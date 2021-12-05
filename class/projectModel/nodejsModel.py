@@ -1694,12 +1694,12 @@ echo $! > {pid_file}
                     result = self.start_project(get)
                     if not result['status']:
                         error_count += 1
-                        error_msg = 'Automatically start Nodej project ['+project_name+'] failed!'
+                        error_msg = 'Automatically start NodeJS project ['+project_name+'] failed!'
                         public.WriteLog(self._log_name, error_msg)
                         public.print_log(error_msg + ", " + result['error_msg'],'ERROR')
                     else:
                         success_count += 1
-                        success_msg = 'Automatically start the Nodej project ['+project_name+'] successfully!'
+                        success_msg = 'Automatically start the NodeJS project ['+project_name+'] successfully!'
                         public.WriteLog(self._log_name, success_msg)
                         public.print_log(success_msg,'INFO')
             except:

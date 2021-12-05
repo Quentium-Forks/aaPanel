@@ -23,7 +23,7 @@ $('#cutMode span').on('click',function(){
                     $('#bt_node_table+.mask_layer').addClass('hide');
                 }
             })
-            site.node_porject_view();
+            site.node_project_view();
             break;
     }
     bt.set_cookie('site_tab_status',index==0?'php':'nodejs')
@@ -1265,7 +1265,7 @@ var site = {
             }
         }
     },
-    node_porject_view: function(){
+    node_project_view: function(){
         var node_table = bt_tools.table({
             el: '#bt_node_table',
             url: '/project/nodejs/get_project_list',
@@ -1619,7 +1619,7 @@ var site = {
                         $(this).blur();
                     }
                 }},
-                {fid:'php_version',title:'PHP',tips:'Selete php version',width:57,type:'link',template:function(row,index){
+                {fid:'php_version',title:'PHP',tips:'Select php version',width:57,type:'link',template:function(row,index){
                     if(row.php_version.indexOf('static') > -1) return  row.php_version;
                     return row.php_version;
                 },event:function(row,index){
