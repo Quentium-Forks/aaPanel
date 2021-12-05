@@ -1823,7 +1823,7 @@ def ws_panel(ws):
 
     while True:
         pdata = ws.receive()
-        if pdata is '{}': break
+        if pdata == '{}': break
         data = json.loads(pdata)
         get = public.to_dict_obj(data)
         get._ws = ws

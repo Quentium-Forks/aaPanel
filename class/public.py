@@ -2933,10 +2933,10 @@ class dict_obj:
                 if not re.match(regex,result):
                     raise ValueError('Parameters: {}, the correct URL format is required'.format(key))
             elif format in ['ip','ipaddr','i','ipv4','ipv6']:
-                if format is 'ipv4':
+                if format == 'ipv4':
                     if not is_ipv4(result):
                         raise ValueError('Parameters: {}, the correct ipv4 address is required'.format(key))
-                elif format is 'ipv6':
+                elif format == 'ipv6':
                     if not is_ipv6(result):
                         raise ValueError('Parameters: {}, the correct ipv6 address is required'.format(key))
                 else:
@@ -2961,10 +2961,10 @@ class dict_obj:
                 length = int(format[1:].strip())
                 result_len = len(result)
                 error_obj = ValueError("Parameters: {}, the required length is {}".format(key,format))
-                if operator is '=':
+                if operator == '=':
                     if result_len != length:
                         raise error_obj
-                elif operator is '>':
+                elif operator == '>':
                     if result_len < length:
                         raise error_obj
                 else:
