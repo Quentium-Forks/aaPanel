@@ -753,7 +753,7 @@ class panelPlugin:
                     new_softInfo = self.check_status(softInfo)
                     if not new_softInfo['setup']: indexList.remove(softInfo['name'])
             public.writeFile(self.__index,json.dumps(indexList))
-            if len(indexList) >= 12: return public.returnMsg(False,'HP_DIS_MOST')
+            if len(indexList) >= 15: return public.returnMsg(False,'HP_DIS_MOST')
         indexList.append(sName)
         public.writeFile(self.__index,json.dumps(indexList))
         return public.returnMsg(True,'ADD_SUCCESS')
