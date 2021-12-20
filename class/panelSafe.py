@@ -59,7 +59,7 @@ class safe:
         self.result['outime'] = int(end - start)
     
     def threadto(self,filename):
-        print 'scanning ' + filename,
+        print('scanning ' + filename)
         file= open(filename)
         filestr = file.read()
         char=chardet.detect(filestr)
@@ -80,7 +80,7 @@ class safe:
                 self.result['data'].append(tmp);
                 self.result['error'] += 1
                 break
-        print '  done'
+        print('done')
         self.result['count'] += 1
         public.writeFile(self.result['path'] + '/scan.pl',json.dumps(self.result));
         del(filestr)

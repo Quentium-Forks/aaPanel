@@ -1,4 +1,4 @@
-DelAcceptPort#coding: utf-8
+#coding: utf-8
 # +-------------------------------------------------------------------
 # | 宝塔Linux面板 x5
 # +-------------------------------------------------------------------
@@ -490,5 +490,3 @@ class firewalls:
 
         self.FirewallReload()
         return public.returnMsg(True, 'DEL_SUCCESS')
-
-

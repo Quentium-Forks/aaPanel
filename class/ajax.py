@@ -1092,7 +1092,7 @@ class ajax:
         wlist = self.GetWarning(get)
         id = int(get.id)
         import time,json;
-        for i in xrange(len(wlist['data'])):
+        for i in range(len(wlist['data'])):
             if wlist['data'][i]['id'] == id:
                 wlist['data'][i]['ignore_count'] += 1
                 wlist['data'][i]['ignore_time'] = int(time.time())
