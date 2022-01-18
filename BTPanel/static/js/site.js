@@ -12,6 +12,7 @@ $('#cutMode span').on('click',function(){
             }
             site.php_table_view();
             site.get_types();
+            bt.set_cookie('site_tab_status','php');
             break;
         case 1:
             $('#bt_node_table').empty();
@@ -24,9 +25,17 @@ $('#cutMode span').on('click',function(){
                 }
             })
             site.node_project_view();
+            bt.set_cookie('site_tab_status','nodejs');
             break;
-    }
-    bt.set_cookie('site_tab_status',index==0?'php':'nodejs')
+        case 2:
+            $('#bt_python_table').empty();
+            $.get('/plugin?action=getConfigHtml',{name: "pythonmamager"},function(res){
+                if(typeof res !== 'string') $('.site_table_view .mask_layer').removeClass('hide').find('.prompt_description').html('Python version manager is not installed，<a href="javascript:;" class="btlink" onclick="bt.soft.install(\'python\')">Click install</a>');
+            })
+            site.python_project_view();
+            bt.set_cookie('site_tab_status','python');
+            break;
+        }
 })
 
 
@@ -241,8 +250,8 @@ var site = {
                         list:[
                             '[Run opt]: The scripts list in package.json is read by default, or you can select the [Custom Command] option to manually enter the start command',
                             '[Custom start]: You can select the startup file or directly enter the startup command. Supported startup methods: npm/node/pm2/yarn',
-                            '[Port]：The wrong port will lead to access to 502, if you dont know the port, you can change to the correct port after starting',
-                            '[User]：For security reasons, the www user is used by default to run, and root user running may bring security risks'
+                            '[Port]: The wrong port will lead to access to 502, if you dont know the port, you can change to the correct port after starting',
+                            '[User]: For security reasons, the www user is used by default to run, and root user running may bring security risks'
                         ]
                     }
                 }]
@@ -544,7 +553,7 @@ var site = {
                         '<div class="bt-w-menu site-menu pull-left"></div>'+
                     '<div id="webedit-con" class="bt-w-con pd15" style="height:100%">' +
                     '</div>'+
-                    '<div class="mask_module hide"><div class="node_mask_module_text">Please turn on <a href="javascript:;" class="btlink mapExtranet" onclick="site.node.simulated_click(2)"> mapping </a>to viewing the configuration information</div></div>'+
+                    '<div class="mask_module hide"><div class="node_mask_module_text">Please turn on <a href="javascript:;" class="btlink mapExtranet" onclick="site.node.simulated_click(2)"> mapping </a>to view the configuration information</div></div>'+
                     '</div>',
                 btn:false,
                 success:function(layers){
@@ -592,7 +601,7 @@ var site = {
                             title:'Load status',
                             event:that.reander_node_service_condition
                         },{
-                            title:'service status',
+                            title:'Service status',
                             event:that.reander_node_service_status
                         },{
                             title:'Module',
@@ -682,8 +691,8 @@ var site = {
                 $(el).append('<ul class="help-info-text c7">' +
                 '<li>[Run opt]: The scripts list in package.json is read by default, or you can select the [Custom Command] option to manually enter the start command</li>' +
                 '<li>[Custom command]: You can select the startup file or directly enter the startup command. Supported startup methods: npm/node/pm2/yarn</li>' +
-                '<li>[Port]：The wrong port will lead to access to 502, if you don’t know the port, you can fill it out at will, and then change to the correct port after starting the project</li>' +
-                '<li>[User]：For security reasons, the www user is used by default to run, and root user running may bring security risks</li>' +
+                '<li>[Port]: The wrong port will lead to access to 502, if you don\'t know the port, you can fill it out at will, and then change to the correct port after starting the project</li>' +
+                '<li>[User]: For security reasons, the www user is used by default to run, and root user running may bring security risks</li>' +
             '</ul>')
                 if(!row.listen_ok) $(el).find('input[name="port"]').parent().after('<div class="block mt10" style="margin-left: 100px;color: red;line-height: 20px;">The project port may be wrong, it is detected that the current project listens to the following ports[ '+  row.listen.join('/') +' ]</div>');
 
@@ -1265,6 +1274,311 @@ var site = {
             }
         }
     },
+    // SECTION Python methods
+    python: {
+        /**
+         * @description 获取Node通用Form配置
+         * @param config {object} 获取配置参数
+         * @return form模板
+         */
+         get_python_general_config: function (config) {
+            config = config || {}
+            var that = this,
+                formLineConfig = [{
+                    label: 'Path',
+                    group: {
+                        type: 'text',
+                        width: '350px',
+                        name: 'project_cwd',
+                        readonly: true,
+                        icon: {
+                            type: 'glyphicon-folder-open',
+                            event: function (ev) {},
+                            callback: function (path) {
+                                var filename = path.split('/');
+                                var project_script_config = this.config.form[2],
+                                    project_name_config = this.config.form[1],
+                                    project_ps_config = this.config.form[6];
+                                project_name_config.group.value = filename[filename.length - 1];
+                                project_ps_config.group.value = filename[filename.length - 1];
+                                project_script_config.group.disabled = false;
+                                this.$replace_render_content(1)
+                                this.$replace_render_content(6)
+                                that.get_project_script_list(path,project_script_config,this)
+                            }
+                        },
+                        value: config.path ? config.path : '/www/wwwroot',
+                        placeholder: 'Please select the project directory'
+                    }
+                }, {
+                    label: 'Name',
+                    group: {
+                        type: 'text',
+                        name: 'project_name',
+                        width: '350px',
+                        placeholder: 'Please enter the name of the Python project',
+                        value: config.name,
+                        input: function (formData,formElement,formConfig) {
+                            var  project_ps_config = formConfig.config.form[6];
+                            project_ps_config.group.value = formData.project_name;
+                            formConfig.$replace_render_content(6)
+                        }
+                    }
+                }]
+                if (config.path) {
+                    // formLineConfig.splice(-1, 1)
+                    return formLineConfig.concat([{
+                        label: '',
+                        group: {
+                            type: 'button',
+                            name:'saveNodeConfig',
+                            title: 'Save',
+                            event: function (data,form,that) {
+                                if(data.project_cwd === ''){
+                                    bt.msg({status:false,msg:'The project directory cannot be empty'})
+                                    return false
+                                }
+                                var project_script_two = $('[name="project_script_two"]');
+                                if(data.project_script === '' && project_script_two.length < 1 || project_script_two.length > 1 && project_script_two.val() === ''){
+                                    bt.msg({status:false,msg:'Start file/command cannot be empty'})
+                                    return false
+                                }
+                                if(data.port === ''){
+                                    bt.msg({status:false,msg:'Project port cannot be empty'})
+                                    return false
+                                }
+                                if(data.project_script === ''){
+                                    data.project_script = project_script_two.val()
+                                    delete data.project_script_two
+                                }
+                                config.callback(data,form,that)
+                            }
+                        }
+                    }])
+                }
+                return formLineConfig;
+            },
+        /**
+         * @description 获取值指定Python项目信息
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        get_python_project_info: function (param, callback) {
+            if (callback) callback(param);
+        },
+        /**
+         * @description 获取值指定Python项目信息
+         * @param param {object} 请求参数
+         * @param callback {function} 回调行数
+         */
+        get_python_config: function (pjname, callback) {
+            var that = this;
+            that.http({
+                method: 'GetConfFile',
+                data: { pjname: pjname },
+                tips: 'Getting configuration information, please wait...',
+                success: function (res) {
+                    if (callback) callback(res);
+                }
+            });
+        },
+        /**
+         * @description 获取Python项目信息
+         * @param row {object} 当前行，项目信息
+         */
+        set_python_project_view: function (row) {
+            var that = this;
+            bt.open({
+                type: 1,
+                title: 'Python project management-[' + row.pjname + ']',
+                skin: 'python_project_dialog',
+                area: ['800px', '720px'],
+                content: '<div class="bt-form">' +
+                    '<div class="bt-w-menu site-menu pull-left"></div>' +
+                    '<div id="webedit-con" class="bt-w-con pd15" style="height:100%">' +
+                    '</div>' +
+                    '<div class="mask_module hide"><div class="python_mask_module_text">Please turn on <a href="javascript:;" class="btlink mapExtranet" onclick="site.python.simulated_click(2)"> mapping </a>to view the configuration information</div></div>' +
+                    '</div>',
+                btn: false,
+                success: function (layers) {
+                    var $layers = $(layers), $content = $layers.find('#webedit-con');
+                    function reander_tab_list(config) {
+                        for (var i = 0; i < config.list.length; i++) {
+                            var item = config.list[i], tab = $('<p class="' + (i === 0 ? 'bgw' : '') + '">' + item.title + '</p>');
+                            $(config.el).append(tab);
+                            (function (i, item) {
+                                tab.on('click', function (ev) {
+                                    $('.mask_module').addClass('hide');
+                                    $(this).addClass('bgw').siblings().removeClass('bgw');
+                                    if ($(this).hasClass('bgw')) {
+                                        that.get_python_project_info(row, function (res) {
+                                            config.list[i].event.call(that, $content, res, ev);
+                                        });
+                                    }
+                                });
+                                if (item.active) tab.click();
+                            }(i, item));
+                        }
+                    }
+                    reander_tab_list({
+                        el: $layers.find('.bt-w-menu'),
+                        list: [{
+                            title: 'Project config',
+                            active: true,
+                            event: that.reander_python_project_config
+                        }, {
+                            title: 'Config file',
+                            event: that.reander_python_file_config
+                        }]
+                    });
+                }
+            });
+        },
+
+        /**
+         * @description 渲染Python项目配置视图
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         * @param that {object} 当前python项目对象
+         */
+        reander_python_project_config: function (el, rows) {
+            var row = $.extend(true,{},rows);
+            console.log(row);
+            var that = this,edit_python_project = bt_tools.form({
+                el:'#webedit-con',
+                data: row.project_config,
+                class: 'ptb10',
+                form:(function(){
+                    var fromConfig = that.get_python_general_config({
+                        form:edit_python_project,
+                        name:row.pjname,
+                        path:row.path,
+                        callback:function(data,form,formNew){
+                        }
+                    })
+
+                    fromConfig[1].group.disabled = true;
+                    return fromConfig
+                })()
+            })
+            setTimeout(function () {
+                $(el).append('<ul class="help-info-text c7">' +
+                    '<li>To add another version of Python, please install it in python manager</li>' +
+                    '<li>Gunicorn is a widely used Python WSGI UNIX HTTP server</li>' +
+                    '<li>uWsgi is a high performance WEB server</li>' +
+                    '<li>python runs the project directly using python</li>' +
+                    '<li>The project log needs to be located in the project /project_dir/logs/error.log otherwise the log cannot be obtained</li>' +
+                    '<li>Customized project path needs to fill in the full path</li>' +
+                    '</ul>');
+            }, 100);
+        },
+
+        /**
+         * @description 渲染Python项目配置视图
+         * @param el {object} 当前element节点
+         * @param row {object} 当前项目数据
+         * @param that {object} 当前python项目对象
+         */
+        reander_python_file_config: function (el, row) {
+            var that = this;
+            $(el).empty();
+            that.get_python_config(row.pjname, function (ress) {
+                if (!ress.status) {
+                    layer.msg(ress.msg, { icon: 2 });
+                    return false;
+                }
+                var u = ["utf-8", "GBK", "GB2312", "BIG5"], n = '';
+                for (var p = 0; p < u.length; p++) {
+                    m = ress.uencoding == p[u] ? "selected" : "";
+                    n += '<option value="' + u[p] + '" ' + m + ">" + u[p] + "</option>";
+                }
+                bt.open({
+                    type: 1,
+                    closeBtn: 2,
+                    title: 'Edit&nbsp;[' + row.pjname + ']&nbsp;Project configuration',
+                    area: ['650px', '550px'],
+                    shadeClose: false,
+                    btn: ['Confirm', 'Cancel'],
+                    content: '<form class="bt-form pd20 pb70">\
+                                            <div class="line">\
+                                                <p style="color:red;margin-bottom:10px;padding-right: 74px;">Tips: Ctrl+F to search for keywords, Ctrl+G to find the next one, Ctrl+S to save, Ctrl+Shift+R to find replacements!\
+                                                    <select class="bt-input-text" name="encoding" style="width: 74px;position: absolute;top: 22px;right: 19px;height: 22px;z-index: 9999;border-radius: 0;">' + n + '</select>\
+                                                </p>\
+                                                <textarea class="mCustomScrollbar bt-input-text" id="edit_python_text" style="width: 100%; margin: 0px auto; line-height: 1.8; position: relative; top: 10px; height: 845px; display: none;" value="">' + ress.data + '</textarea>\
+                                            </div>\
+                                        </form>',
+                    success: function (layero, index) {
+                        encoding = $('[name="encoding"]').val();
+                        code_mirror = CodeMirror.fromTextArea(document.getElementById("edit_python_text"), {
+                            extraKeys: {
+                                "Ctrl-F": "findPersistent",
+                                "Ctrl-H": "replaceAll",
+                                "Ctrl-S": function () {
+                                    that.save_conf_file({
+                                        pjname: row.pjname,
+                                        data: code_mirror.getValue(),
+                                        encoding: encoding
+                                    }, function (res) {
+                                        layer.msg(res.msg, { icon: res.status ? 1 : 2 });
+                                    });
+                                }
+                            },
+                            mode: "text/x-nginx-conf",
+                            lineNumbers: true,
+                            matchBrackets: true,
+                            matchtags: true,
+                            autoMatchParens: true
+                        });
+                    },
+                    yes: function (index, layero) {
+                        that.save_conf_file({
+                            pjname: row.pjname,
+                            data: code_mirror.getValue(),
+                            encoding: encoding
+                        }, function (res) {
+                            layer.msg(res.msg, { icon: res.status ? 1 : 2 });
+                        });
+                    }
+                });
+            });
+        },
+        http: function (obj) {
+            var loadT = '';
+            if (obj.load == undefined) obj.load = 0;
+            if (obj.load === 0) {
+                loadT = layer.msg(obj.tips, {
+                    icon: 16,
+                    time: 0,
+                    shade: 0.3
+                });
+            } else if (obj.load === 1 || (obj.tips == undefined && obj.load == undefined)) {
+                loadT = layer.load();
+            }
+            $.ajax({
+                type: 'POST',
+                url: obj.url != undefined ? obj.url : ('/plugin?action=a&name=pythonmamager&s=' + obj.method),
+                data: obj.data || {},
+                timeout: obj.timeout || 99999999,
+                complete: function (res) {
+                    if (obj.load === 0 || obj.load === 1) layer.close(loadT);
+                },
+                success: function (rdata) {
+                    if (!obj.success) {
+                        obj.msg || obj.msg == undefined ? layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 }) : '';
+                        return;
+                    }
+                    obj.success(rdata);
+                },
+                error: function (ex) {
+                    if (!obj.error) {
+                        obj.msg || obj.msg == undefined ? layer.msg('Request process found error!', { icon: 2 }) : '';
+                        return;
+                    }
+                    return obj.error(ex);
+                }
+            });
+        }
+    },
     node_project_view: function(){
         var node_table = bt_tools.table({
             el: '#bt_node_table',
@@ -1443,7 +1757,7 @@ var site = {
                     }, {
                         title: 'Del',
                         event: function(row, index, ev, key, that) {
-                            bt.prompt_confirm('Delete item','You are deleting the Node project-['+ row.name +'], continue?',function(){
+                            bt.prompt_confirm('Delete item','You are deleting the Node project ['+ row.name +'], continue?',function(){
                                 site.node.remove_node_project({project_name:row.name},function(res){
                                     bt.msg({status:res.status,msg:res.data || res.error_msg})
                                     node_table.$refresh_table_list(true);
@@ -1517,7 +1831,202 @@ var site = {
                 type: 'page',
                 positon: ['right', 'bottom'], // 默认在右下角
                 pageParam: 'p', //分页请求字段,默认为 : p
-                page: 1, //当前分页 默认：1
+                page: 1, //当前分页 默认: 1
+                numberParam: 'limit',
+                //分页数量请求字段默认为 : limit
+                number: 20,
+                //分页数量默认 : 20条
+                numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
+                numberStatus: true, //　是否支持分页数量选择,默认禁用
+                jump: true, //是否支持跳转分页,默认禁用
+            }]
+        });
+    },
+    // SECTION Python
+    python_project_view: function () {
+        var python_table = bt_tools.table({
+            el: '#bt_python_table',
+            url: '/plugin?action=a&name=pythonmamager&s=GetPorjectList',
+            minWidth: '1000px',
+            autoHeight: true,
+            default: "The item list is empty", //数据为空时的默认提示\
+            load: 'Getting the list of Python projects, please wait...',
+            beforeRequest: function (params) {
+                if (params.hasOwnProperty('data') && typeof params.data === 'string') {
+                    var oldParams = JSON.parse(params['data']);
+                    delete params['data'];
+                    return { data: JSON.stringify($.extend(oldParams, params)) };
+                }
+                return { data: JSON.stringify(params) };
+            },
+            column: [
+                {
+                    type: 'checkbox',
+                    class: '',
+                    width: 20
+                },
+                {
+                    fid: 'pjname',
+                    title: 'Name',
+                    width: 85,
+                    type: 'link',
+                    event: function (row, index, ev) {
+                        // TODO
+                        site.python.set_python_project_view(row);
+                    }
+                },
+                {
+                    fid: 'status',
+                    title: 'Status',
+                    width: 85,
+                    config: {
+                        icon: true,
+                        list: [
+                            ["1", 'Running', 'bt_success', 'glyphicon-play'],
+                            ["0", 'Stop', 'bt_danger', 'glyphicon-pause']
+                        ]
+                    },
+                    type: 'status',
+                    event: function (row, index, ev, key, that) {
+                        var status = true;
+                        bt.confirm({
+                            title: status ? 'Stop project' : 'Startup project',
+                            msg: status ? 'After stopping the project, the project service will stop running, continue?' : 'Startup Python project [' + row.name + '], continue operation?'
+                        }, function (index) {
+                            layer.close(index);
+                            // TODO
+                            // site.python[status?'stop_python_project':'start_python_project']({project_name:row.name},function(res){
+                            //     bt.msg({status:res.status,msg:res.data || res.error_msg})
+                            //     that.$refresh_table_list(true);
+                            // })
+                        });
+                    }
+                },
+                {
+                    title: 'CPU',
+                    type: 'text',
+                    template: function (row) {
+                        if(row['mem'] === 0) return '<span>-</span>'
+                        var _cpu = row['cpu'];
+                        return '<span>' + _cpu.toFixed(2) + '%</span>';
+                    }
+                },
+                {
+                    title: 'RAM',
+                    type: 'text',
+                    template: function (row) {
+                        if(row['mem'] === 0) return '<span>-</span>'
+                        var _mem = row['mem'] * 1048576;
+                        return '<span>' + bt.format_size(_mem) + '</span>';
+                    }
+                },
+                {
+                    fid: 'path',
+                    title: 'Root directory',
+                    tips: 'Open Directory',
+                    type: 'link',
+                    event: function (row, index, ev) {
+                        openPath(row.path);
+                    }
+                },
+                {
+                    fid: 'version',
+                    title: 'Python version',
+                    type: 'text',
+                    template: function (row) {
+                        return '<span>' + row['version'] + '</span>';
+                    }
+                },
+                {
+                    fid: 'rtype',
+                    title: 'Mode',
+                    type: 'text'
+                },
+                {
+                    title: 'Operating',
+                    type: 'group',
+                    width: 100,
+                    align: 'right',
+                    group: [{
+                        title: 'Del',
+                        event: function (row, index, ev, key, that) {
+                            bt.prompt_confirm('Delete item', 'You are deleting the Python project [' + row.pjname + '], continue?', function () {
+                                // TODO
+                                // site.python.remove_python_project({project_name:row.name},function(res){
+                                //     bt.msg({status:res.status,msg:res.data || res.error_msg})
+                                //     python_table.$refresh_table_list(true);
+                                // })
+                            });
+                        }
+                    }]
+                }
+            ],
+            sortParam: function (data) {
+                return { 'order': data.name + ' ' + data.sort };
+            },
+            // 渲染完成
+            tootls: [{ // 按钮组
+                type: 'group',
+                positon: ['left', 'top'],
+                list: [{
+                    title: 'Add Python project',
+                    active: true,
+                    event: function (ev) {
+                        // TODO
+                        // site.python.add_python_form(function(res,index){
+                        //     if(res.status) {
+                        //         layer.close(index)
+                        //         python_table.$refresh_table_list(true);
+                        //     }
+                        //     bt.msg({status:res.status, msg: (!Array.isArray(res.data)?res.data:false) || res.error_msg})
+                        // })
+                    }
+                }, {
+                    title: 'Python version manager',
+                    event: function (ev) {
+                        bt.soft.set_lib_config('python', 'Python version manager');
+                    }
+                }]
+            }, { // 搜索内容
+                type: 'search',
+                positon: ['right', 'top'],
+                placeholder: 'Please enter the project name',
+                searchParam: 'search', //搜索请求字段，默认为 search
+                value: '', // 当前内容,默认为空
+            }, { // 批量操作
+                type: 'batch', //batch_btn
+                positon: ['left', 'bottom'],
+                placeholder: 'Please select bulk operation',
+                buttonValue: 'Batch operation',
+                disabledSelectValue: 'Please select the site that needs batch operation!',
+                selectList: [{
+                    title: "Delete item",
+                    url: '/project/python/remove_project',
+                    param: function (row) {
+                        return {
+                            data: JSON.stringify({ project_name: row.name })
+                        };
+                    },
+                    refresh: true,
+                    callback: function (that) {
+                        bt.prompt_confirm('Delete items in bulk', 'You are deleting the selected Python project. Continue?', function () {
+                            that.start_batch({}, function (list) {
+                                var html = '';
+                                for (var i = 0; i < list.length; i++) {
+                                    var item = list[i];
+                                    html += '<tr><td><span>' + item.name + '</span></td><td><div style="float:right;"><span style="color:' + (item.requests.status ? '#20a53a' : 'red') + '">' + (item.requests.status ? item.requests.data : item.requests.error_msg) + '</span></div></td></tr>';
+                                }
+                                python_table.$batch_success_table({ title: 'Delete items in bulk', th: 'project name', html: html });
+                                python_table.$refresh_table_list(true);
+                            });
+                        });
+                    }
+                }],
+            }, { //分页显示
+                type: 'page',
+                positon: ['right', 'bottom'], // 默认在右下角
+                pageParam: 'p', //分页请求字段,默认为 : p
+                page: 1, //当前分页 默认: 1
                 numberParam: 'limit',
                 //分页数量请求字段默认为 : limit
                 number: 20,
@@ -1643,7 +2152,6 @@ var site = {
                     }
                     return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
                 },event:function(row,index,ev,key,that){
-                    console.log(row,'111');
                     site.web_edit(row);
                     setTimeout(function(){
                         $('.site-menu p:eq(8)').click();
@@ -1906,7 +2414,7 @@ var site = {
                 type:'page',
                 positon:['right','bottom'], // 默认在右下角
                 pageParam:'p', //分页请求字段,默认为 : p
-                page:1, //当前分页 默认：1
+                page:1, //当前分页 默认: 1
                 numberParam:'limit',　//分页数量请求字段默认为 : limit
                 number:20,　//分页数量默认 : 20条
                 numberList:[10,20,50,100,200], // 分页显示数量列表
@@ -2265,7 +2773,6 @@ var site = {
                     var data = {};
                         data.file_name = $(this).attr('backup-name');
                         data.site_id = $(this).attr('site-id');
-                    // console.log(data);
                     layer.confirm('Are you sure to restore backup file?', {
                         icon: 0,
                         closeBtn: 2,
@@ -2324,7 +2831,6 @@ var site = {
                                     var data = {};
                                         data.file_name = row.name;
                                         data.site_id = config.id;
-                                    // console.log(data);
                                     layer.confirm('Are you sure to restore backup file?', {
                                         icon: 0,
                                         closeBtn: 2,
@@ -2419,7 +2925,7 @@ var site = {
                         type: 'page',
                         positon: ['right', 'bottom'], // 默认在右下角
                         pageParam: 'p', //分页请求字段,默认为 : p
-                        page: 1, //当前分页 默认：1
+                        page: 1, //当前分页 默认: 1
                         numberParam: 'limit',
                         　 //分页数量请求字段默认为 : limit
                         number: 10,
@@ -3159,12 +3665,12 @@ var site = {
                                         dir_size = bt.format_size(item.total);
 
                                     var f_html = '<i ' + (is_path_rule ? 'class="warning"' : '') + ' style = "vertical-align: middle;" > ' +(item.limit ? 'More than 50 MB' : dir_size) + '</i> ' + (is_path_rule ? t_icon : '');
-                                    var f_title = (is_path_rule ?'Note: This directory may contain important data. Exercise caution when performing this operation.\n':'') + 'directory：' + item.path + '(' + (item.limit ? 'greater than ' : '') + dir_size + ')';
+                                    var f_title = (is_path_rule ?'Note: This directory may contain important data. Exercise caution when performing this operation.\n':'') + 'directory: ' + item.path + '(' + (item.limit ? 'greater than ' : '') + dir_size + ')';
 
                                     return '<div class="check_layer_site">' +
-                                        '<span title="site：' + item.name + '">Site: ' + item.name + '</span>' +
+                                        '<span title="site: ' + item.name + '">Site: ' + item.name + '</span>' +
                                         '<span title="' + f_title + '" >Path: <span style="vertical-align: middle;max-width: 160px;width: auto;">' + item.path + '</span> (' + f_html + ')</span>' +
-                                        '<span title="' + (is_time_rule ? 'Note: This site is created earlier and may contain important data. Exercise caution when performing this operation.\n' : '') + 'time：' + dir_time +'">Create: <i ' + (is_time_rule ? 'class="warning"' : '') + '>' + dir_time + '</i></span>' +
+                                        '<span title="' + (is_time_rule ? 'Note: This site is created earlier and may contain important data. Exercise caution when performing this operation.\n' : '') + 'time: ' + dir_time +'">Create: <i ' + (is_time_rule ? 'class="warning"' : '') + '>' + dir_time + '</i></span>' +
                                         '</div>'
                                 }(item)),
                                     database_html = (function(item){
@@ -3175,12 +3681,12 @@ var site = {
                                             database_size = bt.format_size(item.database.total);
 
                                         var f_size = '<i ' + (is_database_rule ? 'class="warning"' : '') + ' style = "vertical-align: middle;" > ' + database_size + '</i> ' + (is_database_rule ? t_icon : '');
-                                        var t_size = 'Note: This database is large and may contain important data. Exercise caution when performing this operation.\ndatabase：' + database_size;
+                                        var t_size = 'Note: This database is large and may contain important data. Exercise caution when performing this operation.\ndatabase: ' + database_size;
 
                                         return '<div class="check_layer_database">' +
-                                            '<span title="database：' + item.database.name + '">DB: ' + item.database.name + '</span>' +
+                                            '<span title="database: ' + item.database.name + '">DB: ' + item.database.name + '</span>' +
                                             '<span title="' + t_size+'">Size: ' + f_size +'</span>' +
-                                            '<span title="' + (is_time_rule && item.database.total != 0 ? 'important：This database is created earlier and may contain important data. Exercise caution when performing this operation.' : '') + 'time：' + database_time+'">Create: <i ' + (is_time_rule && item.database.total != 0 ? 'class="warning"' : '') + '>' + database_time + '</i></span>' +
+                                            '<span title="' + (is_time_rule && item.database.total != 0 ? 'important: This database is created earlier and may contain important data. Exercise caution when performing this operation.' : '') + 'time: ' + database_time+'">Create: <i ' + (is_time_rule && item.database.total != 0 ? 'class="warning"' : '') + '>' + database_time + '</i></span>' +
                                             '</div>'
                                     }(item))
                                 if((site_html + database_html) !== '') html += '<div class="check_layer_item">' + site_html + database_html +'</div>';
@@ -3410,7 +3916,7 @@ var site = {
                         offset: "30%",
                         content: '<div style="margin: 10px;">\
                                     <div class="line">\
-                                        <div style="font-size: 13px;">Please select a verification method：</div>\
+                                        <div style="font-size: 13px;">Please select a verification method: </div>\
                                         <div class="label-input-group ptb10">\
                                             <select class="bt-input-text" name="auth_to">' + options + '</select>\
                                             <span class="dnsapi-btn"></span>\
@@ -3878,19 +4384,19 @@ var site = {
               '<div class="line" style="clear:both"><span style="width: 105px;" class="tname"> </span><div class="info-r"><button class="btn btn-success btn-sm" onclick="site.edit.exec_composer()">Execute</button></div></div>' +
               '</from>' +
               '<ul class="help-info-text c7">' +
-              '<li>Directory：Website root dir by default, please make sure that the dir contains composer.json</li>' +
-              '<li>User：The default user www, unless your website is run with root privileges, it is not recommended to use the root user to execute composer</li>' +
-              '<li>Source：source of composer</li>' +
-              '<li>Parameters：Install (install dependent package), Update (upgrade dependent package), please select as needed</li>' +
+              '<li>Directory: Website root dir by default, please make sure that the dir contains composer.json</li>' +
+              '<li>User: The default user www, unless your website is run with root privileges, it is not recommended to use the root user to execute composer</li>' +
+              '<li>Source: source of composer</li>' +
+              '<li>Parameters: Install (install dependent package), Update (upgrade dependent package), please select as needed</li>' +
               '<li>Extra commands: If this is empty, it will be executed according to the conf in composer.json, Supported fill in the complete composer command</li>' +
-              '<li>PHP version：The PHP version used to execute composer, it is recommended to try the default, if the installation fails, try to choose another PHP version</li>' +
-              '<li>Composer version：Composer version, you can click [Upgrade Composer] on the right to upgrade Composer to the latest stable version</li>' +
+              '<li>PHP version: The PHP version used to execute composer, it is recommended to try the default, if the installation fails, try to choose another PHP version</li>' +
+              '<li>Composer version: Composer version, you can click [Upgrade Composer] on the right to upgrade Composer to the latest stable version</li>' +
               '</ul>'
             $("#webedit-con").html(com_body);
           });
         },
         set_domains: function(web) {
-            var _this = this;
+            var that = this;
                 var list = [{
                     items: [
                         { name: 'newdomain', width: '400px', type: 'textarea', placeholder: lan.site.domain_help },
@@ -3920,7 +4426,6 @@ var site = {
                 }).css({ 'width':'340px', 'heigth':'100px','left': '0px', 'top': '0px',  'padding-top': '10px','padding-left': '15px'})
                 $('.newdomain').focus(function(){
                     placeholder.hide();
-                    console.log(placeholder)
                     loadT = layer.tips(placeholder.html(),$(this),{tips:[1,'#20a53a'],time:0,area:$(this).width()});
                 }).blur(function(){
                     if($(this).val().length == 0) placeholder.show();
@@ -3977,7 +4482,6 @@ var site = {
                 $('#domain_table>.divtable').css('max-height','350px');
         },
         set_dirbind: function (web) {
-            var _this = this;
             $('#webedit-con').html('<div id="sub_dir_table"></div>');
             bt_tools.table({
                 el:'#sub_dir_table',
@@ -4068,7 +4572,6 @@ var site = {
                                             {
                                                 items: [{
                                                     name: 'btn_save', text: 'Save', type: 'button', callback: function (ldata) {
-                                                        console.log(ret)
                                                         bt.files.set_file_body(ret.filename, ldata.dir_config, 'utf-8', function (sdata) {
                                                             if (sdata.status) load_form.close();
                                                             bt.msg(sdata);
@@ -4080,7 +4583,7 @@ var site = {
                                             for (var i = 0; i < datas.length; i++) {
                                                 var _form_data = bt.render_form_line(datas[i]);
                                                 _html.append(_form_data.html);
-                                                var _other = (bt.os == 'Linux' && i == 0) ? '<span>Rewrite rule converter：<a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">Apache to Nginx</a></span>' : '';
+                                                var _other = (bt.os == 'Linux' && i == 0) ? '<span>Rewrite rule converter: <a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">Apache to Nginx</a></span>' : '';
                                                 _html.find('.info-r').append(_other)
                                                 clicks = clicks.concat(_form_data.clicks);
                                             }
@@ -4297,7 +4800,6 @@ var site = {
                 	title: " delete",
     			      url: '/site?action=delete_dir_auth',
     			      param: function (row) {
-    			      	console.log(row)
     			        return {
     			          id: web.id,
     			          name: row.name
@@ -4704,7 +5206,7 @@ var site = {
                 for (var i = 0; i < datas.length; i++) {
                     var _form_data = bt.render_form_line(datas[i]);
                     _html.append(_form_data.html);
-                    var _other = (bt.os == 'Linux' && i == 0) ? '<span>' + lan.site.rewrite_change_tools + '：<a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">' + lan.site.ap_change_ng + '</a></span>' : '';
+                    var _other = (bt.os == 'Linux' && i == 0) ? '<span>' + lan.site.rewrite_change_tools + ': <a href="https://www.bt.cn/Tools" target="_blank" style="color:#20a53a">' + lan.site.ap_change_ng + '</a></span>' : '';
                     _html.find('.info-r').append(_other)
                     clicks = clicks.concat(_form_data.clicks);
                 }
@@ -4758,7 +5260,7 @@ var site = {
             })
         },
         set_config: function(web) {
-            var con = '<p style="color: #666; margin-bottom: 7px">Tips：Ctrl+F Search keywords，Ctrl+S Save，Ctrl+H Search and replace</p><div class="bt-input-text ace_config_editor_scroll" style="height: 400px; line-height:18px;" id="siteConfigBody"></div>\
+            var con = '<p style="color: #666; margin-bottom: 7px">Tips: Ctrl+F Search keywords，Ctrl+S Save，Ctrl+H Search and replace</p><div class="bt-input-text ace_config_editor_scroll" style="height: 400px; line-height:18px;" id="siteConfigBody"></div>\
 				<button id="OnlineEditFileBtn" class="btn btn-success btn-sm" style="margin-top:10px;">Save</button>\
 				<ul class="help-info-text c7">\
                     <li>This is primary configuration file of the site.</li>\
@@ -4794,7 +5296,7 @@ var site = {
                     //             value: sdata.phpversion,
                     //             type: 'select',
                     //             items: versions ,
-                    //             ps:'<input class="bt-input-text other-version" style="margin-right: 10px;width:300px;color: #000;" type="text" value="'+sdata.php_other+'" placeholder="连接配置，如：1.1.1.1:9001或unix:/tmp/php.sock" />'
+                    //             ps:'<input class="bt-input-text other-version" style="margin-right: 10px;width:300px;color: #000;" type="text" value="'+sdata.php_other+'" placeholder="连接配置，如: 1.1.1.1:9001或unix:/tmp/php.sock" />'
                     //         },
                     //         {
                     //             text: '切换',
@@ -4903,7 +5405,6 @@ var site = {
                     setTimeout(function(){
                         $('select[name="versions"]').change(function(){
                             var phpversion = $(this).val();
-                            // console.log(phpversion);
                             if(phpversion == 'other'){
                                 $('.other-version').show();
                             }else{
@@ -5867,7 +6368,6 @@ var site = {
 
     },
     web_edit: function(obj) {
-        var _this = this;
         var item = obj;
         bt.open({
             type: 1,
@@ -5914,7 +6414,6 @@ var site = {
             site.reload(0);
         }, 100)
     },
-
     set_ssl: function(web) {
         // if(typeof web['ele'] === 'undefined') web['ele'] = $('.webedit-con')
         $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0;\"></div>");
@@ -6032,7 +6531,6 @@ var site = {
                     title: "Let's Encrypt",
                     callback: function(robj) {
                         robj = $('#webedit-con .tab-con')
-                        // console.log(robj,'obj');
                         acme.get_account_info(function(let_user) {});
                         acme.id = web.id;
                         if (rdata.status && rdata.type == 1) {
@@ -6488,7 +6986,23 @@ var site = {
     }
 }
 
-$('.site_table_view .tab-nav span').eq(bt.get_cookie('site_tab_status') == null?0:(bt.get_cookie('site_tab_status') == 'php'?0:1)).trigger('click')
+switch (bt.get_cookie('site_tab_status')) {
+    case 'php':
+        var index = 0;
+        break;
+    case 'nodejs':
+        var index = 1;
+        break;
+    case 'python':
+        var index = 2;
+        break;
+
+    default:
+        var index = 0;
+        break;
+}
+
+$('.site_table_view .tab-nav span').eq(index).trigger('click')
 // site.get_types();
 
 // $.prototype.serializeObject = function() {
