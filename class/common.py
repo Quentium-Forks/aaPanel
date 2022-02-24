@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g
+from BTPanel import session, cache , request, redirect, g, abort
 from datetime import datetime
 from public import dict_obj
 import os
@@ -156,21 +156,21 @@ class panelAdmin(panelSetup):
             else:
                 if session['login'] == False:
                     session.clear()
-                    return redirect('/login')
+                    return abort(404)
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
-                        return redirect('/login')
+                        return abort(404)
                     if not os.path.exists(s_file):
                         session.clear()
-                        return redirect('/login')
+                        return abort(404)
                 ua_md5 = public.md5(g.ua)
                 if ua_md5 != session.get('login_user_agent',ua_md5):
                     session.clear()
-                    return redirect('/login')
+                    return abort(404)
 
             if api_check:
                 now_time = time.time()
@@ -197,27 +197,28 @@ class panelAdmin(panelSetup):
         except:
             public.WriteLog('Login auth',public.get_error_info())
             session.clear()
-            return redirect('/login')
+            return abort(404)
 
     # 获取sk
     def get_sk(self):
         save_path = '/www/server/panel/config/api.json'
         if not os.path.exists(save_path):
-            return redirect('/login')
+            return abort(404)
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return redirect('/login')
+            return abort(404)
 
         if not api_config['open']:
-            return redirect('/login')
+            return abort(404)
+
         from BTPanel import get_input
         get = get_input()
         client_ip = public.GetClientIp()
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return redirect('/login')
+                return abort(404)
 
             num_key = client_ip + '_api'
             if not public.get_error_num(num_key,20):
@@ -250,7 +251,7 @@ class panelAdmin(panelSetup):
 
             get = get_input()
             if not 'request_token' in get or not 'request_time' in get:
-                return redirect('/login')
+                return abort(404)
             g.is_aes = True
             g.aes_key = api_config['key']
         request_token = public.md5(get.request_time + api_config['token'])
