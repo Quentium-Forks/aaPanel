@@ -64,7 +64,7 @@ var bt_tools = {
             */
             $refresh_table_list: function (load,callback) {
                 var _that = this,loadT;
-                if(load) loadT = bt_tools.load(lan.database.get_data);
+                if (load) loadT = bt_tools.load(lan.database.get_data);
                 this.$http(function(data) {
                     if (loadT) loadT.close();
                     if (callback) callback(data);
@@ -1887,7 +1887,8 @@ var bt_tools = {
      * @return void
      */
     load: function (title) {
-        var random = bt.get_random(5),layel = $('<div class="layui-layer layui-layer-dialog layui-layer-msg layer-anim" id="'+ random +'" type="dialog" style="z-index: 99891031;"><div class="layui-layer-content layui-layer-padding"><i class="layui-layer-ico layui-layer-ico16"></i>'+ title +'，please wait...</div><span class="layui-layer-setwin"></span></div><div class="layui-layer-shade" id="layer-mask-'+ random +'" times="17" style="z-index:99891000; background-color:#000; opacity:0.3; filter:alpha(opacity=30);"></div>'),mask = '',loadT = '';
+        title = title.indexOf(', please wait...') !== -1 ? title : title + ', please wait...'
+        var random = bt.get_random(5),layel = $('<div class="layui-layer layui-layer-dialog layui-layer-msg layer-anim" id="'+ random +'" type="dialog" style="z-index: 99891031;"><div class="layui-layer-content layui-layer-padding"><i class="layui-layer-ico layui-layer-ico16"></i>'+ title +'</div><span class="layui-layer-setwin"></span></div><div class="layui-layer-shade" id="layer-mask-'+ random +'" times="17" style="z-index:99891000; background-color:#000; opacity:0.3; filter:alpha(opacity=30);"></div>'),mask = '',loadT = '';
         $('body').append(layel);
         var win = $(window),msak = $('.layer-loading-mask'),layel = $('#'+random);
         layel.css({'top':((win.height() - 64)/2),'left':((win.width() -320)/2)});

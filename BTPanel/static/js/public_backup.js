@@ -4056,6 +4056,8 @@ bt.soft = {
             case 4:
                 var loadP = bt.load("Getting deduction volume information!")
                 clearInterval(bt.soft.pub.wxpayTimeId);
+                $('#libPay-content').empty().append('<div class="li-tit c4"></div><div class="li-con c5"></div>');
+                $('#libPay-pay').empty();
                 $('#libPay-content .li-tit').text('Vouchers');
                 $('#libPay-pay').removeAttr('data-qecode');
                 $('#libPay-tips').hide();
@@ -4150,6 +4152,8 @@ bt.soft = {
             case 7:
                 if(config.renew) return false
                 var loadA = bt.load("Obtaining authorization information!")
+                $('#libPay-content').empty().append('<div class="li-tit c4"></div><div class="li-con c5"></div>');
+                $('#libPay-pay').empty();
                     var _pid = config.pid;
                      $('#libPay-content .li-tit').text('Authorization information');
                     bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
@@ -4245,7 +4249,7 @@ bt.soft = {
                 });
                 break;
             case 'voucher':// 产品抵扣卷（配置参数）
-                _html = $('<ul class="pay-btn-group"></ul>');
+                _html = $('<ul class="pay-btn-group voucher-group"></ul>');
                 this.each(config.data, function (index, item){
                     _html.append($('<li class="pay-cycle-btn ' + (item.active ? 'active' : '') + '"><span>' + (item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : (item.cycle + that.pro.conver_unit(item.cycle_unit))) + '</span></li>').data($.extend({ pid: config.pid }, item)).click(function (ev) {
                         var data = $(this).data();

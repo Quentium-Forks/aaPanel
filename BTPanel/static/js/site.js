@@ -2157,6 +2157,24 @@ var site = {
                         $('.site-menu p:eq(8)').click();
                     },500);
                 }},
+                {
+                    fid:'attack',
+                    title:'Attack',
+                    width:80,
+                    type:'text',
+                    template:function(row,index){
+                        return '<a class="btlink '+(row.attack > 0 ?'bt_danger':'')+'" style="cursor: pointer;">'+row.attack+'</a>'
+                    },
+                    event:function(row){
+                        site.web_edit(row);
+                        setTimeout(function () {
+                            $('.site-menu p:eq(14)').click();
+                            setTimeout(function(){
+                                $('#tabLogs span:eq(2)').click();
+                            },500)
+                        }, 500);
+                    }
+                },
                 {title:lan.site.operate,type:'group',width:119,align:'right',group:[
                 {
                     title:'WAF',
@@ -2210,6 +2228,24 @@ var site = {
                         }
                     });
                 });
+                if($('#bt_site_table table thead th:eq(9) a').length == 0){
+                    var Attack_tips = '<ul class="help-info-text c7">\
+                      <li>Log analysis: Scan the logs(/www/wwwroot/.log) for requests with attack (types include:<em style="color:red">xss,sql,san,php</em>)</li>\
+                      <li>Analyzed log data contains intercepted requests</li>\
+                      <li>By default, the last scan data is displayed (if not, please click log scan)</li>\
+                      <li>If the log file is too large, scanning may take a long time, please be patient</li>\
+                      <li><a class="btlink" href="https://forum.aapanel.com/d/3351-nginx-waf-instructions" target="_blank">aaPanel WAF</a> can effectively block such attacks</li>\
+                      </ul>'
+                    $('#bt_site_table table thead th:eq(9)>span').css({'width':'42px','display':'initial'})   //设置扫描th大小
+                    //追加tips并设置样式
+                    $('#bt_site_table table thead th:eq(9)').append($('<a class="bt-ico-ask">?</a>').css({'border-color':'#666','color':'#666'}).hover(function(){
+                        $(this).css({'border-color':'#fb7d00','color':'#fff'})
+                        layer.tips(Attack_tips, $(this), { time: 0, tips: [1, '#fff'],area: ['500px', '180px']});
+                    },function(){
+                        $(this).css({'border-color':'#666','color':'#666'})
+                        layer.closeAll('tips');
+                    }))
+                }
             },
             // 渲染完成
             tootls:[{ // 按钮组
@@ -4396,7 +4432,7 @@ var site = {
           });
         },
         set_domains: function(web) {
-            var that = this;
+            var _this = this;
                 var list = [{
                     items: [
                         { name: 'newdomain', width: '400px', type: 'textarea', placeholder: lan.site.domain_help },
@@ -4482,6 +4518,7 @@ var site = {
                 $('#domain_table>.divtable').css('max-height','350px');
         },
         set_dirbind: function (web) {
+            var _this = this;
             $('#webedit-con').html('<div id="sub_dir_table"></div>');
             bt_tools.table({
                 el:'#sub_dir_table',
@@ -6294,6 +6331,148 @@ var site = {
                 var shellCopy = shell + (serverType === 'nginx'?'.error.':serverType === 'apache'?'-error_':'_ols.error_') + 'log';
                 bt_tools.command_line_output({ el:'#webedit-con .tab-con', shell:shellCopy,area:['100%','580px']})
             }
+          },{
+            title:"Log Security Analysis",
+            callback: function(robj){
+              var _serverType = bt.get_cookie('serverType'),
+                  pathFile = '',
+                  progress = '',  //扫描进度
+                  loadT = bt.load('Getting log analytics data, please wait...');
+                  
+              switch(_serverType){
+                  case 'nginx':
+                      pathFile = web.name+'.log'
+                      break;
+                  case 'apache':
+                      pathFile = web.name+'-access_log'
+                      break;
+                  default:
+                      pathFile = web.name+'_ols.access_log'
+                      break;
+              }
+              $.post('/ajax?action=get_result&path=/www/wwwlogs/' + pathFile, function (rdata) {
+                loadT.close();
+                //1.扫描按钮
+                var analyes_log_btn = '<button type="button" title="log scan" class="btn btn-success analyes_log btn-sm mr5"><span>log scan</span></button>'
+    
+                //2.功能介绍
+                var analyse_help = '<ul class="help-info-text c7">\
+                  <li>Log analysis: Scan the logs(/www/wwwroot/.log) for requests with attack (types include:<em style="color:red">xss,sql,san,php</em>)</li>\
+                  <li>Analyzed log data contains intercepted requests</li>\
+                  <li>By default, the last scan data is displayed (if not, please click log scan)</li>\
+                  <li>If the log file is too large, scanning may take a long time, please be patient</li>\
+                  <li><a class="btlink" href="https://forum.aapanel.com/d/3351-nginx-waf-instructions" target="_blank">aaPanel WAF</a> can effectively block such attacks</li>\
+                  </ul>'
+    
+                robj.append(analyes_log_btn+'<div class="analyse_log_table"></div>'+analyse_help)
+                render_analyse_list(rdata);
+    
+                //事件
+                $(robj).find('.analyes_log').click(function(){
+                  bt.confirm({
+                    title:'Scan website logs',
+                    msg:'It is recommended to perform security analysis when the server load is low. This time, the ['+web.name+'.log] file will be scanned. It may take a long time. Do you want to continue?'
+                  }, function(index){
+                    layer.close(index)
+                    progress = layer.open({
+                      type: 1,
+                      closeBtn: 2,
+                      title: false,
+                      shade: 0,
+                      area: '400px',
+                      content: '<div class="pro_style" style="padding: 20px;"><div class="progress-head" style="padding-bottom: 10px;">Scanning, scanning progress...</div>\
+                          <div class="progress">\
+                            <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0%</div>\
+                          </div>\
+                        </div>',
+                      success:function(){
+                        // 开启扫描并且持续获取进度
+                        $.post('/ajax?action=log_analysis&path=/www/wwwlogs/' + pathFile, function (rdata) {
+                          if(rdata.status){
+                            detect_progress();
+                          }else{
+                            layer.close(progress);
+                            layer.msg(rdata.msg, { icon: 2, time: 0, shade: 0.3, shadeClose: true });
+                          }
+                        })
+                      }
+                    })
+                  })
+                })
+              })
+              // 渲染分析日志列表
+              function render_analyse_list(rdata){
+                var analyse_list = '<div class="divtable" style="margin-top: 10px;"><table class="table table-hover">\
+                  <thead><tr><th width="90">Date</th><th>Time</th><th>XSS</th><th>SQL</th><th>Sacn</th><th>PHP</th><th>IP(top100)</th><th>URL(top100)</th></tr></thead>\
+                  <tbody class="analyse_body">'
+                if(rdata.is_status){   //检测是否有扫描数据
+                  analyse_list +='<tr>\
+                      <td>'+rdata.start_time+'</td>\
+                      <td>'+rdata.time.substring(0,4)+' Sec</td>\
+                      <td class="onChangeLogDatail" '+(rdata.xss>0?'style="color:red"':'')+' name="xss">'+rdata.xss+'</td>\
+                      <td class="onChangeLogDatail" '+(rdata.sql>0?'style="color:red"':'')+' name="sql">'+rdata.sql+'</td>\
+                      <td class="onChangeLogDatail" '+(rdata.san>0?'style="color:red"':'')+' name="san">'+rdata.san+'</td>\
+                      <td class="onChangeLogDatail" '+(rdata.php>0?'style="color:red"':'')+' name="php">'+rdata.php+'</td>\
+                      <td class="onChangeLogDatail" style="color:#20a53a" name="ip">'+rdata.ip+'</td>\
+                      <td class="onChangeLogDatail" style="color:#20a53a" name="url">'+rdata.url+'</td>\
+                    </tr>'
+                }else{
+                  analyse_list+='<tr><td colspan="9" style="text-align: center;">no scan data</td></tr>'
+                }
+                analyse_list += '</tbody></table></div>'
+                $('.analyse_log_table').html(analyse_list)
+                $('.onChangeLogDatail').css('cursor','pointer').attr('title','Details')
+                //查看详情
+                $('.onChangeLogDatail').on('click',function(){
+                  get_analysis_data_datail($(this).attr('name'))
+                })
+              }
+              // 扫描进度
+              function detect_progress(){
+                $.post('/ajax?action=speed_log&path=/www/wwwlogs/' + pathFile, function (res) {
+                  var pro = res.msg
+                  if(pro !== 100){
+                    if (pro > 100) pro = 100;
+                    if (pro !== NaN) {
+                      $('.pro_style .progress-bar').css('width', pro + '%').html(pro + '%');
+                    }
+                    setTimeout(function () {
+                      detect_progress();
+                    }, 1000);
+                  }else{
+                    layer.msg('Scan complete',{icon:1,timeout:4000})
+                    layer.close(progress);
+                    get_analysis_data();
+                  }
+                })
+              }
+              // 获取扫描结果
+              function get_analysis_data(){
+                var loadTGA = bt.load('Getting log analytics data, please wait...');
+                $.post('/ajax?action=get_result&path=/www/wwwlogs/' + pathFile, function (rdata) {
+                  loadTGA.close();
+                  render_analyse_list(rdata,true)
+                })
+              }
+              // 获取扫描结果详情日志
+              function get_analysis_data_datail(name){
+                layer.open({
+                  type: 1,
+                  closeBtn: 2,
+                  shadeClose: false,
+                  title: '[ '+name+' ] log details',
+                  area: '650px',
+                  content:'<pre id="analysis_pre" style="background-color: #333;color: #fff;height: 545px;margin: 0;white-space: pre-wrap;border-radius: 0;"></pre>',
+                  success(){
+                    var loadTGD = bt.load('Getting log details data, please wait...');
+                    $.post('/ajax?action=get_detailed&path=/www/wwwlogs/' + pathFile+'&type='+name+'', function (logs) {
+                      loadTGD.close();
+                      $('#analysis_pre').html((name == 'ip' || name == 'url'?'&nbsp;&nbsp;[Access Times]&nbsp;&nbsp;['+name+']</br>':'')+logs)
+                    })
+                  }
+                })
+              }
+            }
           }]
           bt.render_tab('tabLogs',_tab);
           $('#tabLogs span:eq(0)').click();
@@ -6368,6 +6547,7 @@ var site = {
 
     },
     web_edit: function(obj) {
+        var _this = this;
         var item = obj;
         bt.open({
             type: 1,
@@ -6414,6 +6594,7 @@ var site = {
             site.reload(0);
         }, 100)
     },
+
     set_ssl: function(web) {
         // if(typeof web['ele'] === 'undefined') web['ele'] = $('.webedit-con')
         $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0;\"></div>");

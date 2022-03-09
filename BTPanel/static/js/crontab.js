@@ -995,7 +995,7 @@ function toBackup(type){
 			  channelInitVal= ''
               messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="">No Data</a></li>'
             } else if(rdata.telegram.setup) {
-              messageChannelBtnText = '钉钉'
+              messageChannelBtnText = 'Telegram'
 			  channelInitVal= 'telegram'
               messageChannelDom += '<li><a role="menuitem" tabindex="-1" href="javascript:;" value="telegram">Telegram</a></li>'
             } else if(rdata.user_mail.user_name) {

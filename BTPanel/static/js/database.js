@@ -170,7 +170,7 @@ var database = {
                     event: function () {
                         // database.sync_to_database(1)
                         bt.database.sync_database(function (rdata) {
-                            if (rdata.status) that.database_table.$refresh_table_list(true);
+                            if (rdata.status) database_table.$refresh_table_list(true);
                         });
                     }
                 }]

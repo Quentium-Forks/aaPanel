@@ -2799,6 +2799,9 @@ var soft = {
                         }, function(rdata) {
                             loading.close();
                             bt.msg(rdata);
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000);
                         })
                     }
                     break;

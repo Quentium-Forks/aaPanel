@@ -2123,7 +2123,8 @@ var bt_file = {
         delete config['cancel_favorites']; // 未分享
         config['favorites'] =  (data.type == 'dir' ? 'Favorites dir' : 'Favorites file');
       }
-      if (data.ext == 'php') config['dir_kill'] = '文件查杀';
+      // if (data.ext == 'php') config['dir_kill'] = '文件查杀';
+      if (data.ext == 'php')  delete config['dir_kill'];
       if (data.ext != 'php' && data.type != 'dir') delete config['dir_kill'];
       var num = 0;
       $.each(compression, function(index, item) { // 判断压缩文件
