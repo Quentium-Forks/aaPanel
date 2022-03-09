@@ -15,6 +15,9 @@
 import sys
 import os
 import logging
+import datetime
+import threading
+
 from json import dumps, loads
 from psutil import Process, pids, cpu_count, cpu_percent, net_io_counters, disk_io_counters, virtual_memory
 os.environ['BT_TASK'] = '1'
@@ -98,7 +101,6 @@ def ExecShell(cmdstring, cwd=None, timeout=None, shell=True, symbol = '&>'):
     try:
         global logPath
         import shlex
-        import datetime
         import subprocess
         import time
         sub = subprocess.Popen(cmdstring+ symbol +logPath, cwd=cwd,
@@ -602,6 +604,23 @@ def check_files_panel():
             public.writeFile(cf, i['body'])
             os.system("bash {}/init.sh reload &".format(base_path))
 
+def func():
+    os.system(get_python_bin() + " {}/script/scan_log.py > /dev/null".format(base_path))
+    #如果需要循环调用，就要添加以下方法
+    timer = threading.Timer(86400, func)
+    timer.start()
+
+def scan_log_site():
+    now_time = datetime.datetime.now()
+    next_time = now_time + datetime.timedelta(days=+1)
+    next_year = next_time.date().year
+    next_month = next_time.date().month
+    next_day = next_time.date().day
+    next_time = datetime.datetime.strptime(str(next_year) + "-" + str(next_month) + "-" + str(next_day) + " 03:00:00",
+                                           "%Y-%m-%d %H:%M:%S")
+    timer_start_time = (next_time - now_time).total_seconds()
+    timer = threading.Timer(timer_start_time, func)
+    timer.start()
 
 # 面板消息提醒
 # def check_panel_msg():
@@ -634,7 +653,6 @@ def main():
                         datefmt='%Y-%m-%d %H:%M:%S', filename=task_log_file, filemode='a+')
     logging.info('Service started')
 
-    import threading
     t = threading.Thread(target=systemTask)
     t.setDaemon(True)
     t.start()
@@ -672,6 +690,9 @@ def main():
     # p = threading.Thread(target=check_panel_msg)
     # p.setDaemon(True)
     # p.start()
+    p = threading.Thread(target=scan_log_site)
+    p.setDaemon(True)
+    p.start()
 
     startTask()
 
