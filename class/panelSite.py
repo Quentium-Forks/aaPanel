@@ -477,9 +477,26 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         public.serviceReload()
         return res
 
+    # 检测enable-php-00.conf
+    def check_php_conf(self):
+        try:
+            file = '/www/server/nginx/conf/enable-php.conf'
+            if public.get_webserver() != "nginx":
+                return
+            if os.path.exists(file):
+                return
+            php_v = os.listdir('/www/server/php')
+            if not php_v:
+                return
+            conf = public.readFile('/www/server/nginx/conf/enable-php-{}.conf'.format(php_v[0]))
+            public.writeFile(file,conf)
+        except:
+            pass
+
     # 添加站点
     def AddSite(self, get, multiple=None):
         self.check_default()
+        self.check_php_conf()
         isError = public.checkWebConfig()
         if isError != True:
             return public.returnMsg(False, 'ERROR: %s<br><br><a style="color:red;">' % public.GetMsg(
@@ -2248,9 +2265,12 @@ listener SSL443 {
     def SiteStop(self, get, multiple=None):
         path = self.setupPath + '/stop'
         id = get.id
+        site_status = public.M('sites').where("id=?", (id,)).getField('status')
+        if str(site_status) != '1':
+            return public.returnMsg(True, 'SITE_STOP_SUCCESS')
         if not os.path.exists(path):
             os.makedirs(path)
-            public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
+            public.downloadFile('https://node.aapanel.com/stop_en.html', path + '/index.html')
 
         # if 'This site has been closed by administrator' not in public.readFile(path + '/index.html'):
         #     public.downloadFile('http://download.bt.cn/stop_en.html', path + '/index.html')
@@ -3749,7 +3769,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     php_pass_proxy = get.proxysite
                     if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
                         php_pass_proxy = re.search('(https?\:\/\/[\w\.]+)', get.proxysite).group(0)
-                    ng_conf = re.sub("location\s+%s" % conf[i]["proxydir"], "location " + get.proxydir, ng_conf)
+                    ng_conf = re.sub("location\s+[\^\~]*\s?%s" % conf[i]["proxydir"], "location ^~ " + get.proxydir, ng_conf)
                     ng_conf = re.sub("proxy_pass\s+%s" % conf[i]["proxysite"], "proxy_pass " + get.proxysite, ng_conf)
                     ng_conf = re.sub("location\s+\~\*\s+\\\.\(php.*\n\{\s*proxy_pass\s+%s.*" % (php_pass_proxy),
                                      "location ~* \.(php|jsp|cgi|asp|aspx)$\n{\n\tproxy_pass %s;" % php_pass_proxy,ng_conf)

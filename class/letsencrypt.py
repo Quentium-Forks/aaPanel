@@ -23,7 +23,10 @@
 # Copyright Daniel Roesler, under MIT license, see LICENSE at github.com/diafygi/acme-tiny
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, requests
 
-from urllib.request import urlopen, Request
+try:
+    from urllib.request import urlopen, Request  # 3
+except ImportError:
+    from urllib2 import urlopen, Request  # 2
 
 DEFAULT_CA = "https://acme-v02.api.letsencrypt.org"
 # DEFAULT_CA = "https://acme-staging-v02.api.letsencrypt.org"

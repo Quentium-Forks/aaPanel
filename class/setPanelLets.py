@@ -192,10 +192,10 @@ class setPanelLets:
         panel_cert_data = self.__check_panel_cert()
         if not panel_cert_data:
             self.__write_panel_cert()
-            return public.returnMsg(True,'')
+            return public.returnMsg(True,'1')
         if panel_cert_data["key"] != self.__tmp_key and panel_cert_data["cert"] != self.__tmp_cert:
             self.__write_panel_cert()
-            return public.returnMsg(True,'')
+            return public.returnMsg(True,'1')
         return public.returnMsg(True, '')
 
     # 设置lets证书
@@ -218,7 +218,7 @@ class setPanelLets:
             if not res['status']:
                 return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
-            public.writeFile("/www/server/panel/data/reload.pl","1")
+            # public.writeFile("/www/server/panel/data/reload.pl","1")
             self.__save_cert_source(domain,get.email)
             return public.returnMsg(True, 'Panel lets set successfully')
         if not create_site:
@@ -229,7 +229,7 @@ class setPanelLets:
                 domain_cert = self.__check_cert_dir(get)
                 self.copy_cert(domain_cert)
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
-                public.writeFile("/www/server/panel/data/reload.pl", "1")
+                # public.writeFile("/www/server/panel/data/reload.pl", "1")
                 self.__save_cert_source(domain, get.email)
                 return  public.returnMsg(True, 'Panel lets set successfully')
             else:

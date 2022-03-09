@@ -24,7 +24,7 @@ class http:
         if type == 'python':
             try:
                 import requests
-                from urllib3.exceptions import InsecureRequestWarning
+                from requests.packages.urllib3.exceptions import InsecureRequestWarning
                 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
                 from requests import get as req_get
                 return req_get(url,timeout=timeout,headers=get_headers(headers),verify=verify)
@@ -35,7 +35,10 @@ class http:
         elif type == 'php':
             result = self._get_php(url,timeout,headers,verify)
         elif type == 'src':
-            result = self._get_py3(url,timeout,headers,verify)
+            if sys.version_info[0] == 2:
+                result = self._get_py2(url,timeout,headers,verify)
+            else:
+                result = self._get_py3(url,timeout,headers,verify)
         return result
 
     def post(self,url,data,timeout = 60,headers = {},verify = False,type = 'python'):
@@ -43,7 +46,7 @@ class http:
         if type == 'python':
             try:
                 import requests
-                from urllib3.exceptions import InsecureRequestWarning
+                from requests.packages.urllib3.exceptions import InsecureRequestWarning
                 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
                 from requests import post as req_post
                 return req_post(url,data,timeout=timeout,headers=headers,verify=verify)
@@ -54,8 +57,27 @@ class http:
         elif type == 'php':
             result = self._post_php(url,data,timeout,headers,verify)
         elif type == 'src':
-            result = self._post_py3(url,data,timeout,headers,verify)
+            if sys.version_info[0] == 2:
+                result = self._post_py2(url,data,timeout,headers,verify)
+            else:
+                result = self._post_py3(url,data,timeout,headers,verify)
         return result
+
+    #POST请求 Python2
+    def _post_py2(self,url,data,timeout,headers,verify):
+        import urllib2
+        req = urllib2.Request(url, self._str_py_post(data,headers),headers = headers)
+        try:
+            if not verify:
+                context = ssl._create_unverified_context()
+                r_response = urllib2.urlopen(req,timeout = timeout,context = context)
+            else:
+                r_response = urllib2.urlopen(req,timeout = timeout)
+        except urllib2.HTTPError as err:
+            return response(str(err),err.code,[])
+        except urllib2.URLError as err:
+            return response(str(err),0,[])
+        return response(r_response.read(),r_response.getcode(),r_response.info().headers)
 
     #POST请求 Python3
     def _post_py3(self,url,data,timeout,headers,verify):
@@ -131,6 +153,23 @@ exit($header."\r\n\r\n".json_encode($body));
         if os.path.exists(tmp_file): os.remove(tmp_file)
         r_body,r_headers,r_status_code = self._curl_format(result)
         return response(json.loads(r_body),r_status_code,r_headers)
+
+
+    #GET请求 Python2
+    def _get_py2(self,url,timeout,headers,verify):
+        import urllib2
+        req = urllib2.Request(url, headers = headers)
+        try:
+            if not verify:
+                context = ssl._create_unverified_context()
+                r_response = urllib2.urlopen(req,timeout = timeout,context = context)
+            else:
+                r_response = urllib2.urlopen(req,timeout = timeout)
+        except urllib2.HTTPError as err:
+            return response(str(err),err.code,[])
+        except urllib2.URLError as err:
+            return response(str(err),0,[])
+        return response(r_response.read(),r_response.getcode(),r_response.info().headers)
 
     #URL转码
     def quote(self,url):
@@ -415,3 +454,4 @@ def get(url,timeout = 60,headers = {},verify = False,s_type = None):
         return p.get(url,timeout,get_headers(headers),verify,get_stype(s_type))
     except:
         raise Exception(public.get_error_info())
+

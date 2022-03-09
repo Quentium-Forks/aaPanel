@@ -490,3 +490,5 @@ class firewalls:
 
         self.FirewallReload()
         return public.returnMsg(True, 'DEL_SUCCESS')
+
+

@@ -172,10 +172,13 @@ class send_mail:
             filename = '/www/server/panel/data/iplist.txt'
             ipaddress = public.readFile(filename)
             if not ipaddress:
-                import urllib
-                urllib = urllib.request
+                try:
+                    import urllib2
+                except:
+                    import urllib as urllib2
+                    urllib2 = urllib2.request
                 url = 'http://pv.sohu.com/cityjson?ie=utf-8'
-                opener = urllib.urlopen(url)
+                opener = urllib2.urlopen(url)
                 m_str = opener.read()
                 if isinstance(m_str, bytes):
                     ipaddress = re.search('\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)

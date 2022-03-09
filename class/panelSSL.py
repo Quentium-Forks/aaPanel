@@ -11,7 +11,6 @@
 # SSL接口
 #------------------------------
 import public,os,sys,binascii,urllib,json,time,datetime,re
-from Crypto import Random
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as PKCS1_cipher
 import base64

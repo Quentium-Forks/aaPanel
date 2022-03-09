@@ -627,7 +627,7 @@ def GetHost(port = False):
 def GetClientIp():
     from flask import request
     ipaddr =  request.remote_addr.replace('::ffff:','')
-    if not check_ip(ipaddr): return '未知IP地址'
+    if not check_ip(ipaddr): return 'Unknown IP address'
     return ipaddr
 
 
@@ -2933,10 +2933,10 @@ class dict_obj:
                 if not re.match(regex,result):
                     raise ValueError('Parameters: {}, the correct URL format is required'.format(key))
             elif format in ['ip','ipaddr','i','ipv4','ipv6']:
-                if format == 'ipv4':
+                if format is 'ipv4':
                     if not is_ipv4(result):
                         raise ValueError('Parameters: {}, the correct ipv4 address is required'.format(key))
-                elif format == 'ipv6':
+                elif format is 'ipv6':
                     if not is_ipv6(result):
                         raise ValueError('Parameters: {}, the correct ipv6 address is required'.format(key))
                 else:
@@ -2961,10 +2961,10 @@ class dict_obj:
                 length = int(format[1:].strip())
                 result_len = len(result)
                 error_obj = ValueError("Parameters: {}, the required length is {}".format(key,format))
-                if operator == '=':
+                if operator is '=':
                     if result_len != length:
                         raise error_obj
-                elif operator == '>':
+                elif operator is '>':
                     if result_len < length:
                         raise error_obj
                 else:

@@ -378,7 +378,7 @@ SetLink
 
         db_path = '{}/{}'.format(datadir,u_name)
         if not os.path.exists(db_path):
-            return public.returnMsg(False,'Means that the database data does not exist!')
+            return public.returnMsg(False,'The database does not exist and cannot be stored in the recycle bin! [{}]'.format(name))
 
         public.ExecShell("mv -f {} {}".format(db_path,rm_path))
         if not os.path.exists(rm_path):
@@ -630,7 +630,9 @@ SetLink
             tmpFile = tmpFile.replace('tar.', '')
             # return tmpFile
             backupPath = session['config']['backup_path'] + '/database'
-            panel_restore.panel_restore().restore_db_backup(get)
+            download_msg = panel_restore.panel_restore().restore_db_backup(get)
+            if not download_msg['status']:
+                return download_msg
             if ext == 'zip':
                 public.ExecShell("cd "  +  backupPath  +  " && unzip " + '"'+file+'"')
             else:

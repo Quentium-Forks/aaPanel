@@ -190,7 +190,10 @@ class CloudFlareDns(BaseDns):
         self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL
         self.HTTP_TIMEOUT = 65  # seconds
 
-        import urllib.parse as urlparse
+        try:
+            import urllib.parse as urlparse
+        except:
+            import urlparse
 
         if CLOUDFLARE_API_BASE_URL[-1] != "/":
             self.CLOUDFLARE_API_BASE_URL = CLOUDFLARE_API_BASE_URL + "/"
@@ -549,3 +552,7 @@ class Dns_com(object):
     def delete_dns_record(self, domain_name, domain_dns_value):
         root, _, acme_txt = extract_zone(domain_name)
         self.get_dns_obj().remove_txt(acme_txt + '.' + root)
+
+
+
+

@@ -278,7 +278,6 @@ def ClearRecycle_Bin():
     
 #清理其它
 def ClearOther():
-    import shutil
     clearPath = [
                  {'path':'/www/server/panel','find':'testDisk_'},
                  {'path':'/www/wwwlogs','find':'log'},

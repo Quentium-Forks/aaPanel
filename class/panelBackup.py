@@ -572,6 +572,10 @@ class backup:
             os.environ["MYSQL_PWD"] = password
             backup_cmd = "/www/server/mysql/bin/mysqldump -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root" + " 2>"+self._err_log+"| gzip > " + dfile
             public.ExecShell(backup_cmd)
+            gz_size = os.path.getsize(dfile)
+            if gz_size < 400:
+                backup_cmd = "/www/server/mysql/bin/mysqldump -E -R --default-character-set=" + character + " --force --hex-blob --opt " + db_name + " -u root -p"+ password + " 2>" + self._err_log + "| gzip > " + dfile
+                public.ExecShell(backup_cmd)
         except Exception as e:
             raise
         finally:
@@ -647,7 +651,6 @@ class backup:
                         'size': os.path.getsize(dfile)
                     }
                     public.M('backup').insert(pdata)
-
             if _not_save_local:
                 if os.path.exists(dfile):
                     os.remove(dfile)
@@ -768,7 +771,7 @@ class backup:
             return
 
         if notice == 1 or notice == 2:
-            title = self.generate_failture_title(cron_title)
+            title = self.generate_failture_title()
             task_name = cron_title
             msg = self.generate_failture_notice(task_name, error_msg, remark)
             res = self.send_notification(notice_channel, title, msg)
@@ -874,7 +877,7 @@ class backup:
                 return False
             return True
         except Exception as e:
-            print(e)
+            print(public.get_error_info())
         return False
 
     

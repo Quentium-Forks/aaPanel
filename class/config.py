@@ -885,6 +885,8 @@ class config:
             if os.path.exists('/etc/redhat-release'):
                 phpini_file = '/usr/local/lsws/lsphp' + get.version + '/etc/php.ini'
         phpini = public.readFile(phpini_file)
+        if not phpini:
+            return public.returnMsg(False,'File not found: {}'.format(phpini))
         result = []
         for g in gets:
             rep = g['name'] + r'\s*=\s*([0-9A-Za-z_&/ ~]+)(\s*;?|\r?\n)'

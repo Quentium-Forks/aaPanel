@@ -202,6 +202,7 @@ class data:
                         data['data'][i]['domain'] = SQL.table('domain').where("pid=?",(data['data'][i]['id'],)).count()
                         data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
                         data['data'][i]['php_version'] = self.get_php_version(data['data'][i]['name'])
+                        data['data'][i]['attack'] = self.get_analysis(get,data['data'][i])
                         if not data['data'][i]['status'] in ['0','1',0,1]:
                             data['data'][i]['status'] = '1'
             elif table == 'firewall':
@@ -379,3 +380,10 @@ class data:
             return fields[tableName]
         except:
             return ''
+
+    def get_analysis(self,get,i):
+        import log_analysis
+        get.path = '/www/wwwlogs/{}.log'.format(i['name'])
+        get.action = 'get_result'
+        data = log_analysis.log_analysis().get_result(get)
+        return int(data['php']) + int(data['san']) + int(data['sql']) + int(data['xss'])
