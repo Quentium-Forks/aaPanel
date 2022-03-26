@@ -18,7 +18,6 @@ import binascii
 import hashlib
 import base64
 import json
-import copy
 import time
 import os
 import sys
@@ -1645,8 +1644,8 @@ fullchain.pem       Paste into certificate input box
 
                     # 是否到了最大重试次数
                     if 'retry_count' in self._config['orders'][i]:
-                        if self._config['orders'][i]['retry_count'] >= 3:
-                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 3 times in a row, (The number of errors will be reset after manual renewal and success)'.format(self._config['orders'][i]['domains']))
+                        if self._config['orders'][i]['retry_count'] >= 5:
+                            write_log('|-Skip the domain name this time: {}, this certificate will not be renewed due to failure to renew 5 times in a row, (The number of errors will be reset after manual renewal and success)'.format(self._config['orders'][i]['domains']))
                             continue
 
                     # 加入到续签订单

@@ -187,6 +187,8 @@ class panel_restore:
             @parma file_name 备份得文件名 /www/backup/database/db_test_com_20200817_112722.sql.gz|Google Drive|db_test_com_20200817_112722.sql.gz
             @parma obj_name 数据库名
         """
+        if "|" not in args.file:
+            return public.returnMsg(True,'success')
         try:
             backup_info = args.file.split('|')
             args.file_name = backup_info[-1]

@@ -56,33 +56,33 @@ def HttpGet(url,timeout = 6,headers = {}):
     del res
     return s_body
 
-def http_get_home(url,timeout,ex):
-    """
-        @name Get方式使用优选节点访问官网
-        @author hwliang<hwl@bt.cn>
-        @param url 当前官网URL地址
-        @param timeout 用于测试超时时间
-        @param ex 上一次错误的响应内容
-        @return string 响应内容
-
-        如果已经是优选节点，将直接返回ex
-    """
-    try:
-        home = 'www.bt.cn'
-        if url.find(home) == -1: return ex
-        hosts_file = "config/hosts.json"
-        if not os.path.exists(hosts_file): return ex
-        hosts = json.loads(readFile(hosts_file))
-        headers = {"host":home}
-        for host in hosts:
-            new_url = url.replace(home,host)
-            res = HttpGet(new_url,timeout,headers)
-            if res:
-                writeFile("data/home_host.pl",host)
-                # set_home_host(host)
-                return res
-        return ex
-    except: return ex
+# def http_get_home(url,timeout,ex):
+#     """
+#         @name Get方式使用优选节点访问官网
+#         @author hwliang<hwl@bt.cn>
+#         @param url 当前官网URL地址
+#         @param timeout 用于测试超时时间
+#         @param ex 上一次错误的响应内容
+#         @return string 响应内容
+#
+#         如果已经是优选节点，将直接返回ex
+#     """
+#     try:
+#         home = 'www.bt.cn'
+#         if url.find(home) == -1: return ex
+#         hosts_file = "config/hosts.json"
+#         if not os.path.exists(hosts_file): return ex
+#         hosts = json.loads(readFile(hosts_file))
+#         headers = {"host":home}
+#         for host in hosts:
+#             new_url = url.replace(home,host)
+#             res = HttpGet(new_url,timeout,headers)
+#             if res:
+#                 writeFile("data/home_host.pl",host)
+#                 # set_home_host(host)
+#                 return res
+#         return ex
+#     except: return ex
 
 
 # def set_home_host(host):
@@ -284,22 +284,23 @@ def ReadFile(filename,mode = 'r'):
     """
     import os
     if not os.path.exists(filename): return False
+    fp = None
     try:
         fp = open(filename, mode)
         f_body = fp.read()
-        fp.close()
     except Exception as ex:
         if sys.version_info[0] != 2:
             try:
                 fp = open(filename, mode,encoding="utf-8")
                 f_body = fp.read()
-                fp.close()
             except:
                 fp = open(filename, mode,encoding="GBK")
                 f_body = fp.read()
-                fp.close()
         else:
             return False
+    finally:
+        if fp and not fp.closed:
+            fp.close()
     return f_body
 
 def readFile(filename,mode='r'):
@@ -571,7 +572,7 @@ def GetLocalIp():
         return ipaddress
     except:
         try:
-            url = 'https://brandnew.aapanel.com/api/common/getClientIP'
+            url = 'https://www.aapanel.com/api/common/getClientIP'
             return HttpGet(url)
         except:
             return GetHost()
@@ -1118,26 +1119,26 @@ def CheckMyCnf():
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-CF='node.aapanel.com'
-HK='download.bt.cn'
-HK2='103.224.251.67'
-US='128.1.164.196'
-sleep 0.5;
-CN_PING=`ping -c 1 -w 1 $CF|grep time=|awk '{print $7}'|sed "s/time=//"`
-HK_PING=`ping -c 1 -w 1 $HK|grep time=|awk '{print $7}'|sed "s/time=//"`
-HK2_PING=`ping -c 1 -w 1 $HK2|grep time=|awk '{print $7}'|sed "s/time=//"`
-US_PING=`ping -c 1 -w 1 $US|grep time=|awk '{print $7}'|sed "s/time=//"`
+# CF='node.aapanel.com'
+# HK='download.bt.cn'
+# HK2='103.224.251.67'
+# US='128.1.164.196'
+# sleep 0.5;
+# CN_PING=`ping -c 1 -w 1 $CF|grep time=|awk '{print $7}'|sed "s/time=//"`
+# HK_PING=`ping -c 1 -w 1 $HK|grep time=|awk '{print $7}'|sed "s/time=//"`
+# HK2_PING=`ping -c 1 -w 1 $HK2|grep time=|awk '{print $7}'|sed "s/time=//"`
+# US_PING=`ping -c 1 -w 1 $US|grep time=|awk '{print $7}'|sed "s/time=//"`
+# 
+# echo "$HK_PING $HK" > ping.pl
+# echo "$HK2_PING $HK2" >> ping.pl
+# echo "$US_PING $US" >> ping.pl
+# echo "$CF_PING $CF" >> ping.pl
+# nodeAddr=`sort -V ping.pl|sed -n '1p'|awk '{print $2}'`
+# if [ "$nodeAddr" == "" ];then
+#     nodeAddr=$CF
+# fi
 
-echo "$HK_PING $HK" > ping.pl
-echo "$HK2_PING $HK2" >> ping.pl
-echo "$US_PING $US" >> ping.pl
-echo "$CF_PING $CF" >> ping.pl
-nodeAddr=`sort -V ping.pl|sed -n '1p'|awk '{print $2}'`
-if [ "$nodeAddr" == "" ];then
-    nodeAddr=$CF
-fi
-
-Download_Url=http://$nodeAddr:5880
+Download_Url=http://node.aapanel.com
 
 
 MySQL_Opt()
@@ -1527,7 +1528,13 @@ def get_os_version():
         @author hwliang<2021-08-07>
         @return string
     '''
-    version = readFile('/etc/redhat-release')
+    p_file = '/etc/.productinfo'
+    if os.path.exists(p_file):
+        s_tmp = readFile(p_file).split("\n")
+        if s_tmp[0].find('Kylin') != -1 and len(s_tmp) > 1:
+            version = s_tmp[0] + ' ' + s_tmp[1].split('/')[0].strip()
+    else:
+        version = readFile('/etc/redhat-release')
     if not version:
         version = readFile('/etc/issue').strip().split("\n")[0].replace('\\n','').replace('\l','').strip()
     else:
@@ -1650,9 +1657,20 @@ def set_mode(filename, mode):
     os.chmod(filename, mode)
     return True
 
+def create_linux_user(user,group):
+    '''
+        @name 创建系统用户
+        @author hwliang<2022-01-15>
+        @param user<string> 用户名
+        @param group<string> 所属组
+        @return bool
+    '''
+    ExecShell("groupadd {}".format(group))
+    ExecShell('useradd -s /sbin/nologin -g {} {}'.format(user,group))
+    return True
 
-# 设置用户组
-def set_own(filename, user, group=None):
+#设置用户组
+def set_own(filename,user,group=None):
     if not os.path.exists(filename): return False
     from pwd import getpwnam
     try:
@@ -1662,8 +1680,13 @@ def set_own(filename, user, group=None):
             user_info = getpwnam(group)
         group = user_info.pw_gid
     except:
-        # 如果指定用户或组不存在，则使用www
-        user_info = getpwnam('www')
+        if user == 'www': create_linux_user(user,group)
+        #如果指定用户或组不存在，则使用www
+        try:
+            user_info = getpwnam('www')
+        except:
+            create_linux_user(user,group)
+            user_info = getpwnam('www')
         user = user_info.pw_uid
         group = user_info.pw_gid
     os.chown(filename, user, group)
@@ -1817,6 +1840,35 @@ def get_limit_ip():
     return iplong_list
 
 
+def is_api_limit_ip(ip_list,client_ip):
+    '''
+        @name 判断IP是否在限制列表中
+        @author hwliang<2022-02-10>
+        @param ip_list<list> 限制IP列表
+        @param client_ip<string> 客户端IP
+        @return bool
+    '''
+    iplong_list = []
+    for limit_ip in ip_list:
+        if not limit_ip: continue
+        if limit_ip in ['*','all','0.0.0.0','0.0.0.0/0','0.0.0.0/24','0.0.0.0/32']: return True
+        limit_ip = limit_ip.split('-')
+        iplong = {}
+        iplong['min'] = ip2long(limit_ip[0])
+        if len(limit_ip) > 1:
+            iplong['max'] = ip2long(limit_ip[1])
+        else:
+            iplong['max'] = iplong['min']
+        iplong_list.append(iplong)
+
+    client_ip_long = ip2long(client_ip)
+    for limit_ip in iplong_list:
+        if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
+            return True
+    return False
+
+
+
 
 
 #检查IP白名单
@@ -1865,23 +1917,46 @@ def auto_backup_panel():
         paths = panel_paeh + '/data/not_auto_backup.pl'
         if os.path.exists(paths): return False
         b_path = '{}/panel'.format(get_backup_path())
-        backup_path = b_path + '/' + format_date('%Y-%m-%d')
-        if os.path.exists(backup_path): return True
-        if os.path.getsize(panel_paeh + '/data/default.db') > 104857600 * 2: return False
+        day_date = format_date('%Y-%m-%d')
+        backup_path = b_path + '/' + day_date
+        backup_file = backup_path + '.zip'
+        if os.path.exists(backup_path) or os.path.exists(backup_file): return True
+        ignore_default = ''
+        ignore_system = ''
+        max_size = 100 * 1024 * 1024
+        if os.path.getsize('{}/data/default.db'.format(panel_paeh)) > max_size:
+            ignore_default = 'default.db'
+        if os.path.getsize('{}/data/system.db'.format(panel_paeh)) > max_size:
+            ignore_system = 'system.db'
         os.makedirs(backup_path,384)
         import shutil
-        shutil.copytree(panel_paeh + '/data',backup_path + '/data')
+        shutil.copytree(panel_paeh + '/data',backup_path + '/data',ignore = shutil.ignore_patterns(ignore_system,ignore_default))
         shutil.copytree(panel_paeh + '/config',backup_path + '/config')
         shutil.copytree(panel_paeh + '/vhost',backup_path + '/vhost')
-        ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=b_path))
+        ExecShell("cd {} && zip {} -r {}/".format(b_path,backup_file,day_date))
+        ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=backup_file))
+        if os.path.exists(backup_path): shutil.rmtree(backup_path)
+
         time_now = time.time() - (86400 * 15)
         for f in os.listdir(b_path):
             if time.mktime(time.strptime(f, "%Y-%m-%d")) < time_now:
                 path = b_path + '/' + f
-                if os.path.exists(path): shutil.rmtree(path)
-    except:
-        pass
+                b_file = path + '.zip'
+                if os.path.exists(path):
+                    shutil.rmtree(path)
+                if os.path.exists(b_file):
+                    os.remove(b_file)
+        set_php_cli_env()
+    except:pass
 
+
+
+def set_php_cli_env():
+    '''
+        @name 重新设置php-cli.ini配置
+    '''
+    import jobs
+    jobs.set_php_cli_env()
 
 
 
@@ -2067,7 +2142,7 @@ def get_php_version_conf(conf):
     '''
     if not conf: return '00'
     if conf.find('enable-php-') != -1:
-        rep = r"enable-php-(\w{2,5})\.conf"
+        rep = r"enable-php-(\w{2,5})[-\w]*\.conf"
         tmp = re.findall(rep,conf)
         if not tmp: return '00'
     elif conf.find('/usr/local/lsws/lsphp') != -1:
@@ -2150,7 +2225,7 @@ def sync_all_address():
         @author hwliang<2020-10-24>
         @return void
     '''
-    php_versions = ['52','53','54','55','56','70','71','72','73','74','75','80','81']
+    php_versions = get_php_versions()
     for phpv in php_versions:
         sync_php_address(phpv)
 
@@ -2204,20 +2279,22 @@ def sync_php_address(php_version):
 
 
 def url_encode(data):
-    if type(data) == str: return data
-    import urllib
+    if type(data) != str: return data
     if sys.version_info[0] != 2:
-        pdata = urllib.parse.urlencode(data).encode('utf-8')
+        import urllib.parse
+        pdata = urllib.parse.quote(data)
     else:
+        import urllib
         pdata = urllib.urlencode(data)
     return pdata
 
 def url_decode(data):
-    if type(data) == str: return data
-    import urllib
+    if type(data) != str: return data
     if sys.version_info[0] != 2:
-        pdata = urllib.parse.urldecode(data).encode('utf-8')
+        import urllib.parse
+        pdata = urllib.parse.unquote(data)
     else:
+        import urllib
         pdata = urllib.urldecode(data)
     return pdata
 
@@ -2696,6 +2773,9 @@ def run_thread(fun,args = (),daemon=False):
 def check_domain_cloud(domain):
     run_thread(cloud_check_domain,(domain,))
 
+def count_wp():
+    run_thread(httpPost('http://brandnew.aapanel.com/api/setupCount/setupWP',{}))
+
 def cloud_check_domain(domain):
     '''
         @name 从云端验证域名的可访问性,并将结果保存到文件
@@ -2891,13 +2971,14 @@ class dict_obj:
             @name 获取指定参数
             @param key<string> 参数名称，允许在/后面限制参数格式，请参考参数值格式(format)
             @param default<string> 默认值，默认空字符串
-            @param format<string>  参数值格式(int|str|float|json|xss|path|url|ip|ipv4|ipv6|letter|mail|phone|正则表达式|>1|<1|=1)，默认为空
+            @param format<string>  参数值格式(int|str|port|float|json|xss|path|url|ip|ipv4|ipv6|letter|mail|phone|正则表达式|>1|<1|=1)，默认为空
             @param limit<list> 限制参数值内容
             @param return mixed
         '''
         if key.find('/') != -1:
             key,format = key.split('/')
-        result = getattr(self,key,default).strip()
+        result = getattr(self,key,default)
+        if isinstance(result,str): result = result.strip()
         if format:
             if format in ['str','string','s']:
                 result = str(result)
@@ -3713,6 +3794,11 @@ def to_date(format = "%Y-%m-%d %H:%M:%S",times = None):
         @param times<date> 时间
         @return int
     '''
+    if times:
+        if isinstance(times,int): return times
+        if isinstance(times,float): return int(times)
+        if re.match("^\d+$",times): return int(times)
+    else: return 0
     ts = time.strptime(times, "%Y-%m-%d %H:%M:%S")
     return time.mktime(ts)
 
@@ -3741,8 +3827,30 @@ def is_apache_nginx():
     setup_path = get_setup_path()
     return os.path.exists(setup_path + '/apache') or os.path.exists(setup_path + '/nginx')
 
+def error_not_login(e = None):
+    '''
+        @name 未登录时且未输入正确的安全入口时的响应
+        @author hwliang<2021-12-16>
+        @return Response
+    '''
+    from BTPanel import Response,render_template,redirect
+
+    try:
+        abort_code = read_config('abort')
+        if not abort_code in [None,1,0,'0','1']:
+            if abort_code == 404: return error_404(e)
+            if abort_code == 403: return error_403(e)
+            return Response(status=int(abort_code))
+    except:
+        pass
+
+    if e in ['/login']:
+        return redirect(e)
+    return Response(status=int(404))
+
 def error_403(e):
-    from BTPanel import Response
+    from BTPanel import Response,session
+    if not session.get('login',None): return error_not_login()
     errorStr = '''<html>
 <head><title>403 Forbidden</title></head>
 <body>
@@ -3756,7 +3864,8 @@ def error_403(e):
     return Response(errorStr, status=403, headers=headers)
 
 def error_404(e):
-    from BTPanel import Response
+    from BTPanel import Response,session
+    if not session.get('login',None): return error_not_login()
     errorStr = '''<html>
 <head><title>404 Not Found</title></head>
 <body>
@@ -3769,3 +3878,35 @@ def error_404(e):
     }
     return Response(errorStr, status=404, headers=headers)
 
+def check_password(password):
+    """
+    密码强度：
+    0           弱
+    1           中
+    2           强
+    """
+    l = 0
+    low = False
+    up = False
+    symbol = False
+    digit = False
+    p_len = len(password)
+    if p_len < 8:
+        return l
+    for i in password:
+        if i.islower():
+            low = True
+        if i.isupper():
+            up = True
+        if i in ['~','!','@','#','$','%','^','&','*','(',')','_','-','=','+','<','>',',','.','/','"','|','\\',"'",'?']:
+            symbol = True
+        if i.isdigit():
+            digit = True
+    # 判断重复出现
+    tmp = len(set([i for i in password]))
+    if tmp >= 2:
+        if low and up and symbol and digit:
+            l = 2
+        if p_len >= 11:
+            l = 1
+    return l

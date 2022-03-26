@@ -233,6 +233,8 @@ class config:
 
 
     def setPassword(self,get):
+        get.password1 = public.url_decode(get.password1)
+        get.password2 = public.url_decode(get.password2)
         if get.password1 != get.password2: return public.returnMsg(False,'USER_PASSWORD_CHECK')
         if len(get.password1) < 5: return public.returnMsg(False,'USER_PASSWORD_LEN')
         public.M('users').where("username=?",(session['username'],)).setField('password',public.password_salt(public.md5(get.password1.strip()),username=session['username']))
@@ -241,6 +243,8 @@ class config:
         return public.returnMsg(True,'USER_PASSWORD_SUCCESS')
 
     def setUsername(self,get):
+        get.username1 = public.url_decode(get.username1)
+        get.username2 = public.url_decode(get.username2)
         if get.username1 != get.username2: return public.returnMsg(False,'USER_USERNAME_CHECK')
         if len(get.username1) < 3: return public.returnMsg(False,'USER_USERNAME_LEN')
         public.M('users').where("username=?",(session['username'],)).setField('username',get.username1.strip())
@@ -256,6 +260,8 @@ class config:
 
     # 创建新用户
     def create_user(self,args):
+        args.username = public.url_decode(args.username)
+        args.password = public.url_decode(args.password)
         if session['uid'] != 1: return public.returnMsg(False,'PERMISSION_DENIED')
         if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
         if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
@@ -289,11 +295,13 @@ class config:
         username = public.M('users').where('id=?',(args.id,)).getField('username')
         pdata = {}
         if 'username' in args:
+            args.username = public.url_decode(args.username)
             if len(args.username) < 2: return public.returnMsg(False,'USERNAME_ERR')
             pdata['username'] = args.username.strip()
 
         if 'password' in args:
             if args.password:
+                args.password = public.url_decode(args.password)
                 if len(args.password) < 8: return public.returnMsg(False,'PASSWORD_ERR')
                 pdata['password'] = public.password_salt(public.md5(args.password.strip()),username=username)
 
@@ -387,19 +395,24 @@ class config:
 
     def set_admin_path(self,get):
         get.admin_path = get.admin_path.strip()
-        if get.admin_path == '': get.admin_path = '/'
-        if get.admin_path != '/':
-            if len(get.admin_path) < 6: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_NOT_LESS_THAN')
-            if get.admin_path in admin_path_checks: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_EXIST')
-            if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
-            if get.admin_path[0] != '/': return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
-        else:
-            get.domain = public.readFile('data/domain.conf')
-            if not get.domain: get.domain = ''
-            get.limitip = public.readFile('data/limitip.conf')
-            if not get.limitip: get.limitip = ''
-            if not get.domain.strip() and not get.limitip.strip() and not os.path.exists('config/basic_auth.json'):
-                return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_TRUEN_OFF_WARN')
+        # if get.admin_path == '': get.admin_path = '/'
+        # if get.admin_path != '/':
+        #     if len(get.admin_path) < 6: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_NOT_LESS_THAN')
+        #     if get.admin_path in admin_path_checks: return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_EXIST')
+        #     if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
+        #     if get.admin_path[0] != '/': return public.returnMsg(False, 'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
+        # else:
+        #     get.domain = public.readFile('data/domain.conf')
+        #     if not get.domain: get.domain = ''
+        #     get.limitip = public.readFile('data/limitip.conf')
+        #     if not get.limitip: get.limitip = ''
+        #     if not get.domain.strip() and not get.limitip.strip() and not os.path.exists('config/basic_auth.json'):
+        #         return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_TRUEN_OFF_WARN')
+
+        if len(get.admin_path) < 6: return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_NOT_LESS_THAN')
+        if get.admin_path in admin_path_checks: return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_EXIST')
+        if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
+        if get.admin_path[0] != '/': return public.returnMsg(False,'SECURITY_ENTRANCE_ADDRESS_INCORRECT')
 
         admin_path_file = 'data/admin_path.pl'
         admin_path = '/'

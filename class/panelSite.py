@@ -18,6 +18,7 @@ except:
     pass
 from panelRedirect import panelRedirect
 import site_dir_auth
+import one_key_wp
 
 
 class panelSite(panelRedirect):
@@ -495,6 +496,14 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
     # 添加站点
     def AddSite(self, get, multiple=None):
+        rep_email = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+        if hasattr(get, 'email'):
+            if not re.search(rep_email,get.email):
+                return public.ReturnMsg(False, "Please check if the [Email] format correct")
+        if hasattr(get,'password') and hasattr(get,'pw_weak'):
+            l = public.check_password(get.password)
+            if l == 0 and get.pw_weak == 'off':
+                return public.returnMsg(False,'Password very weak, if you are sure to use it, please tick [ Allow weak passwords ]')
         self.check_default()
         self.check_php_conf()
         isError = public.checkWebConfig()
@@ -502,7 +511,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             return public.returnMsg(False, 'ERROR: %s<br><br><a style="color:red;">' % public.GetMsg(
                 "GET_ERR_IN_CONFILE") + isError.replace("\n", '<br>') + '</a>')
 
-        import json, files
+        import json
 
         get.path = self.__get_site_format_path(get.path)
 
@@ -545,7 +554,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         #表单验证
         if not self.__check_site_path(self.sitePath): return public.returnMsg(False,'PATH_ERROR')
         if len(self.phpVersion) < 2: return public.returnMsg(False,'SITE_ADD_ERR_PHPEMPTY')
-        reg = r"^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+        reg = r"^([\w\-\*]{1,100}\.){1,24}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
         if not re.match(reg, self.siteName): return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN')
         if self.siteName.find('*') != -1: return public.returnMsg(False, 'SITE_ADD_ERR_DOMAIN_TOW')
         if self.sitePath[-1] == '.': return public.returnMsg(False, 'DIR_END_WITH', ("'.'",))
@@ -613,8 +622,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         # 检查处理结果
         if not result: return public.returnMsg(False, 'SITE_ADD_ERR_WRITE')
 
-        ps = get.ps
-        ps = public.xssencode(ps)
+        ps = public.xssencode2(get.ps)
         # 添加放行端口
         if self.sitePort != '80':
             import firewalls
@@ -623,9 +631,13 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             firewalls.firewalls().AddAcceptPort(get)
 
         if not hasattr(get,'type_id'): get.type_id = 0
+        if not hasattr(get,'project_type'): get.project_type = "PHP"
         public.check_domain_cloud(self.siteName)
+        # 统计wordpress安装次数
+        if get.project_type == 'WP':
+            public.count_wp()
         #写入数据库
-        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime',(self.siteName,self.sitePath,'1',ps,get.type_id,public.getDate()))
+        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type',(self.siteName,self.sitePath,'1',ps,get.type_id,public.getDate(),get.project_type))
 
         #添加更多域名
         for domain in siteMenu['domainlist']:
@@ -670,6 +682,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
                 data['databaseStatus'] = True
                 data['databaseUser'] = get.datauser
                 data['databasePass'] = get.datapassword
+                data['d_id'] = str(public.M('databases').where('pid=?',(get.pid,)).field('id').find()['id'])
         if not multiple:
             public.serviceReload()
         data = self._set_ssl(get, data, siteMenu)
@@ -890,7 +903,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         public.M('sites').where("id=?", (id,)).delete()
         public.M('binding').where("pid=?", (id,)).delete()
         public.M('domain').where("pid=?", (id,)).delete()
-        public.WriteLog('TYPE_SITE', "SITE_DEL_SUCCESS", (siteName,))
+        public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
 
         # 是否删除关联数据库
         if hasattr(get, 'database'):
@@ -1026,7 +1039,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
             get.domain = self.ToPunycode(domain[0]).lower()
             get.port = '80'
 
-            reg = "^([\w\-\*]{1,100}\.){1,4}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
+            reg = "^([\w\-\*]{1,100}\.){1,24}([\w\-]{1,24}|[\w\-]{1,24}\.[\w\-]{1,24})$"
             if not re.match(reg, get.domain): return public.returnMsg(False, 'SITE_ADD_DOMAIN_ERR_FORMAT')
 
             if len(domain) == 2: get.port = domain[1]
@@ -3458,10 +3471,10 @@ server
             return public.returnMsg(False, 'GET_ERR_IN_CONFILE')
         if action == "create":
             if sys.version_info.major < 3:
-                if len(get.proxyname) < 3 or len(get.proxyname) > 15:
+                if len(get.proxyname) < 3 or len(get.proxyname) > 40:
                     return public.returnMsg(False, 'NAME_LEN')
             else:
-                if len(get.proxyname.encode("utf-8")) < 3 or len(get.proxyname.encode("utf-8")) > 15:
+                if len(get.proxyname.encode("utf-8")) < 3 or len(get.proxyname.encode("utf-8")) > 40:
                     return public.returnMsg(False, 'NAME_LEN')
         if self.__check_even(get, action):
             return public.returnMsg(False, 'PROXY_NAME_OR_DIR_EXIST')
@@ -3528,9 +3541,11 @@ server
             self.CheckProxy(get)
             ng_conf = public.readFile(ng_file)
             if not p_conf:
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
-                    "CLEAR_CACHE")
-                ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
+                #     "CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                ng_conf = re.sub(rep, '', ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
         expires      30d;
@@ -3544,7 +3559,7 @@ server
         access_log off;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
-                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                    ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log /www",ng_conf)
                 public.writeFile(ng_file, ng_conf)
                 return
             sitenamelist = []
@@ -3562,9 +3577,11 @@ server
                     public.writeFile(ng_file, ng_conf)
 
             else:
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
-                    "CLEAR_CACHE")
-                ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
+                #     "CLEAR_CACHE")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
+                ng_conf = re.sub(rep,'',ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
     {
         expires      30d;
@@ -3578,7 +3595,7 @@ server
         access_log off;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
-                    ng_conf = ng_conf.replace('access_log', oldconf + "\n\taccess_log")
+                    ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log  /www",ng_conf)
                 public.writeFile(ng_file, ng_conf)
 
     # 设置apache配置
@@ -4400,9 +4417,9 @@ location ^~ %s
     # 设置目录加密
     def SetHasPwd(self, get):
         if public.get_webserver() == 'openlitespeed':
-            return public.returnMsg(False, 'NOT_SUPPORT_OLS')
-        if len(get.username.strip()) == 0 or len(get.password.strip()) == 0: return public.returnMsg(False,
-                                                                                                     'LOGIN_USER_EMPTY')
+            return public.returnMsg(False, 'The current web server is openlitespeed. This function is not supported yet.')
+        if len(get.username.strip()) < 3 or len(get.password.strip()) < 3: return public.returnMsg(False,
+                                                                                                     'Username or password cannot be less than 3 digits!')
 
         if not hasattr(get, 'siteName'):
             get.siteName = public.M('sites').where('id=?', (get.id,)).getField('name')
@@ -4772,7 +4789,7 @@ location ^~ %s
     # 取默认站点
     def GetDefaultSite(self, get):
         data = {}
-        data['sites'] = public.M('sites').field('name').order('id desc').select()
+        data['sites'] = public.M('sites').where('project_type=?','PHP').field('name').order('id desc').select()
         data['defaultSite'] = public.readFile('data/defaultSite.pl')
         return data
 
@@ -4894,12 +4911,12 @@ location ^~ %s
         if os.path.exists(file):
             conf = public.readFile(file)
             if get.status == '1':
+                if conf.find('SECURITY-START') == -1: return public.returnMsg(False,'Please turn on the hotlink first!')
                 r_key = 'valid_referers none blocked'
                 d_key = 'valid_referers'
                 if conf.find(r_key) == -1:
                     conf = conf.replace(d_key, r_key)
                 else:
-                    if conf.find('SECURITY-START') == -1: return public.returnMsg(False, 'ANTI_THEFT_ERR')
                     conf = conf.replace(r_key, d_key)
             else:
 
@@ -5187,7 +5204,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                 data['database'] = db_data[find['name']]
                 data['database']['st_time'] = db_addtime
 
-                db_score = 0;
+                db_score = 0
                 db_size = data['database']['total']
 
                 if db_size > 0:
@@ -5201,3 +5218,27 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         slist['file_size'] = self.get_average_num(f_list_size)
         slist['db_size'] = self.get_average_num(db_list_size)
         return slist
+
+    def reset_wp_password(self,get):
+        return one_key_wp.one_key_wp().reset_wp_password(get)
+
+    def is_update (self,get):
+        return one_key_wp.one_key_wp().is_update(get)
+
+    def purge_all_cache(self,get):
+        return one_key_wp.one_key_wp().purge_all_cache(get)
+
+    def set_fastcgi_cache(self,get):
+        return one_key_wp.one_key_wp().set_fastcgi_cache(get)
+
+    def update_wp(self,get):
+        return one_key_wp.one_key_wp().update_wp(get)
+
+    def get_language(self,get):
+        return one_key_wp.one_key_wp().get_language(get)
+
+    def deploy_wp(self,get):
+        return one_key_wp.one_key_wp().deploy_wp(get)
+
+    def get_wp_username(self,get):
+        return one_key_wp.one_key_wp().get_wp_username(get)

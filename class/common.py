@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g, abort
+from BTPanel import session, cache , request, redirect, g
 from datetime import datetime
 from public import dict_obj
 import os
@@ -26,7 +26,7 @@ class panelSetup:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.8.22'
+        g.version = '6.8.23'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')

@@ -25,7 +25,7 @@ class data:
     '''
     def setPs(self,get):
         id = get.id
-        get.ps = public.xssencode(get.ps)
+        get.ps = public.xssencode2(get.ps)
         if public.M(get.table).where("id=?",(id,)).setField('ps',get.ps):
             return public.returnMsg(True,'EDIT_SUCCESS')
         return public.returnMsg(False,'EDIT_ERROR')
@@ -142,7 +142,7 @@ class data:
                 conf = public.readFile(
                     self.setupPath + '/panel/vhost/' + self.web_server + '/detail/' + siteName + '.conf')
             if self.web_server == 'nginx':
-                rep = r"enable-php-(\w{2,5})\.conf"
+                rep = r"enable-php-(\w{2,5})[-\w]*\.conf"
             elif self.web_server == 'apache':
                 rep = r"php-cgi-(\w{2,5})\.sock"
             else:
@@ -181,6 +181,7 @@ class data:
      * @return Json  page.分页数 , count.总行数   data.取回的数据
     '''
     def getData(self,get):
+        import one_key_wp
         try:
             table = get.table
             data = self.GetSql(get)
@@ -203,6 +204,9 @@ class data:
                         data['data'][i]['ssl'] = self.get_site_ssl_info(data['data'][i]['name'])
                         data['data'][i]['php_version'] = self.get_php_version(data['data'][i]['name'])
                         data['data'][i]['attack'] = self.get_analysis(get,data['data'][i])
+                        data['data'][i]['project_type'] = SQL.table('sites').where('id=?',(data['data'][i]['id'])).field('project_type').find()['project_type']
+                        if data['data'][i]['project_type'] == 'WP':
+                            data['data'][i]['cache_status'] = one_key_wp.one_key_wp().get_cache_status(data['data'][i]['id'])
                         if not data['data'][i]['status'] in ['0','1',0,1]:
                             data['data'][i]['status'] = '1'
             elif table == 'firewall':
@@ -288,21 +292,27 @@ class data:
                     else:
                         where += "id=" + str(pid)
 
-        if get.table == 'sites' and hasattr(get,'type'):
-            if get.type != '-1':
-                type_where = "type_id=%s" % get.type
-                if where == '': 
-                    where = type_where
-                else:
-                    where += " and " + type_where
         if get.table == 'sites':
             if where:
                 where = "({}) AND project_type='PHP'".format(where)
             else:
-                where = "project_type='PHP'"
+                where = "project_type='PHP' OR project_type='WP'"
 
+            if hasattr(get,'type'):
+                if get.type != '-1':
+                    where += " AND type_id={}".format(get.type)
 
-
+        if get.table == 'databases':
+            if hasattr(get,'db_type'):
+                if where:
+                    where += " AND db_type='{}'".format(get.db_type)
+                else:
+                    where = "db_type='{}'".format(get.db_type)
+            if hasattr(get,'sid'):
+                if where:
+                    where += " AND sid='{}'".format(get.sid)
+                else:
+                    where = "sid='{}'".format(get.sid)
         field = self.GetField(get.table)
         #实例化数据库对象
         
@@ -350,7 +360,7 @@ class data:
         except:
             return ''
         wheres = {
-            'sites'     :   "id='"+search+"' or name like '%"+search+"%' or status like '%"+search+"%' or ps like '%"+search+"%'",
+            'sites'     :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
             'ftps'      :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
             'databases' :   "id='"+search+"' or name like '%"+search+"%' or ps like '%"+search+"%'",
             'logs'      :   "uid='"+search+"' or username='"+search+"' or type like '%"+search+"%' or log like '%"+search+"%' or addtime like '%"+search+"%'",

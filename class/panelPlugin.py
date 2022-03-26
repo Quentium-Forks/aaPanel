@@ -238,7 +238,7 @@ class panelPlugin:
             mmsg = 'upgrade'
         if not 'type' in get: get.type = '0'
         if int(get.type) > 4: get.type = '0'
-        if get.sName == 'nginx': 
+        if get.sName == 'nginx':
             if get.version == '1.8': return public.returnMsg(False,'NOT_SUP_NG1.8')
         if get.sName.find('php-') != -1:get.sName = get.sName.split('-')[0]
         ols_execstr = ""
@@ -262,7 +262,7 @@ class panelPlugin:
             ols_execstr = ols_execstr.format(get.type,mtype)
         execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh {} {} {} {} {}".format(
             get.type, mtype, get.sName, get.version, ols_execstr)
-        if get.sName == "phpmyadmin":
+        if get.sName == "phpmyadmin" and public.get_webserver() == "openlitespeed":
             execstr += "&> /tmp/panelExec.log && sleep 1 && /usr/local/lsws/bin/lswsctrl restart"
         # 清理日志文件
         if os.path.exists("/tmp/panelExec.log"):
@@ -708,7 +708,10 @@ class panelPlugin:
             if public.readFile(check_version_path).find('2.2') == 0: 
                 softList['apache22'] = True
                 softList['apache24'] = False
-
+        if os.path.exists('/www/server/nginx/conf/nginx.conf'):
+            import one_key_wp
+            one_key_wp.fast_cgi().set_nginx_conf()
+            public.ExecShell("/etc/init.d/nginx start")
         return softList
 
     #取首页软件列表

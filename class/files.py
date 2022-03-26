@@ -230,9 +230,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if sys.version_info[0] == 2:
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
-
-
-        if not self.f_name_check(args.f_name): return public.returnMsg(False,'FILE_NAME_ERR')
+        try:
+            if self.get_real_len(args.f_name) > 128: return public.returnMsg(False,'The file name contains more than 128 bytes')
+        except:
+            pass
+        if not self.f_name_check(args.f_name): return public.returnMsg(False,'No special characters can be included in the file name!')
 
         if args.f_path == '/':
             return public.returnMsg(False,'UPLOAD_DIR_ERR')
@@ -251,16 +253,21 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             d_size = os.path.getsize(save_path)
         if d_size != int(args.f_start):
             return d_size
-        f = open(save_path, 'ab')
-        if 'b64_data' in args:
-            import base64
-            b64_data = base64.b64decode(args.b64_data)
-            f.write(b64_data)
-        else:
-            upload_files = request.files.getlist("blob")
-            for tmp_f in upload_files:
-                f.write(tmp_f.read())
-        f.close()
+        try:
+            f = open(save_path, 'ab')
+            if 'b64_data' in args:
+                import base64
+                b64_data = base64.b64decode(args.b64_data)
+                f.write(b64_data)
+            else:
+                upload_files = request.files.getlist("blob")
+                for tmp_f in upload_files:
+                    f.write(tmp_f.read())
+            f.close()
+        except Exception as ex:
+            ex = str(ex)
+            if ex.find('No space left on device') != -1:
+                return public.returnMsg(False, 'Not enough disk space')
         f_size = os.path.getsize(save_path)
         if f_size != int(args.f_size):
             return f_size
@@ -292,6 +299,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 设置文件和目录权限
     def set_mode(self, path):
+        if path[-1] == '/': path = path[:-1]
         s_path = os.path.dirname(path)
         p_stat = os.stat(s_path)
         os.chown(path,p_stat.st_uid,p_stat.st_gid)
@@ -330,7 +338,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def GetDir(self, get):
         if not hasattr(get, 'path'):
             # return public.returnMsg(False,'错误的参数!')
-            get.path = '/www/wwwroot'
+            get.path = public.get_site_path() #'/www/wwwroot'
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if get.path == '':
@@ -342,7 +350,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         get.path = self.xssdecode(get.path)
         if not os.path.exists(get.path):
-            get.path = '/www/wwwroot'
+            get.path = public.get_site_path()
             #return public.ReturnMsg(False, '指定目录不存在!')
         if get.path == '/www/Recycle_bin':
             return public.returnMsg(False,'RECYCLE_BIN_ERR')
@@ -499,7 +507,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             @param filename<string> 文件或目录全路径
             @return string
         '''
-        ps_path = '/www/server/panel/data/files_ps'
+
+        ps_path = public.get_panel_path() + '/data/files_ps'
         f_key1 = '/'.join((ps_path,public.md5(filename)))
         if os.path.exists(f_key1):
             return public.readFile(f_key1)
@@ -545,8 +554,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         '''
         filename = args.filename.strip()
         ps_type = int(args.ps_type)
-        ps_body = public.xssencode(args.ps_body)
-        ps_path = '/www/server/panel/data/files_ps'
+        ps_body = public.xssencode2(args.ps_body)
+        ps_path = public.get_panel_path() + '/data/files_ps'
         if not os.path.exists(ps_path):
             os.makedirs(ps_path,384)
         if ps_type == 1:
@@ -634,7 +643,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     def SearchFiles(self, get):
         if not hasattr(get, 'path'):
-            get.path = '/www/wwwroot'
+            get.path = public.get_site_path()
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
         if not os.path.exists(get.path):
@@ -738,6 +747,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8').strip()
         try:
+            fname = os.path.basename(get.path).strip()
+            fpath = os.path.dirname(get.path).strip()
+            get.path = os.path.join(fpath,fname)
             if get.path[-1] == '.':
                 return public.returnMsg(False, 'File_END_WITH')
             if not self.CheckFileName(get.path):
@@ -820,12 +832,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if os.path.exists('data/recycle_bin.pl') and session.get('debug') != 1:
                 if self.Mv_Recycle_bin(get):
                     self.site_path_safe(get)
+                    self.remove_file_ps(get)
                     return public.returnMsg(True, 'DIR_MOVE_RECYCLE_BIN')
 
             import shutil
             shutil.rmtree(get.path)
             self.site_path_safe(get)
             public.WriteLog('TYPE_FILE', 'DIR_DEL_SUCCESS', (get.path,))
+            self.remove_file_ps(get)
             return public.returnMsg(True, 'DIR_DEL_SUCCESS')
         except:
             return public.returnMsg(False, 'DIR_DEL_ERR')
@@ -852,13 +866,24 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if os.path.exists('data/recycle_bin.pl') and session.get('debug') != 1:
                 if self.Mv_Recycle_bin(get):
                     self.site_path_safe(get)
+                    self.remove_file_ps(get)
                     return public.returnMsg(True, 'FILE_MOVE_RECYCLE_BIN')
             os.remove(get.path)
             self.site_path_safe(get)
             public.WriteLog('TYPE_FILE', 'FILE_DEL_SUCCESS', (get.path,))
+            self.remove_file_ps(get)
             return public.returnMsg(True, 'FILE_DEL_SUCCESS')
         except:
             return public.returnMsg(False, 'FILE_DEL_ERR')
+
+    def remove_file_ps(self,get):
+        '''
+            @name 删除文件或目录的备注信息
+        '''
+        get.filename = get.path
+        get.ps_body = ''
+        get.ps_type = '0'
+        self.set_file_ps(get)
 
     # 移动到回收站
     def Mv_Recycle_bin(self, get):
@@ -1148,6 +1173,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.path = get.path.encode('utf-8')
 
         get.path = self.xssdecode(get.path)
+
+        if get.path.find('/rewrite/null/') != -1:
+            webserver = public.get_webserver()
+            get.path = get.path.replace("/rewrite/null/", "/rewrite/{}/".format(webserver))
+        if get.path.find('/vhost/null/') != -1:
+            webserver = public.get_webserver()
+            get.path = get.path.replace("/vhost/null/", "/vhost/{}/".format(webserver))
+
         if not os.path.exists(get.path):
             if get.path.find('rewrite') == -1:
                 return public.returnMsg(False,'FILE_NOT_EXISTS',(get.path,))
@@ -1194,6 +1227,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 get.path = get.filename
             data['historys'] = self.get_history(get.path)
             data['auto_save'] = self.get_auto_save(get.path)
+            data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
             return data
         except Exception as ex:
             return public.returnMsg(False,'INCOMPATIBLE_FILECODE',(str(ex)),)
@@ -1204,6 +1238,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.returnMsg(False,'PATH_PARA_ERR')
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
+
+        if get.path.find('/rewrite/null/') != -1:
+            webserver = public.get_webserver()
+            get.path = get.path.replace("/rewrite/null/", "/rewrite/{}/".format(webserver))
+        if get.path.find('/vhost/null/') != -1:
+            webserver = public.get_webserver()
+            get.path = get.path.replace("/vhost/null/", "/vhost/{}/".format(webserver))
+
         if not os.path.exists(get.path):
             if get.path.find('.htaccess') == -1:
                 return public.returnMsg(False, 'FILE_NOT_EXISTS')
@@ -1273,7 +1315,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 保存历史副本
     def save_history(self, filename):
-        if os.path.exists('/www/server/panel/data/not_file_history.pl'):
+        if os.path.exists(public.get_panel_path()+'/data/not_file_history.pl'):
             return True
         try:
             his_path = '/www/backup/file_history/'
@@ -1286,7 +1328,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             his_list = sorted(os.listdir(save_path), reverse=True)
             num = public.readFile('data/history_num.pl')
             if not num:
-                num = 10
+                num = 100
             else:
                 num = int(num)
             d_num = len(his_list)
@@ -1502,6 +1544,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.data = json.loads(get.data)
             l = len(get.data)
             i = 0
+            args = public.dict_obj()
             for key in get.data:
                 try:
                     if sys.version_info[0] == 2:
@@ -1530,12 +1573,18 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                             self.Mv_Recycle_bin(get)
                         else:
                             os.remove(filename)
+                    args.path = filename
+                    self.remove_file_ps(args)
                 except:
                     continue
                 public.writeSpeed(None, 0, 0)
             self.site_path_safe(get)
-            public.WriteLog('TYPE_FILE', 'FILE_ALL_DEL')
-            return public.returnMsg(True, 'FILE_ALL_DEL')
+            if not isRecyle:
+                public.WriteLog('File manager', 'Batch deleting successful!')
+                return public.returnMsg(True, 'Batch deleting successful!')
+            else:
+                public.WriteLog('File manager', '{} files or directories have been moved to the recycle bin in batches'.format(i))
+                return public.returnMsg(True, '{} files or directories have been moved to the recycle bin in batches'.format(i))
 
     # 批量粘贴
     def BatchPaste(self, get):

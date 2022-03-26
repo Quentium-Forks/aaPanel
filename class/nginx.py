@@ -86,7 +86,6 @@ class nginx:
             kv = {"name":k, "value":v, "unit":u,"ps":psstr}
             conflist.append(kv)
             n+=1
-        print(conflist)
         return conflist
 
     def SetNginxValue(self,get):
