@@ -3285,6 +3285,104 @@ var site = {
                 }
             }]
         });
+        
+        var deploy_wp = bt_tools.form({
+            form:[{
+                label:'Domain',
+                group:{
+                    type:'text',
+                    name:'domain',
+                    width:'400px',
+                    placeholder:'Your website domain name'
+                }
+            },{
+                label:'Website Title',
+                group:{
+                    type:'text',
+                    name:'weblog_title',
+                    width:'400px',
+                    placeholder:'Website title for wordpress'
+                }
+            },{
+                label:'Language',
+                group:[{
+                    type:'select',
+                    name:'language',
+                    width: '230px',
+                    list:{
+                        url:'/site?action=get_language',
+                        dataFilter:function(rlist){
+                            var lan = [];
+                            $.each(rlist.msg,function(index,item){
+                                lan.push({title:item,value:index})
+                            })
+                            return lan
+                        }
+                    }
+                }]
+            },{
+                label:'PHP version',
+                group:[{
+                    type:'select',
+                    name:'php_version',
+                    width:'230px',
+                    list:add_web['config']['form'][8]['group'][0]['list']
+                }]
+            },{
+                label:'User name',
+                group:{
+                    type:'text',
+                    name:'user_name',
+                    width:'400px',
+                    placeholder:'WordPress backend user'
+                }
+            },{
+                label: 'Password',
+                group: [
+                    {
+                        type: 'text',
+                        name: 'admin_password',
+                        placeholder: 'WordPress backend password',
+                        width: '230px',
+                        style: {'margin-right': '15px'}
+                    },
+                    {
+                        type: 'checkbox',
+                        name: 'pw_weak',
+                        title: 'Allow weak passwords',
+                    }
+                ]
+            },{
+                label:'Email',
+                group:{
+                    type:'text',
+                    name:'admin_email',
+                    width:'400px',
+                    placeholder:'Your email address'
+                }
+            },{
+                label:'Prefix',
+                group:{
+                    type:'text',
+                    name:'prefix',
+                    width:'400px',
+                    value:'wp_',
+                    placeholder:'Wordpress table name prefix'
+                }
+            },{
+                label: 'Enable cache',
+                style:{'min-height': '0','line-height': '15px','margin-bottom':' 0'},
+                group: [
+                    {
+                        type: 'checkbox',
+                        name: 'enable_cache',
+                        title: 'Enable caching, currently only supports nginx',
+                    }
+                ]
+            }]
+        })
+        
+        
         var web_tab = bt_tools.tab({
             class:'pd20',
             type:0,
@@ -3304,10 +3402,16 @@ var site = {
                 success:function(){
                     bath_web.$event_bind();
                 }
-            }],
-            success:function(){
-
-            }
+            },{
+                title:'Wordpress deploy',
+                name:'wordpressDeploy',
+                content:'',
+                success:function (el) {
+                    el.html(deploy_wp.$reader_content())
+                    deploy_wp.$event_bind();
+                    $(el).find('form .line:last-child .tname').css({'height':'22px','line-height':'22px'})
+                }
+            }]
         });
         bt_tools.open({
             title:lan.site.add_site.add_site_title,
@@ -3318,12 +3422,22 @@ var site = {
                 web_tab.$init();
             },
             yes:function(indexs){
-                var formValue = !web_tab.active?add_web.$get_form_value():bath_web.$get_form_value();
+                var tabContent = add_web,
+                    tabActive = web_tab.active;
+                switch(tabActive){
+                    case 1:
+                        tabContent = bath_web
+                        break;
+                    case 2:
+                        tabContent = deploy_wp
+                        break;
+                }
+                var formValue = tabContent.$get_form_value();
                 if(formValue.webname === ''){
                     bt.msg({status:false,msg:'网站域名不能为空！'})
                     return false;
                 }
-                if(!web_tab.active){  // 创建站点
+                if(tabActive == 0){  // 创建站点
                     var loading = bt.load();
                     add_web.$get_form_element(true);
                     if(formValue.webname === ''){
@@ -3412,7 +3526,7 @@ var site = {
                             bt.msg(rdata);
                         }
                     });
-                }else{ //批量创建
+                }else if(tabActive == 1){ //批量创建
                     var loading = bt.load();
                     if(formValue.bath_code === ''){
                         bt_tools.msg(lan.site.add_site.batch_site_ps,2);
@@ -3485,6 +3599,53 @@ var site = {
                             bt.msg(rdata);
                         }
                     });
+                } else{
+                    var param = {webname: {domain: '', domainlist: [], count: 0},type:'PHP',port:80,type_id:0,ftp:false,sql:'MySQL',codeing:'utf8',set_ssl:0,force_ssl:0,project_type:'WP'}
+                    if(formValue.domain == '') return layer.msg('Wordpress domain name cannot be empty',{icon:2})
+                    if(formValue.weblog_title == '') return layer.msg('Wordpress site title cannot be empty',{icon:2})
+                    if(formValue.user_name == '') return layer.msg('Wordpress backend user cannot be empty',{icon:2})
+                    if(formValue.admin_password == '') return layer.msg('Wordpress backend password cannot be empty',{icon:2})
+                    if(formValue.admin_email == '') return layer.msg('Email address cannot be empty',{icon:2})
+                    if(formValue.prefix == '') return layer.msg('Wordpress table name prefix cannot be empty',{icon:2})
+
+                    var _domain = bt.strim(formValue.domain.replace(new RegExp(/([-.])/g), '_'));
+                    param['webname']['domain'] = formValue.domain
+                    param['webname'] = JSON.stringify(param['webname']);
+
+                    param['path'] = '/www/wwwroot/'+formValue.domain
+                    param['ps'] = _domain
+                    param['version'] = formValue.php_version
+                    param['datauser'] = 'sql_'+_domain
+                    param['datapassword'] = bt.get_random(16)
+
+                    // 密码强度判断
+                    param['password'] = formValue['admin_password']
+                    param['pw_weak'] = formValue['pw_weak']?'on':'off'
+                    param['email'] = formValue['admin_email']
+                    
+                    var loading = bt.load('Creating website, please wait...');
+                    // 1.通过主域名生成域名文件地址等信息
+                    bt.send('AddSite', 'site/AddSite', param, function (rdata) {
+                        loading.close();
+                        if(typeof rdata.status === 'boolean' && !rdata.status) return layer.msg(rdata.msg,{icon: 2, time: 0, shade: 0.3, shadeClose: true})
+                        // 2.通过回调的siteId,d_id部署wp
+                        if(rdata.databaseStatus){
+                            formValue['d_id'] = rdata.d_id;
+                            formValue['s_id'] = rdata.siteId;
+                            formValue['enable_cache'] = formValue['enable_cache']?1:0
+                            formValue['pw_weak'] = formValue['pw_weak']?'on':'off'
+
+                            var loadingWp = bt.load('Deploying wordpress, please wait...');
+                            bt.send('deploy_wp','site/deploy_wp',formValue,function(deploy){
+                                loadingWp.close();
+                                if(deploy.status){
+                                    layer.close(indexs);
+                                    if(callback) callback(deploy)
+                                }
+                                layer.msg(deploy.msg,{icon:deploy.status?1:2})
+                            })
+                        }
+                    })
                 }
             }
         });
@@ -5470,6 +5631,111 @@ var site = {
                 })
             })
         },
+        set_wp_config:function(web){
+            var loadup = bt.load('Getting Wordpress information, please wait...');
+            bt.send('is_update','site/is_update',{s_id:web.id},function(rdata){
+                loadup.close();
+                var loadin = bt.load('Getting wordpress account information, please wait...');
+                bt.send('get_wp_username','site/get_wp_username',{s_id:web.id},function(wlist){
+                    loadin.close();
+                    var robj = $('#webedit-con'),
+                        _html = $('<div class="webedit-box soft-man-con"></div>'),
+                        user_array = [],
+                        clicks = [];
+
+                    
+                    $.each(wlist.msg,function(index,item){
+                        user_array.push({title:item,value:item})
+                    })
+                    var datas = [
+                        {
+                            title: 'WP Version',
+                            items:[{
+                                name:'wp_version',
+                                type:'html',
+                                html:(rdata['msg']['update']?'<span class="c7 mr10">The current version is: '+rdata['msg']['local_v']+'</span><button class="btn btn-success btn-sm mr5 ml5 update_wp_version">upgrade to '+rdata['msg']['online_v']+'</button>':'<span class="c7">The latest version</span>')
+                            }]
+                        },{
+                            title:'Cache',
+                            items:[
+                                {
+                                    type:'checkbox',
+                                    name:'cache_switch',
+                                    text:' Open cache',
+                                    value:web.cache_status,
+                                    callback:function(sdata){
+                                        var loads = bt.load((sdata.cache_switch?'Turning on':'Turining off')+' [ '+web.name+' ] cache, please wait...');
+                                        bt.send('set_fastcgi_cache','site/set_fastcgi_cache',{version:web.php_version,sitename:web.name,act:(sdata.cache_switch?'enable':'disable')},function(res){
+                                            loads.close();
+                                            bt.msg(res)
+                                            if(res.status){
+                                                site.php_table_view();
+                                                web.cache_status = sdata.cache_switch
+                                            }
+                                        })
+                                    }
+                                },{
+                                    name: 'remove_cache',
+                                    text: 'Purge all cache',
+                                    type: 'button',
+                                    callback:function(sdata){
+                                        var loadC = bt.load('Clearing all caches, please wait...');
+                                        bt.send('purge_all_cache','site/purge_all_cache',{s_id:web.id},function(res){
+                                            loadC.close();
+                                            bt.msg(res)
+                                        })
+                                    }
+                                }
+                            ]
+                        },{
+                            title:'Reset password',
+                            items:[{
+                                name:'user',
+                                type:'select',
+                                items:user_array,
+                                width:'200px'
+                            },{
+                                title:'',
+                                name:'new_pass',
+                                placeholder:'Please enter a new password',
+                                width:'200px'
+                            },{
+                                name: 'submit_pw',
+                                text: 'Save password',
+                                type: 'button',
+                                callback:function(sdata){
+                                    var loads = bt.load('Resetting password, please wait...')
+                                    bt.send('reset_wp_password','site/reset_wp_password',{s_id:web.id,user:sdata.user,new_pass:sdata.new_pass},function(res){
+                                        loads.close();
+                                        bt.msg(res)
+                                    })
+                                }
+                            }]
+                        }
+                    ]
+                    for (var i = 0; i < datas.length; i++) {
+                        var _form_data = bt.render_form_line(datas[i]);
+                        _html.append(_form_data.html);
+                        clicks = clicks.concat(_form_data.clicks);
+                    }
+                    _html.find('input[type="checkbox"]').parent().addClass('label-input-group');
+                    _html.find('button[name="submit_pw"]').css('margin','15px 0')
+                    robj.append(_html);
+                    bt.render_clicks(clicks);
+
+
+                    //wp版本更新
+                    $('.update_wp_version').click(function(){
+                        var load_wp= bt.load('Updating Wordpress version, please wait...');
+                        bt.send('update_wp','site/update_wp',{s_id:web.id,version:rdata['msg']['online_v']},function(res){
+                            load_wp.close();
+                            bt.msg(res)
+                            if(res.status) $('.bt-w-menu.site-menu p.bgw').click()
+                        })
+                    })
+                })
+            })
+        },
         templet_301: function(sitename, id, types, obj) {
             if (types) {
                 obj = {
@@ -6579,6 +6845,7 @@ var site = {
                 { title: lan.site.response_log, callback: site.edit.get_site_logs }
             ];
             if (webcache !== '') menus.splice(3, 0, webcache);
+            if(item.project_type == 'WP') menus.splice(10,0,{title: 'Wordpress Setting', callback: site.edit.set_wp_config})
             for (var i = 0; i < menus.length; i++) {
                 var men = menus[i];
                 var _p = $('<p>' + men.title + '</p>');

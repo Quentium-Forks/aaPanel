@@ -1871,8 +1871,9 @@ var bt_tools = {
                     that.active = index;
                     if (!config.init) {
                         // console.log(_theme)
-                        $('#tab_' + that.random+' .' + _theme['body'] + '>div:eq(' + index + ')').html(config.content);
-                        if (config.success) config.success();
+                        var contentItem = $('#tab_' + that.random + ' .' + _theme['body'] + '>div:eq(' + index + ')')
+                        contentItem.html(config.content);
+                        if (config.success) config.success(contentItem);
                         config.init = true;
                     }
                 });
