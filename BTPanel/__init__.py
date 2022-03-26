@@ -137,26 +137,26 @@ admin_path_checks = [
                     '/warning'
                     ]
 if admin_path in admin_path_checks: admin_path = '/bt'
-
+uri_match = re.compile(r"(^/static/[\w_\./\-]+\.(js|css|png|jpg|gif|ico|svg|woff|woff2|ttf|otf|eot|map)$|^/[\w_\./\-]*$)")
 
 #===================================Flask HOOK========================#
 
 #Flask请求勾子
 @app.before_request
 def request_check():
+    if request.method not in ['GET','POST']:return abort(404)
     g.request_time = time.time()
     # 路由和URI长度过滤
-    if len(request.path) > 256: return abort(404)
-    if len(request.url) > 1024: return abort(404)
-
-    if request.path in ['/service_status']: return
-
-    #POST参数过滤
-    if request.path in ['/login','/safe','/hook','/public','/down','/get_app_bind_status','/check_bind']:
+    if len(request.path) > 256: return abort(403)
+    if len(request.url) > 1024: return abort(403)
+    # URI过滤
+    if not uri_match.match(request.path): return abort(403)
+    # POST参数过滤
+    if request.path in ['/login', '/safe', '/hook', '/public', '/down', '/get_app_bind_status', '/check_bind']:
         pdata = request.form.to_dict()
         for k in pdata.keys():
-            if len(k) > 48: return abort(404)
-            if len(pdata[k]) > 256: return abort(404)
+            if len(k) > 48: return abort(403)
+            if len(pdata[k]) > 256: return abort(403)
     if session.get('debug') == 1: return
 
     if app.config['BASIC_AUTH_OPEN']:
@@ -209,6 +209,7 @@ def request_end(reques = None):
 # Flask 404页面勾子
 @app.errorhandler(404)
 def error_404(e):
+    if not session.get('login',None): return public.error_not_login()
     errorStr = '''<html>
 <head><title>404 Not Found</title></head>
 <body>
@@ -225,6 +226,7 @@ def error_404(e):
 # Flask 403页面勾子
 @app.errorhandler(403)
 def error_403(e):
+    if not session.get('login',None): return public.error_not_login()
     errorStr = '''<html>
 <head><title>403 Forbidden</title></head>
 <body>
@@ -241,6 +243,7 @@ def error_403(e):
 # Flask 500页面勾子
 @app.errorhandler(500)
 def error_500(e):
+    if not session.get('login',None): return public.error_not_login()
     ss = '''404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
 
 During handling of the above exception, another exception occurred:'''
@@ -281,7 +284,7 @@ def home():
     data['databaseCount'] = public.M('databases').count()
     data['lan'] = public.GetLan('index')
     data['js_random'] = get_js_random()
-    public.auto_backup_panel()
+    # public.auto_backup_panel()
     return render_template( 'index.html',data = data)
 
 @app.route('/xterm',methods = method_all)
@@ -329,7 +332,9 @@ def site(pdata = None):
             'SetSiteRunPath','GetSiteRunPath','SetPath','SetIndex','GetIndex','GetDirUserINI','SetDirUserINI','GetRewriteList','SetSSL',
             'SetSSLConf','CreateLet','CloseSSLConf','GetSSL','SiteStart','SiteStop','Set301Status','Get301Status','CloseLimitNet','SetLimitNet',
             'GetLimitNet','RemoveProxy','GetProxyList','GetProxyDetals','CreateProxy','ModifyProxy','GetProxyFile','SaveProxyFile','ToBackup',
-            'DelBackup','GetSitePHPVersion','logsOpen','GetLogsStatus','CloseHasPwd','SetHasPwd','GetHasPwd','GetDnsApi','SetDnsApi')
+            'DelBackup','GetSitePHPVersion','logsOpen','GetLogsStatus','CloseHasPwd','SetHasPwd','GetHasPwd','GetDnsApi','SetDnsApi',
+            'reset_wp_password','is_update','purge_all_cache','set_fastcgi_cache','update_wp','get_wp_username',
+            'get_language','deploy_wp')
     return publicObject(siteObject,defs,None,pdata)
 
 @app.route('/ftp',methods=method_all)
@@ -735,7 +740,7 @@ def ajax(pdata = None):
             'GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','get_process_tops','get_process_cpu_high',
             'UninstallLib','InstallLib','SetQiniuAS','GetQiniuAS','GetLibList','GetProcessList','GetNetWorkList',
             'GetNginxStatus','GetPHPStatus','GetTaskCount','GetSoftList','GetNetWorkIo','GetDiskIo','GetCpuIo',
-            'CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig')
+            'CheckInstalled','UpdatePanel','GetInstalled','GetPHPConfig','SetPHPConfig','log_analysis','speed_log','get_result','get_detailed')
 
     return publicObject(ajaxObject,defs,None,pdata)
 
@@ -997,6 +1002,7 @@ def login():
                 s_file = 'data/session/{}'.format(session['tmp_login_id'])
                 if os.path.exists(s_file):
                     os.remove(s_file)
+            del(session['request_token_head'])
             session.clear()
             sess_file = 'data/sess_files/' + public.get_sess_key()
             if os.path.exists(sess_file):
@@ -1004,6 +1010,8 @@ def login():
                     os.remove(sess_file)
                 except:
                     pass
+            sess_tmp_file = public.get_full_session_file()
+            if os.path.exists(sess_tmp_file): os.remove(sess_tmp_file)
             g.dologin = True
             return redirect(login_path)
 
@@ -1015,10 +1023,10 @@ def login():
             if referer_path == '':
                 referer_path = referer_tmp[-2]
             if route_path != '/' + referer_path:
-                data = {}
-                data['lan'] = public.getLan('close')
                 return abort(404)
-                # return render_template('autherr.html', data=data)
+                g.auth_error = True
+                # return render_template('autherr.html')
+                return public.error_not_login(None)
 
     session['admin_auth'] = True
     comReturn = common.panelSetup().init()
@@ -1062,6 +1070,12 @@ def close():
 def get_app_bind_status(pdata=None):
     # APP绑定状态查询
     if not public.check_app('app_bind'):return abort(404)
+    get = get_input()
+    if len(get.__dict__.keys()) > 2: return 'There are meaningless parameters!'
+    v_list = ['bind_token','data']
+    for n in get.__dict__.keys():
+        if not n in v_list:
+            return public.returnJson(False, 'There can be no redundant parameters'), json_header
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.get_app_bind_status(get_input())),json_header
@@ -1071,17 +1085,23 @@ def get_app_bind_status(pdata=None):
 def check_bind(pdata=None):
     # APP绑定查询
     if not public.check_app('app_bind'):return abort(404)
+    get = get_input()
+    if len(get.__dict__.keys()) > 4: return 'There are meaningless parameters!'
+    v_list = ['bind_token','client_brand','client_model','data']
+    for n in get.__dict__.keys():
+        if not n in v_list:
+            return public.returnJson(False, 'There can be no redundant parameters'), json_header
     import panelApi
     api_object = panelApi.panelApi()
     return json.dumps(api_object.check_bind(get_input())),json_header
 
 @app.route('/code',methods=method_get)
 def code():
-    if not 'code' in session:
-        return ''
-    if not session['code']:
-        return ''
-    #获取图片验证码
+    if not 'code' in session: return ''
+    if not session['code']: return ''
+    get=get_input()
+    if len(get.__dict__.keys()) > 2:return abort(404)
+    # 获取图片验证码
     try:
         import vilidate,time
     except:
@@ -1119,16 +1139,19 @@ def down(token=None,fname=None):
         if len(token) != 12: return abort(404)
         if not request.args.get('play') in ['true',None,'']:
             return abort(404)
-
-        if not re.match(r"^\w+$",token): return abort(404)
-        find = public.M('download_token').where('token=?',(token,)).find()
+        args = get_input()
+        v_list = ['fname', 'play', 'file_password','data']
+        for n in args.__dict__.keys():
+            if not n in v_list:
+                return public.returnJson(False, 'There can be no redundant parameters'), json_header
+        if not re.match(r"^\w+$", token): return abort(404)
+        find = public.M('download_token').where('token=?', (token,)).find()
 
         if not find: return abort(404)
         if time.time() > int(find['expire']): return abort(404)
 
         if not os.path.exists(find['filename']): return abort(404)
         if find['password'] and not token in session:
-            args = get_input()
             if 'file_password' in args:
                 if not re.match(r"^\w+$",args.file_password):
                     return public.ReturnJson(False,'WRONG_PASSWD'),json_header
@@ -1177,11 +1200,12 @@ def down(token=None,fname=None):
         else:
             mimetype = "application/octet-stream"
             extName = filename.split('.')[-1]
-            if extName in ['png','gif','jpeg','jpg']: mimetype = None
-            return send_file(filename,mimetype=mimetype,
-                            as_attachment=True,
-                            attachment_filename=os.path.basename(filename),
-                            cache_timeout=0)
+            if extName in ['png', 'gif', 'jpeg', 'jpg']: mimetype = None
+            b_name = os.path.basename(filename)
+            return send_file(filename, mimetype=mimetype,
+                             as_attachment=True,
+                             attachment_filename=b_name,
+                             cache_timeout=0)
     except:
         return abort(404)
 
@@ -1191,6 +1215,26 @@ def panel_public():
     get = get_input()
     if len("{}".format(get.__dict__)) > 1024 * 32:
         return 'ERROR'
+
+    #获取ping测试
+    if 'get_ping' in get:
+        try:
+            import panelPing
+            p = panelPing.Test()
+            get = p.check(get)
+            if not get: return 'ERROR'
+            result = getattr(p,get['act'])(get)
+            result_type = type(result)
+            if str(result_type).find('Response') != -1: return result
+            return public.getJson(result),json_header
+        except:
+            return abort(404)
+
+    v_list = ['fun', 'name','filename', 'data','secret_key']
+    for n in get.__dict__.keys():
+        if not n in v_list:
+            return abort(404)
+
     get.client_ip = public.GetClientIp()
     num_key = get.client_ip + '_wxapp'
     if not public.get_error_num(num_key, 10):
@@ -1237,12 +1281,15 @@ def send_favicon():
 #     return 'True'
 
 
-@app.route('/coll',methods=method_all)
-@app.route('/coll/',methods=method_all)
-@app.route('/<name>/<fun>',methods=method_all)
-@app.route('/<name>/<fun>/<path:stype>',methods=method_all)
-def panel_other(name=None,fun = None,stype=None):
-    #插件接口
+@app.route('/coll', methods=method_all)
+@app.route('/coll/', methods=method_all)
+@app.route('/<name>/<fun>', methods=method_all)
+@app.route('/<name>/<fun>/<path:stype>', methods=method_all)
+def panel_other(name=None, fun=None, stype=None):
+    # 插件接口
+    if public.is_error_path():
+        return redirect('/error',302)
+    if not name: return abort(404)
     if name != "mail_sys" or fun != "send_mail_http.json":
         comReturn = comm.local()
         if comReturn: return comReturn
@@ -1252,12 +1299,13 @@ def panel_other(name=None,fun = None,stype=None):
                     if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
         args = None
     else:
+        p_path = public.get_plugin_path() + '/' + name
+        if not os.path.exists(p_path): return abort(404)
         args = get_input()
         args_list = ['mail_from','password','mail_to','subject','content','subtype','data']
         for k in args.__dict__:
             if not k in args_list: return abort(404)
 
-    is_accept = False
     if not fun: fun = 'index.html'
     if not stype:
         tmp = fun.split('.')
@@ -1266,10 +1314,10 @@ def panel_other(name=None,fun = None,stype=None):
         stype = tmp[1]
 
     if not name: name = 'coll'
-    if not public.path_safe_check("%s/%s/%s" % (name,fun,stype)): return abort(404)
-    if name.find('./') != -1 or not re.match(r"^[\w-]+$",name): return abort(404)
-    if not name: return public.returnJson(False,'PLUGIN_INPUT_ERR'),json_header
-    p_path = os.path.join('/www/server/panel/plugin/', name)
+    if not public.path_safe_check("%s/%s/%s" % (name, fun, stype)): return abort(404)
+    if name.find('./') != -1 or not re.match(r"^[\w-]+$", name): return abort(404)
+    if not name: return public.returnJson(False, 'PLUGIN_INPUT_ERR'), json_header
+    p_path = public.get_plugin_path() + '/' + name
     if not os.path.exists(p_path):
         if name == 'btwaf' and fun == 'index':
             return  render_template('error3.html',data={})
@@ -1364,7 +1412,6 @@ def panel_hook():
         return abort(404)
     public.package_path_append('plugin/webhook')
     import webhook_main
-    #session.clear()
     return public.getJson(webhook_main.webhook_main().RunHook(get))
 
 @app.route('/install',methods=method_all)
@@ -1823,7 +1870,7 @@ def ws_panel(ws):
 
     while True:
         pdata = ws.receive()
-        if pdata == '{}': break
+        if pdata is '{}': break
         data = json.loads(pdata)
         get = public.to_dict_obj(data)
         get._ws = ws
@@ -2034,6 +2081,7 @@ def check_csrf_websocket(ws,args):
         @return void
     '''
     if g.is_aes: return True
+    if public.is_debug(): return True
     is_success = True
     if not 'x-http-token' in args:
         is_success = False
@@ -2042,10 +2090,10 @@ def check_csrf_websocket(ws,args):
         if session['request_token_head'] != args['x-http-token']:
             is_success = False
 
-    # if is_success:
-    #     cookie_token = request.cookies.get('request_token')
-    #     if cookie_token != session['request_token']:
-    #         is_success = False
+    if is_success and 'request_token' in session:
+        cookie_token = request.cookies.get('request_token')
+        if cookie_token != session['request_token']:
+            is_success = False
 
     if not is_success:
         ws.send('token error')
