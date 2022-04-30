@@ -209,6 +209,8 @@ def CreateSSL():
         cert_ca = bytes.decode(cert_ca)
         private_key = bytes.decode(private_key)
     if len(cert_ca) > 100 and len(private_key) > 100:
+        if not os.path.exists('/www/server/panel/ssl'):
+            os.mkdir('/www/server/panel/ssl')
         public.writeFile('ssl/certificate.pem',cert_ca)
         public.writeFile('ssl/privateKey.pem',private_key)
         public.writeFile('/www/server/panel/data/ssl.pl','')
