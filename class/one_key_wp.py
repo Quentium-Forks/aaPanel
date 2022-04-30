@@ -104,7 +104,6 @@ class one_key_wp:
         if not self.__ajax_nonce:
             self.__login_wp()
             self.get_nonce()
-        print(self.__ajax_nonce)
         self.get_plugin_page()
 
     def __save_cookies(self):
@@ -250,7 +249,6 @@ class one_key_wp:
                 "pass" TEXT DEFAULT '');''')
 
     def init_wp(self,values):
-        print("Start initializing Wordpress...")
         self.write_logs("|-Start initializing Wordpress...")
         self.request_setup_0(values)
         if not self.request_setup_2(values):
@@ -260,7 +258,6 @@ class one_key_wp:
         self.set_urlrewrite(values['site_name'])
 
     def request_setup_0(self,values):
-        print("开始设置WP语言1...")
         self.write_logs("|-Start initializing Wordpress language...")
         url = "http://127.0.0.1/wp-admin/setup-config.php?step=0"
         param = {
@@ -268,10 +265,9 @@ class one_key_wp:
             "data":{"language": values['language']},
             "headers":{"Host":values['domain']}
         }
-        print("请求结果:{}".format(self.request_wp_api(param)))
+        self.request_wp_api(param)
 
     def request_setup_2(self,values):
-        print("开始设置WP配置文件2...")
         self.write_logs("|-Start initializing Wordpress config...")
         url = "http://127.0.0.1/wp-admin/setup-config.php?step=2"
         param = {
@@ -288,12 +284,10 @@ class one_key_wp:
             }
         }
         result = self.request_wp_api(param)
-        print("请求结果:{}".format(result))
         if "install.php?language=ja":
             return True
 
     def request_setup_3(self,values):
-        print("开始设置WP语言3...")
         self.write_logs("|-Start initializing Wordpress install language...")
         url = "http://127.0.0.1/wp-admin/install.php?language={}".format(values['language'])
         param = {
@@ -303,10 +297,9 @@ class one_key_wp:
                 "language":values['language']
             }
         }
-        print("请求结果:{}".format(self.request_wp_api(param)))
+        self.request_wp_api(param)
 
     def request_setup_4(self,values):
-        print("开始设置WP语言4...")
         self.write_logs("|-Start installing the wordpress program...")
         url = "http://127.0.0.1/wp-admin/install.php?step=2"
         param = {
@@ -323,8 +316,7 @@ class one_key_wp:
                 "language": values['language']
             }
         }
-        print(param)
-        print("请求结果:{}".format(self.request_wp_api(param)))
+        self.request_wp_api(param)
 
     def request_wp_api(self,param):
         """需要指定域名得host为本机IP"""
@@ -345,18 +337,15 @@ class one_key_wp:
         if 'upgrade' in param['data']:
             param['data']['_wpnonce'] = self.get_update_wp_nonce()
             headers['referer'] = 'http://{}/wp-admin/update-core.php'.format(param['domain'])
-            print(param)
         return self.__wp_session.post(param['url'],data=param['data'], headers=headers, verify=False).text
 
     def action_plugin_get(self,url,headers=None):
         if not headers:
             headers = self.get_headers()
-        print(url)
         # headers['Referer'] = "http://{}/wp-admin".format(self.__domain)
         return self.__wp_session.get(url, headers=headers, verify=False).text
 
     def install_plugin(self,values):
-        print("安装插件")
         self.write_logs("|-Start installing the [nginx-helper] plugin...")
         self.__load_cookies(values['s_id'])
         param = {
@@ -375,7 +364,6 @@ class one_key_wp:
             }
         }
         res = self.action_plugin_post(param)
-        print(res)
         return res
 
     def get_smart_http_expire_form_nonce(self,url):
@@ -414,7 +402,6 @@ class one_key_wp:
                 "smart_http_expire_save": "Save All Changes"
             }
         }
-        print(param)
         return self.action_plugin_post(param)
 
     def act_nginx_helper_active(self,values):
@@ -423,11 +410,9 @@ class one_key_wp:
         values['active_id'] = "activate-nginx-helper"
         self.get_plugin_page()
         res = self.get_plugin_url(values['active_id'],self.__plugin_page_content)
-        print(res)
         url = 'http://127.0.0.1/wp-admin/{data}'.format(
             data=str(str(res[0]).split('"')[5]))
         url = url.replace('amp;','')
-        print(url)
         return self.action_plugin_get(url)
 
     def get_plugin_url(self,active_id,content):
@@ -507,7 +492,6 @@ class one_key_wp:
         mysql_obj = panelMysql.panelMysql()
         sql = 'update {}.{}users set user_pass = "{}" where user_login = "{}"'.format(
             db_name,db_info['prefix'],passwd,values['user'])
-        print(sql)
         mysql_obj.execute(sql)
         return public.returnMsg(True,"Password reset successful")
 
@@ -854,7 +838,7 @@ class one_key_wp:
             d_id = values['d_id'] #数据库ID
             prefix = values['prefix'] #前缀
             site_info = public.M('sites').where('id=?', (s_id,)).find()
-            print("获取网站信息:\n ID: {}\n路径: {}\n".format(s_id,site_info['path']))
+            print("Get site info:\n ID: {}\npath: {}\n".format(s_id,site_info['path']))
             self.write_logs("""
     |-Get website information:
         ID: {}
@@ -927,7 +911,7 @@ class optimize_php:
         import files
         mfile = files.files()
         for ext in exts:
-            print("开始安装php扩展 [{}]...".format(ext))
+            # print("开始安装php扩展 [{}]...".format(ext))
 
             if ext == 'pathinfo':
                 import config
@@ -1208,10 +1192,13 @@ location ~ /purge(/.*) {
         return False
 
     def set_nginx_conf(self):
+        if not os.path.exists("/dev/shm/nginx-cache/wp"):
+            os.makedirs("/dev/shm/nginx-cache/wp")
+            one_key_wp().set_permission("/dev/shm/nginx-cache")
         conf = """
 #AAPANEL_FASTCGI_CONF_BEGIN
 fastcgi_cache_key "$scheme$request_method$host$request_uri";
-fastcgi_cache_path /dev/shm/nginx-cache/wp levels=1:2 keys_zone=WORDPRESS:100m inactive=60m;
+fastcgi_cache_path /dev/shm/nginx-cache/wp levels=1:2 keys_zone=WORDPRESS:100m inactive=60m max_size=1g;
 fastcgi_cache_use_stale error timeout invalid_header http_500;
 fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
 #AAPANEL_FASTCGI_CONF_END
@@ -1221,22 +1208,21 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         content = public.readFile(conf_path)
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
-            print("Nginx FastCgi缓存配置已经存在")
+            print("Nginx FastCgi cache configuration already exists")
             return public.returnMsg(True,"Nginx FastCgi cache configuration already exists")
         rep = "http\s*\n\s*{"
         content = re.sub(rep,"http\n\t{"+conf,content)
         public.writeFile(conf_path,content)
-        if not os.path.exists("/dev/shm/nginx-cache/wp"):
-            os.makedirs("/dev/shm/nginx-cache/wp")
+
         #如果配置出错恢复
         conf_pass = public.checkWebConfig()
         if conf_pass != True:
             public.restore_file(conf_path)
             one_key_wp().write_logs("|-Nginx FastCgi configuration error! {}".format(conf_pass))
-            print("Nginx FastCgi配置出错！ {}".format(conf_pass))
+            print("Nginx FastCgi configuration error! {}".format(conf_pass))
             return public.returnMsg(False,"Nginx FastCgi configuration error!")
         one_key_wp().write_logs("|-Nginx FastCgi cache configuration complete...")
-        print("Nginx FastCgi缓存配置完成")
+        print("Nginx FastCgi cache configuration complete")
         return public.returnMsg(True, "Nginx FastCgi cache configuration complete")
 
     def set_fastcgi_php_conf(self,version):
@@ -1252,13 +1238,13 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         public.back_file(conf_path)
         conf = public.readFile(conf_path)
         if not conf:
-            print("配置文件不存在 {}".format(conf_path))
+            print("Website configuration file does not exist {}".format(conf_path))
             one_key_wp().write_logs("|-Website configuration file does not exist: {}".format(conf_path))
             return False
         if act == 'disable':
             fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(version)
             if fastcgi_conf not in conf:
-                print("网站配置中不存在FastCgi配置")
+                print("FastCgi configuration does not exist in website configuration")
                 one_key_wp().write_logs("|-FastCgi configuration does not exist in website configuration, skip")
                 return public.returnMsg(False,"FastCgi configuration does not exist in website configuration")
             rep = "include\s+enable-php-{}-wpfastcgi.conf;".format(version)
@@ -1274,10 +1260,10 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         conf_pass = public.checkWebConfig()
         if conf_pass != True:
             public.restore_file(conf_path)
-            print("Website FastCgi配置出错！ {}".format(conf_pass))
+            print("Website FastCgi configuration error {}".format(conf_pass))
             one_key_wp().write_logs("|-Website FastCgi configuration error: {}",(conf_pass,))
             return public.returnMsg(False,"Website FastCgi configuration error！")
-        print("Website FastCgi配置完成")
+        print("Website FastCgi configuration complete")
         one_key_wp().write_logs("|-Website FastCgi configuration complete...")
         return public.returnMsg(True, "Website FastCgi configuration complete")
 
@@ -1306,12 +1292,12 @@ define('RT_WP_NGINX_HELPER_CACHE_PATH','/dev/shm/nginx-cache/wp');
         conf_file = "{}/wp-config.php".format(site_path)
         conf = public.readFile(conf_file)
         if not conf:
-            print("配置文件不存在: {}".format(conf_file))
+            print("Wordpress configuration file does not exist: {}".format(conf_file))
             one_key_wp().write_logs("|-Wordpress configuration file does not exist: {}".format(conf_file))
             return public.returnMsg(False,"Wordpress configuration file does not exist: {}",(conf_file,))
         if "AAPANEL_FASTCGICACHE_BEGIN" in conf:
             one_key_wp().write_logs("|-Cache cleaning configuration already exists, skip")
-            print("配置已经存在")
+            print("Cache cleaning configuration already exists")
             return
         conf = conf.replace("<?php","<?php"+cache_conf)
         public.writeFile(conf_file,conf)
@@ -1320,11 +1306,11 @@ define('RT_WP_NGINX_HELPER_CACHE_PATH','/dev/shm/nginx-cache/wp');
         conf_file = "{}/.user.ini".format(site_path)
         conf = public.readFile(conf_file)
         if not conf:
-            print("配置文件不存在: {}".format(conf_file))
+            print("Anti-cross-site configuration file does not exist: {}".format(conf_file))
             one_key_wp().write_logs("|-Anti-cross-site configuration file does not exist: {}".format(conf_file))
             return public.returnMsg(False,"Anti-cross-site configuration file does not exist: {}",(conf_file,))
         if "/dev/shm/nginx-cache/wp" in conf:
-            print("配置已经存在")
+            print("Anti-cross-site configuration is successful")
             one_key_wp().write_logs("|-Anti-cross-site configuration is successful...")
             return
         public.ExecShell('chattr -i {}'.format(conf_file))

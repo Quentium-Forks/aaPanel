@@ -104,6 +104,7 @@ class panelAuth:
         params['cycle_unit'] = get.cycle_unit
         params['product_id'] = get.pid
         params['src'] = 2
+        params['trigger_entry'] = get.source
         params['pay_channel'] = 2
         params['charge_type'] = get.charge_type
         env_info = public.fetch_env_info()
@@ -293,7 +294,12 @@ class panelAuth:
             return []
         if not data['success']: return []
         data = data['res']
-        return [i for i in data['list'] if i['status'] != 'activated']
+        # return [i for i in data['list'] if i['status'] != 'activated' and get.pid == i['product_id']]
+        res = list()
+        for i in data['list']:
+            if i['status'] != 'activated' and str(get.pid) == str(i['product_id']):
+                res.append(i)
+        return res
 
     def auth_activate(self,get):
         params = {}
@@ -311,6 +317,7 @@ class panelAuth:
         params['cycle'] = get.cycle
         params['cycle_unit'] = get.cycle_unit
         params['src'] = 2
+        params['trigger_entry'] = get.source
         params['environment_info'] = json.dumps(public.fetch_env_info())
         if hasattr(get,'coupon_id') and get.pay_channel == '10':
             params['coupon_id'] = get.coupon_id

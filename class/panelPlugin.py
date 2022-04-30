@@ -2,7 +2,7 @@
 #-------------------------------------------------------------------
 # 宝塔Linux面板
 #-------------------------------------------------------------------
-# Copyright (c) 2015-2019 宝塔软件(http:#bt.cn) All rights reserved.
+# Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 #-------------------------------------------------------------------
 # Author: hwliang <hwl@bt.cn>
 #-------------------------------------------------------------------
@@ -329,7 +329,7 @@ class panelPlugin:
         except:
             if os.path.exists(lcoalTmp): os.remove(lcoalTmp)
 
-        if 'init' in get:
+        if get and 'init' in get:
             if softList:
                 if 'success' not in softList:
                     return softList
@@ -934,9 +934,10 @@ class panelPlugin:
 
     #取phpmyadmin状态
     def get_phpmyadmin_stat(self):
-        if public.get_webserver() == 'nginx':
+        webserver = public.get_webserver()
+        if webserver == 'nginx':
             filename = public.GetConfigValue('setup_path') + '/nginx/conf/nginx.conf'
-        elif public.get_webserver() == 'apache':
+        elif webserver == 'apache':
             filename = public.GetConfigValue('setup_path') + '/apache/conf/extra/httpd-vhosts.conf'
         else:
             filename = "/www/server/panel/vhost/openlitespeed/detail/phpmyadmin.conf"
@@ -1218,10 +1219,12 @@ class panelPlugin:
     def get_icon(self,name,downFile = None):
         iconFile = 'BTPanel/static/img/soft_ico/ico-' + name + '.png'
         if not os.path.exists(iconFile):
-            self.download_icon(name,iconFile,downFile)
+            public.run_thread(self.download_icon,(name,iconFile,downFile))
         else:
             size = os.path.getsize(iconFile)
-            if size == 0: self.download_icon(name,iconFile,downFile)
+            if size == 0:
+                public.run_thread(self.download_icon,(name,iconFile,downFile))
+                # self.download_icon(name,iconFile,downFile)
         
     #下载图标
     def download_icon(self,name,iconFile,downFile):
@@ -1232,9 +1235,9 @@ class panelPlugin:
             public.ExecShell(r"\cp  -a -r " + srcIcon + " " + iconFile)
         else:
             if downFile:
-                public.ExecShell('wget -O ' + iconFile + ' ' + public.GetConfigValue('home') + downFile)
+                public.ExecShell('wget -O ' + iconFile + ' ' + public.GetConfigValue('home') + downFile + " &")
             else:
-                public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png')
+                public.ExecShell('wget -O ' + iconFile + ' ' + public.get_url() + '/install/plugin/' + name + '/icon.png' + " &")
         cache.set(skey,1,86400)
 
     

@@ -504,6 +504,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             l = public.check_password(get.password)
             if l == 0 and get.pw_weak == 'off':
                 return public.returnMsg(False,'Password very weak, if you are sure to use it, please tick [ Allow weak passwords ]')
+            #判断Mysql PHP 没有安装不能继续
+            if not os.path.exists("/www/server/mysql") or not os.path.exists("/www/server/php"):
+                return public.returnMsg(False,
+                                        'Please install Mysql and PHP first!')
         self.check_default()
         self.check_php_conf()
         isError = public.checkWebConfig()
@@ -3136,6 +3140,12 @@ server
                     rep = "include\s+enable-php-(\w{2,5})\.conf"
                     tmp = re.search(rep,conf)
                     if tmp: conf = conf.replace(tmp.group(),'include ' + dst)
+                elif re.search("enable-php-\d+-wpfastcgi.conf",conf):
+                    dst = 'enable-php-{}-wpfastcgi.conf'.format(version)
+                    conf = conf.replace(other_rep,dst)
+                    rep = "enable-php-\d+-wpfastcgi.conf"
+                    tmp = re.search(rep, conf)
+                    if tmp:conf = conf.replace(tmp.group(),dst)
                 else:
                     dst = 'enable-php-'+version+'.conf'
                     conf = conf.replace(other_rep,dst)
@@ -3543,7 +3553,7 @@ server
             if not p_conf:
                 # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
                 #     "CLEAR_CACHE")
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.GetMsg("CLEAR_CACHE")
                 # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
                 ng_conf = re.sub(rep, '', ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$
@@ -3579,7 +3589,7 @@ server
             else:
                 # rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.{1,66}[\s\w\/\*\.\;]+include enable-php-" % public.GetMsg(
                 #     "CLEAR_CACHE")
-                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.get_msg_gettext("#Clear cache")
+                rep = "%s[\w\s\~\/\(\)\.\*\{\}\;\$\n\#]+.*\n.*" % public.GetMsg("CLEAR_CACHE")
                 # ng_conf = re.sub(rep, 'include enable-php-', ng_conf)
                 ng_conf = re.sub(rep,'',ng_conf)
                 oldconf = '''location ~ .*\\.(gif|jpg|jpeg|png|bmp|swf)$

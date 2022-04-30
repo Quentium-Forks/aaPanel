@@ -165,6 +165,7 @@ def control_init():
     #clean_session()
     #set_crond()
     test_ping()
+    set_wp_cache_dir()
     clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
     clean_max_log('/var/log/rsyncd.log',1024*1024*10)
     clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
@@ -183,6 +184,10 @@ def control_init():
     run_script()
     set_php_cli_env()
 
+def set_wp_cache_dir():
+    import one_key_wp
+    one_key_wp.fast_cgi().set_nginx_conf()
+    public.ExecShell("/etc/init.d/nginx restart")
 
 def set_php_cli_env():
     '''

@@ -847,6 +847,8 @@ class system:
         elif get.name == 'nginx':
             vhostPath = self.setupPath + '/panel/vhost/rewrite'
             if not os.path.exists(vhostPath): public.ExecShell('mkdir ' + vhostPath)
+            if not os.path.exists("/dev/shm/nginx-cache/wp"):
+                public.ExecShell('mkdir -p /dev/shm/nginx-cache/wp && chown -R www.www /dev/shm/nginx-cache')
             vhostPath = self.setupPath + '/panel/vhost/nginx'
             if not os.path.exists(vhostPath):
                 public.ExecShell('mkdir ' + vhostPath)

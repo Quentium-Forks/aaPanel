@@ -3878,6 +3878,47 @@ def error_404(e):
     }
     return Response(errorStr, status=404, headers=headers)
 
+def stop_status_mvore():
+    flag=False
+    try:
+        nginx_path='/www/server/panel/vhost/nginx/btwaf.conf'
+        if os.path.exists(nginx_path):
+            ExecShell('mv  %s %s.bak'%(nginx_path,nginx_path))
+            flag=True
+        nginx_path='/www/server/panel/vhost/nginx/free_waf.conf'
+        if os.path.exists(nginx_path):
+            ExecShell('mv  %s %s.bak'%(nginx_path,nginx_path))
+            flag=True
+        apache_path='/www/server/panel/vhost/apache/btwaf.conf'
+        if os.path.exists(apache_path):
+            ExecShell('chattr -i %s && mv %s %s.bak'%(apache_path,apache_path,apache_path))
+            flag=True
+        if flag:
+            serviceReload()
+    except:
+        pass
+
+def is_error_path():
+    if os.path.exists("/www/server/panel/data/error_pl.pl"):
+        stop_status_mvore()
+        return True
+    return False
+
+def get_php_versions(reverse=False):
+    '''
+        @name 取PHP版本列表
+        @author hwliang<2021-12-16>
+        @param reverse<bool> 是否降序
+        @return list
+    '''
+    _file = get_panel_path() + '/config/php_versions.json'
+    if os.path.exists(_file):
+        version_list  = json.loads(readFile(_file))
+    else:
+        version_list = ['52','53','54','55','56','70','71','72','73','74','80','81','82','83','84']
+
+    return sorted(version_list,reverse=reverse)
+
 def check_password(password):
     """
     密码强度：
