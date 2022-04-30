@@ -3880,7 +3880,12 @@ bt.soft = {
 			pro: parseInt(bt.get_cookie('pro_end')) || -1,
 			ltd: parseInt(bt.get_cookie('ltd_end')) || -1}
 			,config);
-		var title = '',that = this,endTime = null;
+        var totalNum = config.totalNum ? config.totalNum : '';
+        if (totalNum) {
+            bt.set_cookie('pay_source', parseInt(totalNum));
+        }
+
+        var title = '',that = this,endTime = null;
 		if(!config.is_alone){
 			if(config.plugin){ // 条件：当前为插件
 				title = (!config.renew?'Buy ':'续费') + config.name;
@@ -3905,7 +3910,7 @@ bt.soft = {
 			title:title,
 			area:['650px','760px'],
 			shadeClose:false,
-			content:'<div class="libPay plr15" id="pay_product_view">\
+			content:'<div class="libPay plr15" id="pay_product_view" ' + (config.totalNum ? 'data-index="'+config.totalNum+'"' : '') + '>\
 				<div class="libPay-item" style="margin-bottom:20px">\
 					<span class="bindUser">Account: <span></span></span>\
 					<span class="endTime">Expire date：<span></span></span>\
@@ -3991,18 +3996,18 @@ bt.soft = {
         switch (condition){
             case 1:
               var loadT = bt.load();
-                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15,pid:config.pid }, function(res) {
                   bt.soft.pro.get_voucher(config.pid, function (rdata) {
                     loadT.close();
                     var _arry = [{ title: '微信支付', condition: 2 },{ title: 'Stripe', condition: 3 }, { title: 'voucher', condition: 4 },{title: "Authorization", condition: 7,"_pid":config.pid}];
-                    if(config.renew){
-                      _arry.splice(_arry.length-1,1)
-                      _arry[rdata.length > 0 ? '2' : '1'].active = true
-                      config.condition = rdata.length > 0?4:2
-                    }else{
+                    // if(config.renew){
+                    //   _arry.splice(_arry.length-1,1)
+                    //   _arry[rdata.length > 0 ? '2' : '1'].active = true
+                    //   config.condition = rdata.length > 0?4:2
+                    // }else{
                       _arry[res.length > 0? '3' :(rdata.length > 0 ? '2' : '1')].active = true;
-                      config.condition = (res.length > 0?7:(rdata.length > 0?4:2))
-                    }
+                      config.condition = (res.length > 0?7:(rdata.length > 0?4:3))
+                    // }
                     if(res == null) res = [];
                     if (rdata == null) rdata = [];
                     $('#libPay-mode .li-con').empty().append(
@@ -4105,8 +4110,16 @@ bt.soft = {
                 }else{
                     $('#libPay-pay').html('<div class="cloading">Loading, please wait!</div>');
                 }
-                var paream = {pid:config.pid,cycle:config.cycle},pay_source = bt.get_cookie('pay_source');
-                if(pay_source) paream.source = bt.get_cookie('pay_source');
+                var paream = {pid:config.pid,cycle:config.cycle};
+                paream.source = parseInt(bt.get_cookie('pay_source') || 0)
+                if (paream.source === 0) {
+                    if ($('.btpro-gray').length == 1) {  // 是否免费版
+                        paream.source = 27;
+                    } else {
+                        paream.source = 28;
+                    }
+                }
+
                 if(!paream.pid) delete paream.pid;
                 if(bt.get_cookie('serial_no') != null) paream.serial_no = config.serial_no  || bt.get_cookie('serial_no')
                 that.pro.create_order(paream,function (rdata){
@@ -4156,7 +4169,7 @@ bt.soft = {
                 $('#libPay-pay').empty();
                     var _pid = config.pid;
                      $('#libPay-content .li-tit').text('Authorization information');
-                    bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15 }, function(res) {
+                    bt.send('get_product_auth', 'auth/get_product_auth', { page: 1,pageSize:15,pid:config.pid }, function(res) {
                     loadA.close();
                     if(res.status==false){
                          layer.msg(res.msg, { icon: res.status ? 1 : 2 });
@@ -4338,8 +4351,15 @@ bt.soft = {
     /**
      * @description 升级专业版
     */
-    updata_pro:function(){
-      bt.soft.product_pay_view({name:'Pro',pid:'100000058',limit:'pro'});
+    updata_pro:function(num){
+        var param = {
+            name: 'Pro',
+            pid: 100000058,
+            limit: 'pro'
+        }
+        if(num) param['totalNum'] = num;
+        bt.set_cookie('pay_source', num);
+        bt.soft.product_pay_view(param)
     },
     /**
      * @description 续费专业版

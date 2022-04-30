@@ -733,8 +733,8 @@ def ajax(pdata = None):
     if comReturn: return comReturn
     import ajax
     ajaxObject = ajax.ajax()
-    defs = ('get_lines','php_info','change_phpmyadmin_ssl_port','set_phpmyadmin_ssl','get_phpmyadmin_ssl',
-            'check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml',
+    defs = ('get_lines','php_info','change_phpmyadmin_ssl_port','set_phpmyadmin_ssl','get_phpmyadmin_ssl','get_pd',
+            'check_user_auth','to_not_beta','get_beta_logs','apple_beta','GetApacheStatus','GetCloudHtml','get_pay_type',
             'get_load_average','GetOpeLogs','GetFpmLogs','GetFpmSlowLogs','SetMemcachedCache','GetMemcachedStatus',
             'GetRedisStatus','GetWarning','SetWarning','CheckLogin','GetSpeed','GetAd','phpSort','ToPunycode',
             'GetBetaStatus','SetBeta','setPHPMyAdmin','delClose','KillProcess','GetPHPInfo','GetQiniuFileList','get_process_tops','get_process_cpu_high',
@@ -862,9 +862,9 @@ def download():
     if comReturn: return comReturn
     filename = request.args.get('filename')
     if filename.find('|') != -1:
-        filename = filename.split('|')[1]
+        filename = filename.split('|')[0] #改为获取本地备份
     if not filename: return public.ReturnJson(False,"INIT_ARGS_ERR"),json_header
-    if filename in ['alioss','qiniu','upyun','txcos','ftp','msonedrive','gcloud_storage', 'gdrive', 'aws_s3']: return panel_cloud()
+    # if filename in ['alioss','qiniu','upyun','txcos','ftp','msonedrive','gcloud_storage', 'gdrive', 'aws_s3']: return panel_cloud()
     if not os.path.exists(filename): return public.ReturnJson(False,"FILE_NOT_EXISTS"),json_header
 
     if request.args.get('play') == 'true':
@@ -881,7 +881,7 @@ def download():
                          conditional=True,
                          attachment_filename=os.path.basename(filename),
                          cache_timeout=0)
-
+'''
 @app.route('/cloud',methods=method_all)
 def panel_cloud():
     #从对像存储下载备份文件接口
@@ -937,6 +937,7 @@ def panel_cloud():
         }
 
     return redirect(download_url)
+'''
 
 #======================普通路由区============================#
 
@@ -1299,6 +1300,7 @@ def panel_other(name=None, fun=None, stype=None):
                     if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
         args = None
     else:
+        if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
         p_path = public.get_plugin_path() + '/' + name
         if not os.path.exists(p_path): return abort(404)
         args = get_input()
@@ -1306,6 +1308,7 @@ def panel_other(name=None, fun=None, stype=None):
         for k in args.__dict__:
             if not k in args_list: return abort(404)
 
+    is_accept = False
     if not fun: fun = 'index.html'
     if not stype:
         tmp = fun.split('.')
