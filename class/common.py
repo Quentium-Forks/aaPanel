@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g
+from BTPanel import session, cache, abort, request, redirect, g
 from datetime import datetime
 from public import dict_obj
 import os
