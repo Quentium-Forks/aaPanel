@@ -786,7 +786,7 @@ var site = {
             placeholder.click(function() {
                 $(this).hide();
                 $('.nodedomain').focus();
-            }).css({ 'width': '340px', 'heigth': '120px', 'left': '0px', 'top': '0px', 'padding-top': '10px', 'padding-left': '15px' })
+            }).css({ 'width': '340px', 'height': '120px', 'left': '0px', 'top': '0px', 'padding-top': '10px', 'padding-left': '15px' })
             $('.nodedomain').focus(function() {
                 placeholder.hide();
                 loadT = layer.tips(placeholder.html(), $(this), { tips: [1, '#20a53a'], time: 0, area: $(this).width() });
@@ -1837,7 +1837,7 @@ var site = {
                 number: 20,
                 //分页数量默认 : 20条
                 numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
-                numberStatus: true, //　是否支持分页数量选择,默认禁用
+                numberStatus: true, // 是否支持分页数量选择,默认禁用
                 jump: true, //是否支持跳转分页,默认禁用
             }]
         });
@@ -2032,7 +2032,7 @@ var site = {
                 number: 20,
                 //分页数量默认 : 20条
                 numberList: [10, 20, 50, 100, 200], // 分页显示数量列表
-                numberStatus: true, //　是否支持分页数量选择,默认禁用
+                numberStatus: true, // 是否支持分页数量选择,默认禁用
                 jump: true, //是否支持跳转分页,默认禁用
             }]
         });
@@ -2110,7 +2110,7 @@ var site = {
                             return lan.site.web_end_time;
                         } else {
                             if (new Date(_endtime).getTime() < new Date().getTime()) {
-                                return '<a href="javscript:;" class="bt_danger">' + _endtime + '</a>';
+                                return '<a href="javascript:;" class="bt_danger">' + _endtime + '</a>';
                             } else {
                                 return _endtime;
                             }
@@ -2451,10 +2451,10 @@ var site = {
                 positon:['right','bottom'], // 默认在右下角
                 pageParam:'p', //分页请求字段,默认为 : p
                 page:1, //当前分页 默认: 1
-                numberParam:'limit',　//分页数量请求字段默认为 : limit
-                number:20,　//分页数量默认 : 20条
+                numberParam:'limit', //分页数量请求字段默认为 : limit
+                number:20, //分页数量默认 : 20条
                 numberList:[10,20,50,100,200], // 分页显示数量列表
-                numberStatus:true, //　是否支持分页数量选择,默认禁用
+                numberStatus:true, // 是否支持分页数量选择,默认禁用
                 jump:true, //是否支持跳转分页,默认禁用
             }]
         });
@@ -2792,7 +2792,7 @@ var site = {
                             templet: function(item) {
                                 var _opt = '<a class="btlink restore" site-id="' + id + '" backup-name="' + item.name + '">Restore</a> | ';
                                 _opt += '<a class="btlink" href="/download?filename=' + item.filename + '&amp;name=' + item.name + '" target="_blank">' + lan.site.download + '</a> | ';
-                                _opt += '<a class="btlink" herf="javascrpit:;" onclick="bt.site.del_backup(\'' + item.id + '\',\'' + id + '\',\'' + siteName + '\')">' + lan.site.del + '</a>'
+                                _opt += '<a class="btlink" href="javascript:;" onclick="bt.site.del_backup(\'' + item.id + '\',\'' + id + '\',\'' + siteName + '\')">' + lan.site.del + '</a>'
                                 return _opt;
                             }
                         },
@@ -2963,9 +2963,9 @@ var site = {
                         pageParam: 'p', //分页请求字段,默认为 : p
                         page: 1, //当前分页 默认: 1
                         numberParam: 'limit',
-                        　 //分页数量请求字段默认为 : limit
+                          //分页数量请求字段默认为 : limit
                         number: 10,
-                        　 //分页数量默认 : 20条
+                          //分页数量默认 : 20条
                     }]
                 });
             }
@@ -5349,7 +5349,7 @@ var site = {
                             }
                         }
                     },
-                    { items: [{ name: 'config', type: 'div', value: rdata.data, widht: '340px', height: '200px' }] },
+                    { items: [{ name: 'config', type: 'div', value: rdata.data, width: '340px', height: '200px' }] },
                     {
                         items: [{
                                 name: 'btn_save',
@@ -6116,7 +6116,7 @@ var site = {
                                     if (!rdata.status) bt.msg(rdata)
                                 }
                                 var datas = [
-                                    { items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                    { items: [{ name: 'redirect_configs', type: 'textarea', value: rdata[0].data, width: '340px', height: '200px' }] },
                                     {
                                         name: 'btn_config_submit', text: 'Save', type: 'button', callback: function (ddata) {
                                             bt.site.save_redirect_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
@@ -6416,7 +6416,7 @@ var site = {
                                     if (!rdata.status) bt.msg(rdata)
                                 }
                                 var datas = [
-                                    { items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, widht: '340px', height: '200px' }] },
+                                    { items: [{ name: 'proxy_configs', type: 'textarea', value: rdata[0].data, width: '340px', height: '200px' }] },
                                     {
                                         name: 'btn_config_submit', text: 'Save', type: 'button', callback: function (ddata) {
                                             bt.site.save_proxy_config({ path: rdata[1], data: editor.getValue(), encoding: rdata[0].encoding }, function (ret) {
@@ -6669,7 +6669,7 @@ var site = {
               // 渲染分析日志列表
               function render_analyse_list(rdata){
                 var analyse_list = '<div class="divtable" style="margin-top: 10px;"><table class="table table-hover">\
-                  <thead><tr><th width="90">Date</th><th>Time</th><th>XSS</th><th>SQL</th><th>Sacn</th><th>PHP</th><th>IP(top100)</th><th>URL(top100)</th></tr></thead>\
+                  <thead><tr><th width="90">Date</th><th>Time</th><th>XSS</th><th>SQL</th><th>Scan</th><th>PHP</th><th>IP(top100)</th><th>URL(top100)</th></tr></thead>\
                   <tbody class="analyse_body">'
                 if(rdata.is_status){   //检测是否有扫描数据
                   analyse_list +='<tr>\
