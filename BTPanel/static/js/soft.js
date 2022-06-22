@@ -635,7 +635,7 @@ var soft = {
                     var loadT = bt.load()
                     bt.confirm({
                       title:"Pro Edition",
-                      msg:"Get 15-day Pro edition free, get it now?"
+                      msg:"Get 7-day Pro edition free, get it now?"
                     },function (){
                       bt.send('free_trial','auth/free_trial',{},function(res){
                         loadT.close()

@@ -2247,7 +2247,9 @@ var bt_tools = {
                 }else{
                     this.el.append(data)
                 }
-                this.el.scrollTop(this.el[0].scrollHeight)
+                if (this.el && this.el.length > 0) {
+									this.el.scrollTop(this.el[0].scrollHeight)
+								}
             },
 
             /**

@@ -718,87 +718,87 @@ var index = {
 
 
     get_index_list: function () {
-        bt.soft.get_index_list(function (rdata) {
-            var con = '';
-            var icon = '';
-            var rlen = rdata.length;
-            var clickName = '';
-            var setup_length = 0;
-            var softboxsum = 12;
-            var softboxcon = '';
-            for (var i = 0; i < rlen; i++) {
-                if (rdata[i].setup) {
-                    setup_length++;
-                    if (rdata[i].admin) {
-                        clickName = ' onclick="bt.soft.set_lib_config(\'' + rdata[i].name + '\',\'' + rdata[i].title + '\')"';
-                    }
-                    else {
-                        clickName = 'onclick="soft.set_soft_config(\'' + rdata[i].name + '\')"';
-                    }
-                    var icon = rdata[i].name;
-                    if (bt.contains(rdata[i].name, 'php-')) {
-                        icon = 'php';
-                        rdata[i].version = '';
-                    }
-                    var status = '';
-                    if (rdata[i].status) {
-                        status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
-                    } else {
-                        status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>'
-                    }
-                    con += '<div class="col-sm-3 col-md-3 col-lg-3" data-id="' + rdata[i].name + '">\
+			bt.soft.get_index_list(function (rdata) {
+				var con = '';
+				var icon = '';
+				var rlen = rdata.length;
+				var clickName = '';
+				var setup_length = 0;
+				var softboxsum = 12;
+				var softboxcon = '';
+				for (var i = 0; i < rlen; i++) {
+					if (rdata[i].setup) {
+						setup_length++;
+						if (rdata[i].admin) {
+							clickName = ' onclick="bt.soft.set_lib_config(\'' + rdata[i].name + '\',\'' + rdata[i].title + '\')"';
+						} else {
+							clickName = 'onclick="soft.set_soft_config(\'' + rdata[i].name + '\')"';
+						}
+						var icon = rdata[i].name;
+						if (bt.contains(rdata[i].name, 'php-')) {
+							icon = 'php';
+							rdata[i].version = '';
+						}
+						var status = '';
+						if (rdata[i].status) {
+							status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
+						} else {
+							status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>'
+						}
+						con += '<div class="col-sm-3 col-md-3 col-lg-3" data-id="' + rdata[i].name + '">\
 							<span class="spanmove"></span>\
 							<div '+ clickName + '>\
 							<div class="image"><img width="48" src="/static/img/soft_ico/ico-'+ icon + '.png"></div>\
 							<div class="sname">'+ rdata[i].title + ' ' + rdata[i].version + status + '</div>\
 							</div>\
 						</div>'
-                }
-            }
-            $("#indexsoft").html(con);
-            // 推荐安装软件
-            try {
-                var recomConfig = product_recommend.get_recommend_type(1)
-                if(recomConfig){
-                    var pay_status = product_recommend.get_pay_status();
-                    for (var i = 0; i < recomConfig['list'].length; i++) {
-                        const item = recomConfig['list'][i];
-                        if(setup_length > softboxsum) break;
-                        if(pay_status.is_pay && item['install']) continue;
-                        softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3">\
-                      <div class="recommend-soft recom-iconfont">\
-                        <div class="product-close hide">关闭推荐</div>\
-                        <div class="images"><img src="/static/img/soft_ico/ico-'+ item['name'] +'.png"></div>\
-                        <div class="product-name">'+ item['title'] +'</div>\
-                        <div class="product-pay-btn">\
-                        '+ ((item['isBuy'] && !item['install'])?
-                            '<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\''+ item['name'] +'\')">Install</button>':
-                            '<a class="btn btn-sm btn-default mr5 '+ (!item.preview?'hide':'') +'" href="'+ item.preview +'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick=\"product_recommend.pay_product_sign(\'pro\','+ item.pay +')\">Buy now</button>') +'\
-                        </div>\
-                      </div>\
-                    </div>'
-                        setup_length ++;
-                    }
-                }
-            } catch (error) {
-                console.log(error)
-            }
+					}
+				}
+				$("#indexsoft").html(con);
 
-            //软件位置移动
-            if (setup_length <= softboxsum) {
-                for (var i = 0; i < softboxsum - setup_length; i++) {
-                    softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3 no-bg"></div>'
-                }
-                $("#indexsoft").append(softboxcon);
-            }
-            $("#indexsoft").dragsort({ dragSelector: ".spanmove", dragBetween: true, dragEnd: saveOrder, placeHolderTemplate: "<div class='col-sm-3 col-md-3 col-lg-3 dashed-border'></div>" });
+				// 推荐安装软件
+				try {
+					var recomConfig = product_recommend.get_recommend_type(1)
+					if(recomConfig){
+						var pay_status = product_recommend.get_pay_status();
+						for (var i = 0; i < recomConfig['list'].length; i++) {
+							const item = recomConfig['list'][i];
+							if(setup_length > softboxsum) break;
+							if(pay_status.is_pay && item['install']) continue;
+							softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3">\
+								<div class="recommend-soft recom-iconfont">\
+									<div class="product-close hide">关闭推荐</div>\
+									<div class="images"><img src="/static/img/soft_ico/ico-'+ item['name'] +'.png"></div>\
+									<div class="product-name">'+ item['title'] +'</div>\
+									<div class="product-pay-btn">\
+									'+ ((item['isBuy'] && !item['install'])?
+											'<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\''+ item['name'] +'\')">Install</button>':
+											'<a class="btn btn-sm btn-default mr5 '+ (!item.preview?'hide':'') +'" href="'+ item.preview +'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick=\"product_recommend.pay_product_sign(\'pro\','+ item.pay +')\">Buy now</button>') +'\
+									</div>\
+								</div>\
+							</div>'
+							setup_length ++;
+						}
+					}
+				} catch (error) {
+					console.log(error)
+				}
 
-            function saveOrder() {
-                var data = $("#indexsoft > div").map(function () { return $(this).attr("data-id"); }).get();
-                data = data.join('|');
-                bt.soft.set_sort_index(data)
-            };
-        })
+				//软件位置移动
+				if (setup_length <= softboxsum) {
+					for (var i = 0; i < softboxsum - setup_length; i++) {
+						softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3 no-bg"></div>'
+					}
+				}
+				$("#indexsoft").append(softboxcon);
+				$("#indexsoft").dragsort({ dragSelector: ".spanmove", dragBetween: true, dragEnd: saveOrder, placeHolderTemplate: "<div class='col-sm-3 col-md-3 col-lg-3 dashed-border'></div>" });
+
+				function saveOrder() {
+					var data = $("#indexsoft > div").map(function () { return $(this).attr("data-id"); }).get();
+					data = data.join('|');
+					bt.soft.set_sort_index(data)
+				};
+			})
     },
     check_update: function () {
     	var _load = bt.load('Getting updates, please wait...');

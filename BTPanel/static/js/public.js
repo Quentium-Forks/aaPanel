@@ -3873,7 +3873,9 @@ function reader_realtime_tasks(refresh){
 			html = '',
 			message = res.msg,
 			task = res.task;
-		$('#taskNum').html(typeof res.task === "undefined"?0:res.task.length);
+			var num = typeof res.task === "undefined"?0:res.task.length;
+		$('#task').html(num);
+		$('#taskNum').html(num);
 		if(typeof res.task === "undefined"){
 			html = '<div style="padding:5px;">'+lan.bt.task_not_list+'</div><div style="position: fixed;bottom: 15px;">' + lan.public.task_long_time_not_exec + '</div>'
 			command_install_list.html(html)

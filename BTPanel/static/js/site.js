@@ -2458,7 +2458,7 @@ var site = {
                 jump:true, //是否支持跳转分页,默认禁用
             }]
         });
-        $('.tootls_group.tootls_top .pull-left').append('<div class="bt_select_updown site_class_type" style="vertical-align: bottom;"><div class="bt_select_value"><span class="bt_select_content">Classification:</span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span></div><ul class="bt_select_list"></ul></div>');
+        $('.tootls_group.tootls_top .pull-left').append('<div class="bt_select_updown site_class_type" style="width: 150px; vertical-align: bottom;"><div class="bt_select_value" style="padding-right: 15px;"><span class="bt_select_content" style="margin-right: 0">Classification:</span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span></div><ul class="bt_select_list"></ul></div>');
         bt.site.get_type(function(res) {
             site.reader_site_type(res,site_table);
         });
@@ -3161,8 +3161,9 @@ var site = {
                         return {
                             type:'link',
                             title:'Database not installed, click Install',
+                            name: 'installed_database',
                             event:function(ev){
-                                bt.soft.install('pureftpd');
+                                bt.soft.install('mysql');
                             }
                         }
                     }()),{
@@ -6588,14 +6589,28 @@ var site = {
             title: "Access log",
             on: true,
             callback:function(robj){
-              var shellCopy = shell + (serverType === 'nginx'?'.':serverType === 'apache'?'-access_':'_ols.access_') + 'log';
-              bt_tools.command_line_output({ el:'#webedit-con .tab-con', shell:shellCopy,area:['100%','580px']})
+                bt.site.get_site_logs(web.name, function (rdata) {
+                    var _logs_info = $('<div></div>').text(rdata.msg)
+                    var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '590px', value: _logs_info.html(), width: '100%', type: 'textarea' }] },
+                        _form_data = bt.render_form_line(logs);
+                    robj.append(_form_data.html);
+                    bt.render_clicks(_form_data.clicks);
+                    $('textarea[name="site_logs"]').attr('readonly', true)
+                    $('textarea[name="site_logs"]').scrollTop(100000000000)
+                })
             }
           },{
             title: "Error log",
             callback:function(robj){
-                var shellCopy = shell + (serverType === 'nginx'?'.error.':serverType === 'apache'?'-error_':'_ols.error_') + 'log';
-                bt_tools.command_line_output({ el:'#webedit-con .tab-con', shell:shellCopy,area:['100%','580px']})
+                bt.site.get_site_error_logs(web.name, function (rdata) {
+                    var _logs_info = $('<div></div>').text(rdata.msg)
+                    var logs = { class: 'bt-logs', items: [{ name: 'site_logs', height: '590px', value: _logs_info.html(), width: '100%', type: 'textarea' }] },
+                        _form_data = bt.render_form_line(logs);
+                    robj.append(_form_data.html);
+                    bt.render_clicks(_form_data.clicks);
+                    $('textarea[name="site_logs"]').attr('readonly', true)
+                    $('textarea[name="site_logs"]').scrollTop(100000000000)
+                })
             }
           },{
             title:"Log Security Analysis",
@@ -6733,7 +6748,7 @@ var site = {
                     var loadTGD = bt.load('Getting log details data, please wait...');
                     $.post('/ajax?action=get_detailed&path=/www/wwwlogs/' + pathFile+'&type='+name+'', function (logs) {
                       loadTGD.close();
-                      $('#analysis_pre').html((name == 'ip' || name == 'url'?'&nbsp;&nbsp;[Access Times]&nbsp;&nbsp;['+name+']</br>':'')+logs)
+                      $('#analysis_pre').text((name == 'ip' || name == 'url'?'&nbsp;&nbsp;[Access Times]&nbsp;&nbsp;['+name+']</br>':'')+logs)
                     })
                   }
                 })

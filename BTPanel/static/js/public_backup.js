@@ -1754,14 +1754,11 @@ bt.index = {
 					icon: 1
 				});
 				setTimeout(function() {
-					task()
-				}, 1000)
-            });
-
-            //InstallTips();
-            fly("onekey")
-        })
-    }
+					task();
+				}, 1000);
+      });
+    });
+  }
 }
 
 bt.weixin = {
