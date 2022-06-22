@@ -49,7 +49,7 @@ except:
 try:
     import OpenSSL
 except:
-    os.system('pip install pyopenssl')
+    os.system('btpip install pyOpenSSL')
     import OpenSSL
 import random
 import datetime

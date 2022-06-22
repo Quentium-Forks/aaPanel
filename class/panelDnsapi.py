@@ -39,7 +39,7 @@ except:
 try:
     import OpenSSL
 except:
-    public.ExecShell('pip install pyopenssl')
+    public.ExecShell('btpip install pyOpenSSL')
     import OpenSSL
 import random
 import datetime

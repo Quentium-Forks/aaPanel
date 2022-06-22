@@ -461,7 +461,7 @@ SetLink
         try:
             if not password: return public.returnMsg(False,'MYSQL_ROOT_PASSWD_EMTPY_ERR')
             rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
-            if not re.match(rep, password): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
+            if not re.match(rep, password): return public.returnMsg(False, 'Database password cannot contain special characters!')
             mysql_root = public.M('config').where("id=?",(1,)).getField('mysql_root')
             #修改MYSQL
             mysql_obj = panelMysql.panelMysql()
@@ -511,7 +511,7 @@ SetLink
         name = public.M('databases').where('id=?',(id,)).getField('name')
 
         rep = "^[\w@\.\?\-\_\>\<\~\!\#\$\%\^\&\*\(\)]+$"
-        if  not re.match(rep, newpassword): return public.returnMsg(False, 'DATABASE_NAME_ERR_T')
+        if  not re.match(rep, newpassword): return public.returnMsg(False, 'Database password cannot contain special characters!')
         #修改MYSQL
         mysql_obj = panelMysql.panelMysql()
         m_version = public.readFile(public.GetConfigValue('setup_path') + '/mysql/version.pl')

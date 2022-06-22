@@ -393,7 +393,7 @@ def GetConfigValue(key):
     '''
     config = GetConfig()
     if not key in config.keys():
-        if key == 'download': return 'https://node.aapanel.com'
+        if key == 'download': return 'http://node.aapanel.com'
         return None
     return config[key]
 
@@ -528,7 +528,7 @@ def ExecShell(cmdstring, timeout=None, shell=True,cwd=None,env=None,user = None)
         if timeout:
             s = 0
             d = 0.01
-            while sub.poll() is None:
+            while sub.poll() == None:
                 time.sleep(d)
                 s += d
                 if s >= timeout:
@@ -550,7 +550,9 @@ def ExecShell(cmdstring, timeout=None, shell=True,cwd=None,env=None,user = None)
         #编码修正
         if type(a) == bytes: a = a.decode('utf-8')
         if type(e) == bytes: e = e.decode('utf-8')
-    except:pass
+    except:
+        a = str(a)
+        e = str(e)
 
     return a,e
 
@@ -563,9 +565,9 @@ def GetLocalIp():
             url = 'http://pv.sohu.com/cityjson?ie=utf-8'
             m_str = HttpGet(url)
             if isinstance(m_str,bytes):
-                ipaddress = re.search('\d+.\d+.\d+.\d+', m_str.decode('utf-8')).group(0)
+                ipaddress = re.search(r"^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}$", m_str.decode('utf-8')).group(0)
             else:
-                ipaddress = re.search('\d+.\d+.\d+.\d+', m_str).group(0)
+                ipaddress = re.search(r"^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}$", m_str).group(0)
             WriteFile(filename,ipaddress)
         c_ip = check_ip(ipaddress)
         if not c_ip: return GetHost()
@@ -578,6 +580,17 @@ def GetLocalIp():
             return GetHost()
 
 def is_ipv4(ip):
+    '''
+        @name 是否是IPV4地址
+        @author hwliang
+        @param ip<string> IP地址
+        @return True/False
+    '''
+    #验证基本格式
+    if not re.match(r"^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}$", ip):
+        return False
+
+    # 验证每个段是否在合理范围
     try:
         socket.inet_pton(socket.AF_INET, ip)
     except AttributeError:
@@ -585,13 +598,23 @@ def is_ipv4(ip):
             socket.inet_aton(ip)
         except socket.error:
             return False
-        return ip.count('.') == 3
     except socket.error:
         return False
     return True
 
 
 def is_ipv6(ip):
+    '''
+        @name 是否为IPv6地址
+        @author hwliang
+        @param ip<string> 地址
+        @return True/False
+    '''
+    # 验证基本格式
+    if not re.match(r"^[\w:]$", ip):
+        return False
+
+    # 验证IPv6地址
     try:
         socket.inet_pton(socket.AF_INET6, ip)
     except socket.error:
@@ -605,9 +628,14 @@ def check_ip(ip):
 def GetHost(port = False):
     from flask import request
     host_tmp = request.headers.get('host')
+
+    # 验证基本格式
+    if not re.match("^[\w\.\-]+$", host_tmp):
+        host_tmp = ''
+
     if not host_tmp:
         if request.url_root:
-            tmp = re.findall(r"(https|http)://([\[\]\w:\.-]+)",request.url_root)
+            tmp = re.findall(r"(https|http)://([\w:\.-]+)",request.url_root)
             if tmp: host_tmp = tmp[0][1]
     if not host_tmp:
         host_tmp = GetLocalIp() + ':' + readFile('data/port.pl').strip()
@@ -617,20 +645,13 @@ def GetHost(port = False):
         host_tmp = "127.0.0.1:7800"
     h = host_tmp.split(':')
     if port: return h[-1]
-    if len(h) > 2:
-        h = ":".join(h[:-1])
-        return h
-    return h[0]
-
-
-
+    return ':'.join(h[0:-1])
 
 def GetClientIp():
     from flask import request
-    ipaddr =  request.remote_addr.replace('::ffff:','')
+    ipaddr = request.remote_addr.replace('::ffff:','')
     if not check_ip(ipaddr): return 'Unknown IP address'
     return ipaddr
-
 
 def get_client_ip():
     return GetClientIp()
@@ -653,7 +674,7 @@ def get_timeout(url,timeout=3):
     except: return 0,False
 
 def get_url(timeout = 0.5):
-    return 'https://node.aapanel.com'
+    return 'http://node.aapanel.com'
 
     import json
     try:
@@ -727,7 +748,7 @@ def GetNumLines(path,num,p=1):
     pyVersion = sys.version_info[0]
     max_len = 1024*128
     try:
-        import cgi
+        from cgi import html
         if not os.path.exists(path): return ""
         start_line = (p - 1) * num
         count = start_line + num
@@ -752,7 +773,7 @@ def GetNumLines(path,num,p=1):
                         if sp_len > 0:
                             line = line[sp_len:]
                         try:
-                            data.insert(0,cgi.escape(line))
+                            data.insert(0,html.escape(line))
                         except: pass
                     buf = buf[:newline_pos]
                     n += 1
@@ -971,7 +992,7 @@ REQUEST_FORM: {request_form}
     request_date = getDate(),
     remote_addr = GetClientIp(),
     method = request.method,
-    full_path = request.full_path,
+    full_path = url_encode(request.full_path),
     request_form = request.form.to_dict(),
     user_agent = request.headers.get('User-Agent'),
     panel_version = version(),
@@ -1239,22 +1260,100 @@ def GetSSHPort():
     except:
         return 22
 
+def get_sshd_port():
+    '''
+        @name 获取sshd端口
+        @author hwliang
+        @return int
+    '''
+    # 先尝试从进程中获取当前实际的监听端口
+    sshd_port = 22
+    is_ok = 0
+    pid = get_sshd_pid_of_pidfile()
+    if not pid: pid = get_sshd_pid_of_binfile()
+    if pid:
+        try:
+            import psutil
+            p = psutil.Process(pid)
+            for conn in p.connections():
+                if conn.status == 'LISTEN':
+                    sshd_port = conn.laddr[1]
+                    is_ok = 1
+                    break
+        except:pass
+
+    # 如果从进程获取失败，则尝试从配置文件获取
+    if not is_ok: sshd_port = GetSSHPort()
+
+    return sshd_port
+
+
+
+def get_sshd_pid_of_pidfile():
+    '''
+        @name 通过PID文件获取SSH状态
+        @author hwliang
+        @return int 0:关闭 pid:开启
+    '''
+    sshd_pid_list =['/run/sshd.pid','/var/run/sshd.pid','/run/ssh.pid','/var/run/ssh.pid']
+    sshd_pid_file = None
+    for spid_file in sshd_pid_list:
+        if os.path.exists(spid_file):
+            sshd_pid_file = spid_file
+            break
+
+    if sshd_pid_file:
+        sshd_pid = readFile(sshd_pid_file)
+        if not sshd_pid: return 0
+        try:
+            sshd_pid = int(sshd_pid)
+            if not sshd_pid: return 0
+            if pid_exists(sshd_pid):
+                return sshd_pid
+        except:
+            pass
+    return 0
+
+def get_sshd_pid_of_binfile():
+    '''
+        @name 通过执行文件获取SSH状态
+        @author hwliang
+        @return int 进程pid
+    '''
+    sshd_bin_list = ['/usr/sbin/sshd', '/usr/bin/sshd','/usr/sbin/ssh','/usr/bin/ssh']
+    sshd_bin = None
+    pid = 0
+    for sbin in sshd_bin_list:
+        if os.path.exists(sbin):
+            sshd_bin = sbin
+            break
+
+    if sshd_bin:
+        pid = get_process_pid(sshd_bin.split('/')[-1],sshd_bin,'-D')
+
+    return pid
+
 def GetSSHStatus():
-    if os.path.exists('/usr/bin/apt-get'):
-        status = ExecShell("service ssh status | grep -P '(dead|stop)'")
-    else:
-        import system
-        panelsys = system.system()
-        version = panelsys.GetSystemVersion()
-        if version.find(' 7.') != -1:
-            status = ExecShell("systemctl status sshd.service | grep 'dead'")
-        else:
-            status = ExecShell("/etc/init.d/sshd status | grep -e 'stopped' -e '已停'")
-    if len(status[0]) > 3:
-        status = False
-    else:
-        status = True
-    return status
+    '''
+        @name 获取SSH状态
+        @author hwliang
+        @return bool
+    '''
+    if get_sshd_pid_of_pidfile():
+        return True
+    elif get_sshd_pid_of_binfile():
+        return True
+    return False
+
+
+def get_sshd_status():
+    '''
+        @name 获取SSH状态
+        @author hwliang
+        @return bool
+    '''
+    return GetSSHStatus()
+
 
 #检查端口是否合法
 def CheckPort(port,other=None):
@@ -1287,7 +1386,8 @@ def load_module(pluginCode):
     from BTPanel import cache
     p_tk = 'data/%s' % md5(pluginCode + get_uuid())
     pluginInfo = None
-    if cache: pluginInfo = cache.get(pluginCode + 'code')
+    skey = md5(pluginCode+'code')
+    if cache: pluginInfo = cache.get(skey)
     if not pluginInfo:
         import panelAuth
         pdata = panelAuth.panelAuth().create_serverid(None)
@@ -1300,9 +1400,9 @@ def load_module(pluginCode):
             if not os.path.exists(p_tk): return False
             pluginInfo = json.loads(ReadFile(p_tk))
         if pluginInfo['status'] == False: return False
-        WriteFile(p_tk, json.dumps(pluginInfo))
-        os.chmod(p_tk, 384)
-        if cache: cache.set(pluginCode + 'code', pluginInfo, 1800)
+        WriteFile(p_tk,json.dumps(pluginInfo))
+        os.chmod(p_tk,384)
+        if cache: cache.set(skey,pluginInfo,1800)
 
     mod = sys.modules.setdefault(pluginCode, new_module(pluginCode))
     code = compile(pluginInfo['msg'].encode('utf-8'), pluginCode, 'exec')
@@ -1407,6 +1507,34 @@ def process_exists(pname,exe = None,cmdline = None):
         return False
     except: return True
 
+def get_process_pid(pname,exe = None,cmdline = None):
+    '''
+        @name 通过进程名获取进程PID
+        @author hwliang
+        @param pname 进程名
+        @param exe 进程路径
+        @param cmdline 进程任意命令行参数
+        @return  int 返回进程PID
+    '''
+    import psutil
+    pids = psutil.pids()
+    for pid in pids:
+        try:
+            p = psutil.Process(pid)
+            if p.name() == pname:
+                if not exe and not cmdline:
+                    return pid
+                else:
+                    if exe:
+                        if p.exe() != exe:
+                            if not cmdline:
+                                return pid
+                            return 0
+                    if cmdline:
+                        if cmdline in  p.cmdline(): return pid
+        except:pass
+    return 0
+
 #pid是否存在
 def pid_exists(pid):
     if os.path.exists('/proc/{}/exe'.format(pid)):
@@ -1446,23 +1574,50 @@ def to_ord(string):
 
 #xss 防御
 def xssencode(text):
-    import cgi
-    list = ['`', '~', '&', '#', '/', '*', '$', '@', '<', '>', '\"', '\'', ';', '%', ',', '.', '\\u']
-    ret = []
-    for i in text:
-        if i in list:
-            i = ''
-        ret.append(i)
-    str_convert = ''.join(ret)
-    text2 = cgi.escape(str_convert, quote=True)
-    return text2
+    try:
+        from cgi import html
+        list=['`','~','&','#','/','*','$','@','<','>','\"','\'',';','%',',','.','\\u']
+        ret=[]
+        for i in text:
+            if i in list:
+                i=''
+            ret.append(i)
+        str_convert = ''.join(ret)
+        text2=html.escape(str_convert, quote=True)
+        return text2
+    except:
+        return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+#xss 防御
+def xsssec(text):
+    return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+#xss version
+def xss_version(text):
+    try:
+        if not text or not isinstance(text,str): return text
+        text = text.strip()
+        list=['`','~','&','#','/','*','$','@','<','>','\"','\'',';','%',',','\\u']
+        ret=[]
+        for i in text:
+            if i in list:
+                i=''
+            ret.append(i)
+        str_convert = ''.join(ret)
+        return str_convert
+    except:
+        return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
 
 #xss 防御
 def xssencode2(text):
-    import cgi
-    text2 = cgi.escape(text, quote=True)
-    return text2
-
+    try:
+        from cgi import html
+        text2=html.escape(text, quote=True)
+        return text2
+    except:
+        return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
 # 取缓存
 def cache_get(key):
     from BTPanel import cache
@@ -1500,9 +1655,9 @@ def sess_remove(key):
 def get_page(count, p=1, rows=12, callback='', result='1,2,3,4,5,8'):
     import page
     from BTPanel import request
-    page = page.Page();
-    info = {'count': count, 'row': rows, 'p': p, 'return_js': callback, 'uri': request.full_path}
-    data = {'page': page.GetPage(info, result), 'shift': str(page.SHIFT), 'row': str(page.ROW)}
+    page = page.Page()
+    info = { 'count':count,  'row':rows,  'p':p, 'return_js':callback ,'uri':url_encode(request.full_path)}
+    data = { 'page': page.GetPage(info,result),  'shift': str(page.SHIFT), 'row': str(page.ROW) }
     return data
 
 # 取面板版本
@@ -1544,7 +1699,7 @@ def get_os_version():
         version = "{} {}(Py{}.{}.{})".format(version,os.uname().machine,v_info.major,v_info.minor,v_info.micro)
     except:
         version = "{} (Py{}.{}.{})".format(version,v_info.major,v_info.minor,v_info.micro)
-    return version
+    return xsssec(version)
 
 #取文件或目录大小
 def get_path_size(path, exclude=[]):
@@ -1725,7 +1880,7 @@ def get_database_codestr(codeing):
     return wheres[codeing]
 
 
-def get_database_size():
+def get_database_size(name=None):
     """
     @获取数据库大小
     """
@@ -1881,12 +2036,12 @@ def check_ip_panel():
     for limit_ip in iplong_list:
         if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
             return False
-    return 404
-    # errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-    # try:
-    #     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-    # except IndexError:pass
-    # return errorStr
+
+    errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
+    try:
+        errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
+    except IndexError:pass
+    return error_not_login(errorStr,True)
 
 #检查面板域名
 def check_domain_panel():
@@ -1896,12 +2051,11 @@ def check_domain_panel():
         client_ip = GetClientIp()
         if client_ip in ['127.0.0.1','localhost','::1']: return False
         if tmp.strip().lower() != domain.strip().lower():
-            return 404
-            # errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-            # try:
-            #     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-            # except:pass
-            # return errorStr
+            errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
+            try:
+                errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
+            except:pass
+            return error_not_login(errorStr,True)
     return False
 
 #是否离线模式
@@ -2360,7 +2514,7 @@ def set_cdn_url(cdn_url):
     return True
 
 def get_python_bin():
-    bin_file = '{}/pyenv/bin/python'.format(get_panel_path())
+    bin_file = '{}/pyenv/bin/python3'.format(get_panel_path())
     if os.path.exists(bin_file):
         return bin_file
     return '/usr/bin/python'
@@ -2956,16 +3110,32 @@ def arequests(method,url,data=None,timeout=3):
     threading.Thread(target=method, args=(url,data,timeout)).start()
 
 #取通用对象
+re_key_match = re.compile(r'^[\w\s\[\]\-\.]+$')
+re_key_match2 = re.compile(r'^\.?__[\w\s[\]\-]+__\.?$')
+key_filter_list = ['get','set','get_items','exists','__contains__','__setitem__','__getitem__','__delitem__','__delattr__','__setattr__','__getattr__','__class__']
 class dict_obj:
     def __contains__(self, key):
         return getattr(self,key,None)
-    def __setitem__(self, key, value): setattr(self,key,value)
+    def __setitem__(self, key, value):
+        if key in key_filter_list:
+            raise PanelError("wrong field name")
+        if not re_key_match.match(key) or re_key_match2.match(key):
+            raise PanelError("wrong field name")
+        setattr(self,key,value)
     def __getitem__(self, key): return getattr(self,key,None)
     def __delitem__(self,key): delattr(self,key)
     def __delattr__(self, key): delattr(self,key)
     def get_items(self): return self
     def exists(self,keys):
         return exists_args(keys,self)
+    def set(self,key,value):
+        if not isinstance(value,str) or not isinstance(key,str): return False
+        if key in key_filter_list:
+            raise PanelError("wrong field name")
+        if not re_key_match.match(key) or re_key_match2.match(key):
+            raise PanelError("wrong field name")
+        return setattr(self,key,value)
+
     def get(self,key,default='',format='',limit = []):
         '''
             @name 获取指定参数
@@ -3014,10 +3184,10 @@ class dict_obj:
                 if not re.match(regex,result):
                     raise ValueError('Parameters: {}, the correct URL format is required'.format(key))
             elif format in ['ip','ipaddr','i','ipv4','ipv6']:
-                if format is 'ipv4':
+                if format == 'ipv4':
                     if not is_ipv4(result):
                         raise ValueError('Parameters: {}, the correct ipv4 address is required'.format(key))
-                elif format is 'ipv6':
+                elif format == 'ipv6':
                     if not is_ipv6(result):
                         raise ValueError('Parameters: {}, the correct ipv6 address is required'.format(key))
                 else:
@@ -3042,10 +3212,10 @@ class dict_obj:
                 length = int(format[1:].strip())
                 result_len = len(result)
                 error_obj = ValueError("Parameters: {}, the required length is {}".format(key,format))
-                if operator is '=':
+                if operator == '=':
                     if result_len != length:
                         raise error_obj
-                elif operator is '>':
+                elif operator == '>':
                     if result_len < length:
                         raise error_obj
                 else:
@@ -3154,7 +3324,7 @@ def check_app(check='app'):
         except:
             return False
     elif check=='app_bind':
-        if not cache_get('get_bind_status'):return False
+        if not cache_get(Md5(os.uname().version)):return False
         if not os.path.exists("/www/server/panel/plugin/btapp/btapp_main.py"):return False
         if not os.path.exists(path + 'config/api.json'):return False
         btapp_info = json.loads(readFile(path +'config/api.json'))
@@ -3166,7 +3336,6 @@ def check_app(check='app'):
         app_info = json.loads(readFile(path+'plugin/app/user.json'))
         if not app_info: return False
         return True
-
 
 #宝塔邮件报警
 def send_mail(title,body,is_logs=False,is_type="aapanel login reminder"):
@@ -3371,7 +3540,7 @@ class PanelError(Exception):
         self.value = value
 
     def __str__(self):
-        return ("面板运行时发生错误: {}".format(repr(self.value)))
+        return ("An error occurred while the panel was running: {}".format(str(self.value)))
 
 def get_sysbit():
     '''
@@ -3470,14 +3639,14 @@ def read_config(config_name,ext_name = 'json'):
     '''
     config_file = "{}/config/{}.{}".format(get_panel_path(),config_name,ext_name)
     if not os.path.exists(config_file):
-        raise PanelError('指定配置文件{} 不存在'.format(config_name))
+        raise PanelError('The specified configuration file {} does not exist'.format(config_name))
 
     config_str = readFile(config_file)
     if ext_name == 'json':
         try:
             config_body = json.loads(config_str)
         except Exception as ex:
-            raise PanelError('配置文件不是标准的可解析JSON内容!\n{}'.format(ex))
+            raise PanelError('Configuration files are not standard parsable JSON content!\n{}'.format(ex))
         return config_body
     return config_str
 
@@ -3496,7 +3665,7 @@ def save_config(config_name,config_body,ext_name = 'json'):
         try:
             config_body = json.dumps(config_body)
         except Exception as ex:
-            raise PanelError('配置内容无法被转换为json格式!\n{}'.format(ex))
+            raise PanelError('The configuration content cannot be converted to json format!\n{}'.format(ex))
 
     return writeFile(config_file,config_body)
 
@@ -3539,10 +3708,10 @@ def return_data(status,data = {},status_code=None,error_msg = None):
         @return dict
 
     '''
-    if status_code is None:
+    if status_code == None:
         status_code = 1 if status else 0
-    if error_msg is None:
-        error_msg = '' if status else '未知错误'
+    if error_msg == None:
+        error_msg = '' if status else 'unknown error'
 
     result = {
                 'status':status,
@@ -3721,7 +3890,7 @@ def get_session_timeout():
     from BTPanel import cache
     skey = 'session_timeout'
     session_timeout = cache.get(skey)
-    if not session_timeout is None: return session_timeout
+    if not session_timeout == None: return session_timeout
 
     sess_out_path = '{}/data/session_timeout.pl'.format(get_panel_path())
     session_timeout = 86400
@@ -3744,7 +3913,7 @@ def get_login_token_auth():
     from BTPanel import cache
     skey = 'login_token'
     login_token = cache.get(skey)
-    if not login_token is None: return login_token
+    if not login_token == None: return login_token
 
     login_token_file = '{}/data/login_token.pl'.format(get_panel_path())
     login_token = '1234567890'
@@ -3827,7 +3996,7 @@ def is_apache_nginx():
     setup_path = get_setup_path()
     return os.path.exists(setup_path + '/apache') or os.path.exists(setup_path + '/nginx')
 
-def error_not_login(e = None):
+def error_not_login(e = None,_src = None):
     '''
         @name 未登录时且未输入正确的安全入口时的响应
         @author hwliang<2021-12-16>
@@ -3846,7 +4015,12 @@ def error_not_login(e = None):
 
     if e in ['/login']:
         return redirect(e)
-    return Response(status=int(404))
+
+    if _src:
+        return e
+    else:
+        return Response(status=int(404))
+        return render_template('autherr.html')
 
 def error_403(e):
     from BTPanel import Response,session
@@ -3877,6 +4051,28 @@ def error_404(e):
         "Content-Type": "text/html"
     }
     return Response(errorStr, status=404, headers=headers)
+
+
+def get_password_config():
+    '''
+        @name 获取密码安全配置
+        @author hwliang<2021-10-18>
+        @return int
+    '''
+    import config
+    return config.config().get_password_config(None)
+
+
+def password_expire_check():
+    '''
+        @name 密码过期检查
+        @author hwliang<2021-10-18>
+        @return bool
+    '''
+    p_config = get_password_config()
+    if p_config['expire'] == 0: return True
+    if time.time() > p_config['expire_time']: return False
+    return True
 
 def stop_status_mvore():
     flag=False
@@ -3919,6 +4115,214 @@ def get_php_versions(reverse=False):
 
     return sorted(version_list,reverse=reverse)
 
+def get_full_session_file():
+    '''
+        @name 获取临时SESSION文件
+        @author hwliang<2021-12-28>
+        @return string
+    '''
+    from BTPanel import app
+    full_session_key = app.config['SESSION_KEY_PREFIX'] + get_session_id()
+    sess_path = get_panel_path() + '/data/session/'
+    return sess_path + '/' + md5(full_session_key)
+
+
+
+def install_mysql_client():
+    '''
+        @name 安装mysql客户端
+        @author hwliang<2022-01-14>
+        @return void
+    '''
+    if os.path.exists('/usr/bin/yum'):
+        os.system("yum install mariadb -y")
+        if not os.path.exists('/usr/bin/mysql'):
+            os.system("yum reinstall mariadb -y")
+    elif os.path.exists('/usr/bin/apt-get'):
+        os.system('apt-get install mariadb-client -y')
+        if not os.path.exists('/usr/bin/mysql'):
+            os.system('apt-get reinstall mariadb-client* -y')
+
+def get_mysqldump_bin():
+    '''
+        @name 获取mysqldump路径
+        @author hwliang<2022-01-14>
+        @return string
+    '''
+    bin_files = [
+        '{}/mysql/bin/mysqldump'.format(get_setup_path()),
+        '/usr/bin/mysqldump',
+        '/usr/local/bin/mysqldump',
+        '/usr/sbin/mysqldump',
+        '/usr/local/sbin/mysqldump'
+    ]
+
+    for bin_file in bin_files:
+        if os.path.exists(bin_file):
+            return bin_file
+
+    install_mysql_client()
+
+    for bin_file in bin_files:
+        if os.path.exists(bin_file):
+            return bin_file
+
+    return bin_files[0]
+
+def get_mysql_bin():
+    '''
+        @name 获取mysql路径
+        @author hwliang<2022-01-14>
+        @return string
+    '''
+    bin_files = [
+        '{}/mysql/bin/mysql'.format(get_setup_path()),
+        '/usr/bin/mysql',
+        '/usr/local/bin/mysql',
+        '/usr/sbin/mysql',
+        '/usr/local/sbin/mysql'
+    ]
+
+    for bin_file in bin_files:
+        if os.path.exists(bin_file):
+            return bin_file
+
+    install_mysql_client()
+
+    for bin_file in bin_files:
+        if os.path.exists(bin_file):
+            return bin_file
+    return bin_files[0]
+
+
+def error_conn_cloud(text):
+    '''
+        @name 连接云端失败
+        @author hwliang<2021-12-18>
+        @return void
+    '''
+    code_msg = ''
+    if text.find("502 Bad Gateway") != -1:
+        code_msg = '502 Bad Gateway'
+    if text.find("504 Bad Gateway") != -1:
+        code_msg = '504 Bad Gateway'
+    elif text.find("Connection refused") != -1:
+        code_msg = 'Connection refused'
+    elif text.find("Connection timed out") != -1:
+        code_msg = 'Connection timed out'
+    elif text.find("Connection reset by peer") != -1:
+        code_msg = 'Connection reset by peer'
+    elif text.find("Name or service not known") != -1:
+        code_msg = 'Name or service not known'
+    elif text.find("No route to host") != -1:
+        code_msg = 'No route to host'
+    elif text.find("No such file or directory") != -1:
+        code_msg = 'No such file or directory'
+    elif text.find("404 Not Found") != -1:
+        code_msg = '404 Not Found'
+    elif text.find("403 Forbidden") != -1:
+        code_msg = '403 Forbidden'
+    elif text.find("401 Unauthorized") != -1:
+        code_msg = '401 Unauthorized'
+    elif text.find("400 Bad Request") != -1:
+        code_msg = '400 Bad Request'
+    elif text.find("Remote end closed connection without response") != -1:
+        code_msg = 'Remote end closed connection'
+    err_template_file = '{}/BTPanel/templates/default/error_connect.html'.format(get_panel_path())
+    msg = readFile(err_template_file)
+    msg = msg.format(code=code_msg)
+    return PanelError(msg)
+
+def get_mountpoint_list():
+    '''
+        @name 获取挂载点列表
+        @author hwliang<2021-12-18>
+        @return list
+    '''
+    import psutil
+    mount_list = []
+    for mount in psutil.disk_partitions():
+        mountpoint = mount.mountpoint if mount.mountpoint[-1] == '/' else mount.mountpoint + '/'
+        mount_list.append(mountpoint)
+    # 根据挂载点字符长度排序
+    mount_list.sort(key=lambda i: len(i), reverse=True)
+    return mount_list
+
+
+def get_path_in_mountpoint(path):
+    '''
+        @name 获取文件或目录目录所在挂载点
+        @author hwliang<2022-03-30>
+        @param path<string> 文件或目录路径
+        @return string
+    '''
+    # 判断是否是绝对路径
+    if path.find('./') != -1 or path[0] != '/': raise PanelError("不能使用相对路径")
+    if not path: raise PanelError("文件或目录路径不能为空")
+
+    # 在目录尾加/
+    if os.path.isdir(path):
+        path = path if path[-1] == '/' else path + '/'
+
+    # 匹配挂载点
+    mount_list = get_mountpoint_list()
+    for mountpoint in mount_list:
+        if path.startswith(mountpoint):
+            return mountpoint
+
+    # 没有匹配到挂载点
+    return '/'
+
+def get_recycle_bin_path(path):
+    '''
+        @name 获取指定文件或目录的回收站路径
+        @author hwliang<2022-03-30>
+        @param path<string> 文件或目录路径
+        @return string
+    '''
+    mountpoint = get_path_in_mountpoint(path)
+    recycle_bin_path = '{}/.Recycle_bin/'.format(mountpoint)
+    try:
+        if not os.path.exists(recycle_bin_path):
+            os.mkdir(recycle_bin_path, 384)
+    except:
+        return '/www/.Recycle_bin/'
+    return recycle_bin_path
+
+
+def get_recycle_bin_list():
+    '''
+        @name 获取回收站列表
+        @author hwliang<2022-03-30>
+        @return list
+    '''
+    # 旧的回收站重命名为.Recycle_bin
+    default_path = '/www/.Recycle_bin'
+    default_path_src = '/www/Recycle_bin'
+    if os.path.exists(default_path_src) and not os.path.exists(default_path):
+        os.rename(default_path_src, default_path)
+
+    if not os.path.exists(default_path):
+        os.makedirs(default_path,384)
+
+    # 获取回收站列表
+    recycle_bin_list = []
+    for mountpoint in get_mountpoint_list():
+        recycle_bin_path = '{}.Recycle_bin/'.format(mountpoint)
+        try:
+            if not os.path.exists(recycle_bin_path):
+                os.mkdir(recycle_bin_path, 384)
+            recycle_bin_list.append(recycle_bin_path)
+        except:
+            continue
+
+    # 包含默认回收站路径？
+    if not default_path + '/' in recycle_bin_list:
+        recycle_bin_list.append(default_path + '/')
+
+    return recycle_bin_list
+
+
 def check_password(password):
     """
     密码强度：
@@ -3951,3 +4355,32 @@ def check_password(password):
         if p_len >= 11:
             l = 1
     return l
+
+def set_module_logs(mod_name, fun_name, count=1):
+    """
+    @模块使用次数
+    @mod_name 模块名称
+    @fun_name 函数名
+    """
+    import datetime
+    data = {}
+    path = '{}/data/mod_log.json'.format(get_panel_path())
+    if os.path.exists(path):
+        try:
+            data = json.loads(readFile(path))
+        except:
+            pass
+
+    key = datetime.datetime.now().strftime("%Y-%m-%d")
+    if not key in data: data[key] = {}
+
+    if not mod_name in data[key]:
+        data[key][mod_name] = {}
+
+    if not fun_name in data[key][mod_name]:
+        data[key][mod_name][fun_name] = 0
+
+    data[key][mod_name][fun_name] += count
+
+    writeFile(path, json.dumps(data))
+    return True

@@ -76,8 +76,7 @@ class Page():
         #本页显示开始与结束行
         pages['7'] = "<span class='Pline'>" + self.__FO + str(self.__START_NUM) + "-" + str(self.__END_NUM) + self.__LINE + "</span>"
         #行数
-        pages['8'] = "<span class='Pcount'>" + self.__COUNT_START + str(self.__COUNT_ROW) + self.__COUNT_END + "</span>"
-        
+        pages['8'] = "<span class='Pcount'>" + self.__COUNT_START +' '+ str(self.__COUNT_ROW) + self.__COUNT_END + "</span>"
         #构造返回数据
         retuls = '<div>';
         for value in keys:

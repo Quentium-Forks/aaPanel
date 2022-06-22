@@ -1571,11 +1571,11 @@ listener Default%s{
         try:
             import requests
         except:
-            public.ExecShell('pip install requests')
+            public.ExecShell('btpip install requests')
         try:
             import OpenSSL
         except:
-            public.ExecShell('pip install pyopenssl')
+            public.ExecShell('btpip install pyOpenSSL')
 
     # 判断DNS-API是否设置
     def Check_DnsApi(self, dnsapi):
@@ -2119,7 +2119,7 @@ listener SSL443 {
         file = "/www/server/panel/vhost/openlitespeed/listen/443.conf"
         conf = public.readFile(file)
         if conf:
-            rep = '\n\s*map\s*{}'.format(sitename)
+            rep = '\n\s*map\s*{}.*'.format(sitename)
             conf = re.sub(rep, '', conf)
             if not "map " in conf:
                 public.ExecShell('rm -f {}*'.format(file))
@@ -4799,7 +4799,7 @@ location ^~ %s
     # 取默认站点
     def GetDefaultSite(self, get):
         data = {}
-        data['sites'] = public.M('sites').where('project_type=?','PHP').field('name').order('id desc').select()
+        data['sites'] = public.M('sites').where('project_type=? OR project_type=?',('PHP','WP')).field('name').order('id desc').select()
         data['defaultSite'] = public.readFile('data/defaultSite.pl')
         return data
 
@@ -5061,7 +5061,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         type_sql = public.M('site_types')
         if type_sql.count() >= 10: return public.returnMsg(False, 'SORT_MOST')
         if type_sql.where('name=?', (get.name,)).count() > 0: return public.returnMsg(False, "SORT_NAME_EXIST")
-        type_sql.add("name", (get.name,))
+        type_sql.add("name",(public.xssencode2(get.name),))
         return public.returnMsg(True, 'ADD_SUCCESS')
 
     # 删除网站分类

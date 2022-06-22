@@ -31,12 +31,12 @@ import public
 try:
     import OpenSSL
 except:
-    public.ExecShell("pip install -I pyopenssl")
+    public.ExecShell("btpip install -I pyOpenSSL")
     import OpenSSL
 try:
     import dns.resolver
 except:
-    public.ExecShell("pip install dnspython")
+    public.ExecShell("btpip install dnspython")
     import dns.resolver
 
 class acme_v2:
@@ -1267,6 +1267,8 @@ fullchain.pem       Paste into certificate input box
             index = None
             if 'index' in args:
                 index = args['index']
+            if 'auto_wildcard' in args:
+                self._auto_wildcard = 1
             if not index:  # 判断是否只想验证域名
                 write_log(public.getMsg('ACME_CREAT_ORDER'))
                 index = self.create_order(domains, auth_type, auth_to)
@@ -1423,7 +1425,7 @@ fullchain.pem       Paste into certificate input box
         for domain in json.loads(args.domains):
             if public.checkIp(domain): continue
             if domain.find('*.') >=0 and args.auth_type in ['http','tls']:
-                raise public.returnMsg(False, 'ACME_PAN_DOMAIN_ERR')
+                return public.returnMsg(False, 'ACME_PAN_DOMAIN_ERR')
         import panelSite
         s = panelSite.panelSite()
         if args.auth_type in ['http','tls']:

@@ -296,7 +296,7 @@ class data:
             if where:
                 where = "({}) AND project_type='PHP'".format(where)
             else:
-                where = "project_type='PHP' OR project_type='WP'"
+                where = "(project_type='PHP' OR project_type='WP')"
 
             if hasattr(get,'type'):
                 if get.type != '-1':

@@ -7,6 +7,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
+from base64 import b64encode
 import sys
 import os
 import public

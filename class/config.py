@@ -318,13 +318,18 @@ class config:
         isReWeb = False
         sess_out_path = 'data/session_timeout.pl'
         if 'session_timeout' in get:
-            session_timeout = int(get.session_timeout)
+            try:
+                session_timeout = int(get.session_timeout)
+            except:
+                return public.returnMsg(False,"Timeout must be an integer!")
             s_time_tmp = public.readFile(sess_out_path)
             if not s_time_tmp: s_time_tmp = '0'
             if int(s_time_tmp) != session_timeout:
-                if session_timeout < 300: return public.returnMsg(False,'NOT_LESS_THAN_TIMEOUT')
+                if session_timeout < 300 or session_timeout > 86400: return public.returnMsg(False,'The timeout time needs to be between 300-86400')
                 public.writeFile(sess_out_path,str(session_timeout))
                 isReWeb = True
+        else:
+            return public.returnMsg(False,'Timeout must be an integer!')
 
         workers_p = 'data/workers.pl'
         if 'workers' in get:
@@ -357,8 +362,8 @@ class config:
             isReWeb = True
 
         if get.webname != session['title']:
-            session['title'] = public.xssencode(get.webname)
-            public.SetConfigValue('title',public.xssencode(get.webname))
+            session['title'] = public.xssencode2(get.webname)
+            public.SetConfigValue('title',public.xssencode2(get.webname))
 
         limitip = public.readFile('data/limitip.conf')
         if get.limitip != limitip:
@@ -368,7 +373,10 @@ class config:
         public.writeFile('data/domain.conf',public.xssencode2(get.domain).strip())
         public.writeFile('data/iplist.txt',get.address)
 
-
+        import files
+        fs = files.files()
+        if not fs.CheckDir(get.backup_path): return public.returnMsg(False,'Cannot use system critical directory as default backup directory')
+        if not fs.CheckDir(get.sites_path): return public.returnMsg(False,'Cannot use system critical directory as default site directory')
         public.M('config').where("id=?",('1',)).save('backup_path,sites_path',(get.backup_path,get.sites_path))
         session['config']['backup_path'] = os.path.join('/',get.backup_path)
         session['config']['sites_path'] = os.path.join('/',get.sites_path)
@@ -783,9 +791,9 @@ class config:
                 g.rm_ssl = True
                 return public.returnMsg(True,'PANEL_SSL_CLOSE')
             else:
-                public.ExecShell('pip install cffi')
-                public.ExecShell('pip install cryptography')
-                public.ExecShell('pip install pyOpenSSL')
+                public.ExecShell('btpip install cffi')
+                public.ExecShell('btpip install cryptography')
+                public.ExecShell('btpip install pyOpenSSL')
                 try:
                     if not self.CreateSSL(): return public.returnMsg(False,'PANEL_SSL_ERR')
                     public.writeFile(sslConf,'True')
@@ -1899,3 +1907,37 @@ class config:
         if os.path.exists(self._setup_path+'/data/send_back_error.pl'):
             return public.returnMsg(True,'success')
         return public.returnMsg(False,'false')
+
+    def set_not_auth_status(self,get):
+        '''
+            @name 设置未认证时的响应状态
+            @author hwliang<2021-12-16>
+            @param status_code<int> 状态码
+            @return dict
+        '''
+        if not 'status_code' in get:
+            return public.returnMsg(False,'Parameter ERROR!')
+
+        if re.match("^\d+$", get.status_code):
+            status_code = int(get.status_code)
+            if status_code != 0:
+                if status_code < 100 or status_code > 999:
+                    return public.returnMsg(False,'Parameter ERROR!')
+        else:
+            return public.returnMsg(False,'Parameter ERROR!')
+
+        public.save_config('abort',get.status_code)
+        public.returnMsg('Panel configuration','Set the unauthorized response status to:{}'.format(get.status_code))
+        return public.returnMsg(True,'Setup successfully!')
+
+    def get_not_auth_status(self):
+        '''
+            @name 获取未认证时的响应状态
+            @author hwliang<2021-12-16>
+            @return int
+        '''
+        try:
+            status_code = int(public.read_config('abort'))
+            return status_code
+        except:
+            return 404
