@@ -20,7 +20,7 @@ class SkPort(threading.Thread):
             tmp['port'] = self.port
             tmp['process'] = public.ExecShell("lsof -i :"+str(self.port)+"|grep -v COMMAND|awk '{print $1}'")[0].split('\n')[0].strip();
             ports.append(tmp);
-        except Exception as e:
+        except Exception,e:
             #print e
             pass
         sk.close()
@@ -34,7 +34,7 @@ def main():
         t.start()
             
     
-    print(str(ports))
+    print str(ports)
      
 if __name__ == '__main__':
     main()

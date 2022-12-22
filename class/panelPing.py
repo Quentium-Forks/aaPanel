@@ -56,9 +56,9 @@ def do_one(dest_addr, timeout):
     icmp = socket.getprotobyname("icmp")
     try:
         my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-    except socket.error as error:
-        if error.errno == 1:
-            msg = os.strerror(error.errno) + (
+    except socket.error, (errno, msg):
+        if errno == 1:
+            msg = msg + (
             " - Note that ICMP messages can only be sent from processes"
             " running as root."
           )
@@ -72,10 +72,9 @@ def do_one(dest_addr, timeout):
     return delay
 
 def get_ping(timeout = 0.5):
-    dest_addr = 'google.com'
     try:
         delay = do_one(dest_addr, timeout)
-    except socket.gaierror:
+    except socket.gaierror, e:
         return -2
     
     if delay == None:
@@ -85,3 +84,4 @@ def get_ping(timeout = 0.5):
         return delay
 
 if __name__ == '__main__':
+    print verbose_ping(sys.argv[1],2)

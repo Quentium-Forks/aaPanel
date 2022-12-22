@@ -80,7 +80,8 @@ class Compress(object):
         accept_encoding = request.headers.get('Accept-Encoding', '')
         response.headers['Server'] = 'nginx'
         response.headers['Connection'] = 'keep-alive'
-
+        if not 'tmp_login' in session:
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
         if 'dologin' in g and app.config['SSL']:
             try:
                 for k,v in request.cookies.items():
@@ -109,22 +110,13 @@ class Compress(object):
                 if not session.get('login',None) or g.get('api_request',None):
                     import public
                     default_pl = "{}/default.pl".format(public.get_panel_path())
-                    admin_path = "{}/data/admin_path.pl".format(public.get_panel_path())
                     default_body = public.readFile(default_pl,'rb')
-                    admin_body = public.readFile(admin_path,'rb')
 
-                    if default_body or admin_body:
+                    if default_body:
                         if not default_body: default_body = b""
-                        if not admin_body: admin_body = b""
                         resp_body = response.get_data()
 
                         if default_body and resp_body.find(default_body.strip()) != -1:
-                            result = b'{"status":false,"msg":"Error: 403 Forbidden"}'
-                            response.set_data(result)
-                            response.headers['Content-Length'] = len(result)
-                            return response
-
-                        if admin_body and resp_body.find(admin_body.strip()) != -1:
                             result = b'{"status":false,"msg":"Error: 403 Forbidden"}'
                             response.set_data(result)
                             response.headers['Content-Length'] = len(result)

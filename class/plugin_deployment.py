@@ -12,7 +12,7 @@
 #+--------------------------------------------------------------------
 
 import public,json,os,time,sys,re
-from BTPanel import session
+from BTPanel import session,cache
 class obj: id=0
 class plugin_deployment:
     __setupPath = 'data'
@@ -21,6 +21,7 @@ class plugin_deployment:
     __tmp = '/www/server/panel/temp/'
     timeoutCount = 0
     oldTime = 0
+    _speed_key = 'dep_download_speed'
 
     #获取列表
     def GetList(self,get):

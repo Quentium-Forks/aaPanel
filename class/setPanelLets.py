@@ -209,7 +209,7 @@ class setPanelLets:
         domain = self.__check_panel_domain()
         get.domain = domain
         if not domain:
-            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Let\'s Encrypt certificate.")
+            return public.returnMsg(False, "You need to bind the domain name to the panel before you can apply for the Lets Encrypt certificate.")
         if not self.__check_host_name(domain):
             create_site = self.__create_site_of_panel_lets(get)
         domain_cert = self.__check_cert_dir(get)
@@ -220,7 +220,7 @@ class setPanelLets:
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
             # public.writeFile("/www/server/panel/data/reload.pl","1")
             self.__save_cert_source(domain,get.email)
-            return public.returnMsg(True, 'Panel lets set successfully')
+            return public.returnMsg(True, 'Setup successfully!')
         if not create_site:
             create_lets = self.__create_lets(get)
             if not create_lets['status']:
@@ -231,7 +231,7 @@ class setPanelLets:
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
                 # public.writeFile("/www/server/panel/data/reload.pl", "1")
                 self.__save_cert_source(domain, get.email)
-                return  public.returnMsg(True, 'Panel lets set successfully')
+                return  public.returnMsg(True, 'Setup successfully!')
             else:
                 return public.returnMsg(False, create_lets)
         else:

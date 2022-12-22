@@ -666,6 +666,7 @@ export PATH
         error_list = []
         for domain in domains:
             domain = domain.strip()
+            if not domain: return public.return_error('Domain name cannot be empty',data='')
             domain_arr = domain.split(':')
             if len(domain_arr) == 1: 
                 domain_arr.append(80)
@@ -683,8 +684,8 @@ export PATH
         if success_list:
             public.M('sites').where('id=?',(project_id,)).save('project_config',json.dumps(project_find['project_config']))
             self.set_config(get.project_name)
-
-        return public.return_data(True,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
+            return public.return_data(True,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
+        return public.return_data(False,"[{}] domain names added successfully, [{}] failed!".format(len(success_list),len(error_list)),error_msg=error_list)
 
 
     def project_remove_domain(self,get):
@@ -1155,7 +1156,7 @@ export PATH
         if all_pids:
             pid_file = "{}/{}.pid".format(self._node_pid_path,project_name)
             public.writeFile(pid_file,str(all_pids[0]))
-            return True
+            return all_pids
         return False
 
     def kill_pids(self,get=None,pids = None):
@@ -1787,12 +1788,12 @@ cd {}
                     result = self.start_project(get)
                     if not result['status']:
                         error_count += 1
-                        error_msg = 'Automatically start NodeJS project ['+project_name+'] failed!'
+                        error_msg = 'Automatically start Nodej project ['+project_name+'] failed!'
                         public.WriteLog(self._log_name, error_msg)
                         public.print_log(error_msg + ", " + result['error_msg'],'ERROR')
                     else:
                         success_count += 1
-                        success_msg = 'Automatically start the NodeJS project ['+project_name+'] successfully!'
+                        success_msg = 'Automatically start the Nodej project ['+project_name+'] successfully!'
                         public.WriteLog(self._log_name, success_msg)
                         public.print_log(success_msg,'INFO')
             except:

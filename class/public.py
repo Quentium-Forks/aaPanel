@@ -12,6 +12,10 @@
 # --------------------------------
 
 import json,os,sys,time,re,socket,importlib,binascii,base64,io,string
+import gettext
+es = gettext.translation('en', localedir='/www/server/panel/BTPanel/static/language', languages=['en'])
+es.install()
+_ = es.gettext
 from random import choice
 _LAN_PUBLIC = None
 _LAN_LOG = None
@@ -56,33 +60,33 @@ def HttpGet(url,timeout = 6,headers = {}):
     del res
     return s_body
 
-# def http_get_home(url,timeout,ex):
-#     """
-#         @name Get方式使用优选节点访问官网
-#         @author hwliang<hwl@bt.cn>
-#         @param url 当前官网URL地址
-#         @param timeout 用于测试超时时间
-#         @param ex 上一次错误的响应内容
-#         @return string 响应内容
-#
-#         如果已经是优选节点，将直接返回ex
-#     """
-#     try:
-#         home = 'www.bt.cn'
-#         if url.find(home) == -1: return ex
-#         hosts_file = "config/hosts.json"
-#         if not os.path.exists(hosts_file): return ex
-#         hosts = json.loads(readFile(hosts_file))
-#         headers = {"host":home}
-#         for host in hosts:
-#             new_url = url.replace(home,host)
-#             res = HttpGet(new_url,timeout,headers)
-#             if res:
-#                 writeFile("data/home_host.pl",host)
-#                 # set_home_host(host)
-#                 return res
-#         return ex
-#     except: return ex
+def http_get_home(url,timeout,ex):
+    """
+        @name Get方式使用优选节点访问官网
+        @author hwliang<hwl@bt.cn>
+        @param url 当前官网URL地址
+        @param timeout 用于测试超时时间
+        @param ex 上一次错误的响应内容
+        @return string 响应内容
+
+        如果已经是优选节点，将直接返回ex
+    """
+    try:
+        home = 'www.bt.cn'
+        if url.find(home) == -1: return ex
+        hosts_file = "config/hosts.json"
+        if not os.path.exists(hosts_file): return ex
+        hosts = json.loads(readFile(hosts_file))
+        headers = {"host":home}
+        for host in hosts:
+            new_url = url.replace(home,host)
+            res = HttpGet(new_url,timeout,headers)
+            if res:
+                writeFile("data/home_host.pl",host)
+                # set_home_host(host)
+                return res
+        return ex
+    except: return ex
 
 
 # def set_home_host(host):
@@ -192,7 +196,8 @@ def ReturnJson(status,msg,args=()):
         @param msg  返回消息
         @return string(json)
     """
-    return GetJson(ReturnMsg(status, msg, args))
+    # return GetJson(ReturnMsg(status, msg, args))
+    return GetJson(return_msg_gettext(status,msg,args))
 
 def returnJson(status,msg,args=()):
     """
@@ -223,6 +228,10 @@ def ReturnMsg(status,msg,args = ()):
             for i in range(len(args)):
                 rep = '{'+str(i+1)+'}'
                 msg = msg.replace(rep,args[i])
+    return {'status':status,'msg':msg}
+
+def return_msg_gettext(status,msg,args = ()):
+    msg = gettext_msg(msg,args)
     return {'status':status,'msg':msg}
 
 def returnMsg(status,msg,args = ()):
@@ -345,6 +354,38 @@ def writeFile(filename,s_body,mode='w+'):
     '''
     return WriteFile(filename,s_body,mode)
 
+def gettext_msg(msg,args=()):
+    try:
+        msg = _(msg).format(*args)
+    except:
+        pass
+    finally:
+        return msg
+
+def write_log_gettext(type, logmsg, args=(), not_web = False):
+    #写日志
+    logmsg = gettext_msg(logmsg,args)
+    try:
+        import time,db,json
+        username = 'system'
+        uid = 1
+        tmp_msg = ''
+        if not not_web:
+            try:
+                from BTPanel import session
+                if 'username' in session:
+                    username = session['username']
+                    uid = session['uid']
+                    if session.get('debug') == 1: return
+            except:
+                pass
+        sql = db.Sql()
+        mDate = time.strftime('%Y-%m-%d %X',time.localtime())
+        data = (uid,username,_(type),xssencode2(logmsg + tmp_msg),mDate)
+        result = sql.table('logs').add('uid,username,type,log,addtime',data)
+    except:
+        pass
+
 def WriteLog(type,logMsg,args=(),not_web = False):
     #写日志
     try:
@@ -447,6 +488,10 @@ def GetMsg(key,args = ()):
         return msg
     except:
         return key
+
+def get_msg_gettext(msg,args = ()):
+    return gettext_msg(msg,args)
+
 def getMsg(key,args = ()):
     return GetMsg(key,args)
 
@@ -1861,14 +1906,74 @@ def path_safe_check(path,force=True):
 #取数据库字符集
 def get_database_character(db_name):
     try:
-        import panelMysql
-        tmp = panelMysql.panelMysql().query("show create database `%s`" % db_name.strip())
+        db_obj = get_mysql_obj(db_name)
+        tmp = db_obj.query("show create database `%s`" % db_name.strip())
         c_type = str(re.findall(r"SET\s+([\w\d-]+)\s",tmp[0][1])[0])
         c_types = ['utf8','utf-8','gbk','big5','utf8mb4']
         if not c_type.lower() in c_types: return 'utf8'
         return c_type
     except:
         return 'utf8'
+
+# 取mysql数据库对象
+def get_mysql_obj(db_name):
+    is_cloud_db = False
+    if db_name:
+        db_find = M('databases').where("name=?" ,db_name).find()
+        if db_find['sid']:
+            return get_mysql_obj_by_sid(db_find['sid'])
+        is_cloud_db = db_find['db_type'] in ['1',1]
+    if is_cloud_db:
+        import db_mysql
+        db_obj = db_mysql.panelMysql()
+        conn_config = json.loads(db_find['conn_config'])
+        try:
+            db_obj = db_obj.set_host(conn_config['db_host'],conn_config['db_port'],conn_config['db_name'],conn_config['db_user'],conn_config['db_password'])
+        except Exception as e:
+            raise PanelError(GetMySQLError(e))
+    else:
+        import panelMysql
+        db_obj = panelMysql.panelMysql()
+    return db_obj
+
+# 取mysql数据库对像 By sid
+def get_mysql_obj_by_sid(sid = 0,conn_config = None):
+    if sid in ['0','']: sid = 0
+    if sid:
+        if not conn_config: conn_config = M('database_servers').where("id=?" ,sid).find()
+        import db_mysql
+        db_obj = db_mysql.panelMysql()
+        try:
+            db_obj = db_obj.set_host(conn_config['db_host'],conn_config['db_port'],None,conn_config['db_user'],conn_config['db_password'])
+        except Exception as e:
+            raise PanelError(GetMySQLError(e))
+    else:
+        import panelMysql
+        db_obj = panelMysql.panelMysql()
+    return db_obj
+
+def GetMySQLError(e):
+    res = ''
+    if e.args[0] == 1045:
+        res = get_msg_gettext('Database username or password is wrong!')
+    if e.args[0] == 1049:
+        res = get_msg_gettext('database does not exist!')
+    if e.args[0] == 1044:
+        res = get_msg_gettext('No permission, or the specified database does not exist!')
+    if e.args[0] == 1062:
+        res = get_msg_gettext('Database already exists!')
+    if e.args[0] == 1146:
+        res = get_msg_gettext('Table does not exist!')
+    if e.args[0] == 2003:
+        res = get_msg_gettext('Database server connection failed!')
+    if e.args[0] == 1142:
+        res = get_msg_gettext('Insufficient user rights!')
+    if res:
+        res = res + "<pre>" + str(e) + "</pre>"
+    else:
+        res = str(e)
+    return res
+
 
 def get_database_codestr(codeing):
     wheres = {
@@ -1886,8 +1991,8 @@ def get_database_size(name=None):
     """
     data = {}
     try:
-        import panelMysql
-        tables = panelMysql.panelMysql().query("select table_schema, (sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as data from information_schema.TABLES group by table_schema")
+        mysql_obj = get_mysql_obj(name)
+        tables = mysql_obj.query("select table_schema, (sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as data from information_schema.TABLES group by table_schema")
         if type(tables) == list:
             for x in tables:
                 if len(x) < 2:continue
@@ -1895,6 +2000,35 @@ def get_database_size(name=None):
                 data[x[0]] = int(x[1])
     except: return data
     return data
+
+def get_database_size_by_name(name):
+    """
+    @获取数据库大小
+    """
+    data = 0
+    try:
+        mysql_obj = get_mysql_obj(name)
+        tables = mysql_obj.query("select table_schema, (sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as data from information_schema.TABLES WHERE table_schema='{}' group by table_schema".format(name))
+        data = tables[0][1]
+        if not data: data = 0
+    except: return data
+    return data
+
+def get_database_size_by_id(id):
+    """
+    @获取数据库大小
+    """
+    data = 0
+    try:
+        name = M('databases').where('id=?',id).getField('name')
+        mysql_obj = get_mysql_obj(name)
+        tables = mysql_obj.query("select table_schema, (sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as data from information_schema.TABLES WHERE table_schema='{}' group by table_schema".format(name))
+        data = tables[0][1]
+        if not data: data = 0
+    except:
+        return data
+    return data
+
 
 def en_punycode(domain):
     if sys.version_info[0] == 2:
@@ -2111,6 +2245,7 @@ def set_php_cli_env():
     '''
     import jobs
     jobs.set_php_cli_env()
+
 
 
 
@@ -3502,7 +3637,7 @@ def get_sys_path():
         @return tuple
     '''
     a = ['/www','/usr','/','/dev','/home','/media','/mnt','/opt','/tmp','/var']
-    c = ['/www/Recycle_bin/','/www/backup/','/www/php_session/','/www/wwwlogs/','/www/server/','/etc/','/usr/','/var/','/boot/','/proc/','/sys/','/tmp/','/root/','/lib/','/bin/','/sbin/','/run/','/lib64/','/lib32/','/srv/']
+    c = ['/www/.Recycle_bin/','/www/backup/','/www/php_session/','/www/wwwlogs/','/www/server/','/etc/','/usr/','/var/','/boot/','/proc/','/sys/','/tmp/','/root/','/lib/','/bin/','/sbin/','/run/','/lib64/','/lib32/','/srv/']
     return a,c
 
 
@@ -4019,7 +4154,6 @@ def error_not_login(e = None,_src = None):
     if _src:
         return e
     else:
-        return Response(status=int(404))
         return render_template('autherr.html')
 
 def error_403(e):

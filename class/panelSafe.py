@@ -59,7 +59,7 @@ class safe:
         self.result['outime'] = int(end - start)
     
     def threadto(self,filename):
-        print('scanning ' + filename)
+        print 'scanning ' + filename,
         file= open(filename)
         filestr = file.read()
         char=chardet.detect(filestr)
@@ -80,7 +80,7 @@ class safe:
                 self.result['data'].append(tmp);
                 self.result['error'] += 1
                 break
-        print('done')
+        print '  done'
         self.result['count'] += 1
         public.writeFile(self.result['path'] + '/scan.pl',json.dumps(self.result));
         del(filestr)
@@ -100,7 +100,7 @@ class safe:
     
     def checkPHPINI(self):
         setupPath = '/www/server';
-        phps = ['52','53','54','55','56','70','71']
+        phps = public.get_php_versions()
         rep = "disable_functions\s*=\s*(.+)\n"
         defs = ['passthru','exec','system','chroot','chgrp','chown','shell_exec','popen','ini_alter','ini_restore','dl','openlog','syslog','readlink','symlink','popepassthru']
         data = []

@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache, abort, request, redirect, g
+from BTPanel import session, cache , request, redirect, g
 from datetime import datetime
 from public import dict_obj
 import os
@@ -26,7 +26,7 @@ class panelSetup:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return redirect('https://www.google.com')
-        g.version = '6.8.25'
+        g.version = '6.8.26'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -98,9 +98,9 @@ class panelAdmin(panelSetup):
         if request.method == 'GET':
             g.menus = public.get_menus()
             g.yaer = datetime.now().year
-        session["top_tips"] = public.GetMsg("TOP_TIPS")
-        session["bt_help"] = public.GetMsg("BT_HELP")
-        session["download"] = public.GetMsg("DOWNLOAD")
+        session["top_tips"] = public.get_msg_gettext("The current IE browser version is too low to display some features, please use another browser. Or if you use a browser developed by a Chinese company, please switch to Extreme Mode!")
+        session["bt_help"] = public.get_msg_gettext("For Support|Suggestions, please visit the aaPanel Forum")
+        session["download"] = public.get_msg_gettext("Downloading:")
         if not 'brand' in session:
             session['brand'] = public.GetConfigValue('brand')
             session['product'] = public.GetConfigValue('product')
@@ -114,7 +114,7 @@ class panelAdmin(panelSetup):
         if not 'lan' in session:
             session['lan'] = public.GetLanguage()
         if not 'home' in session:
-            session['home'] = 'https://brandnew.aapanel.com'
+            session['home'] = 'https://www.aapanel.com'
         return False
 
     # 检查Web服务器类型
@@ -150,27 +150,27 @@ class panelAdmin(panelSetup):
             if not 'login' in session:
                 api_check = self.get_sk()
                 if api_check:
-                    #session.clear()
+                    session.clear()
                     return api_check
                 g.api_request = True
             else:
                 if session['login'] == False:
                     session.clear()
-                    return abort(404)
+                    return redirect('/login')
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
-                        return abort(404)
+                        return redirect('/login')
                     if not os.path.exists(s_file):
                         session.clear()
-                        return abort(404)
+                        return redirect('/login')
                 ua_md5 = public.md5(g.ua)
                 if ua_md5 != session.get('login_user_agent',ua_md5):
                     session.clear()
-                    return abort(404)
+                    return redirect('/login')
 
             if api_check:
                 now_time = time.time()
@@ -197,61 +197,67 @@ class panelAdmin(panelSetup):
         except:
             public.WriteLog('Login auth',public.get_error_info())
             session.clear()
-            return abort(404)
+            return redirect('/login')
 
     # 获取sk
     def get_sk(self):
         save_path = '/www/server/panel/config/api.json'
         if not os.path.exists(save_path):
-            return abort(404)
+            return public.error_not_login('/login')
+
+
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return abort(404)
+            return  public.error_not_login('/login')
 
         if not api_config['open']:
-            return abort(404)
-
+            return  public.error_not_login('/login')
         from BTPanel import get_input
         get = get_input()
         client_ip = public.GetClientIp()
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return abort(404)
+                return  public.error_not_login('/login')
 
             num_key = client_ip + '_api'
             if not public.get_error_num(num_key,20):
-                return public.returnJson(False,'AUTH_FAILED1')
+                return public.returnJson(False,'20 consecutive verification failures, prohibited for 1 hour')
 
 
-            if not client_ip in api_config['limit_addr']:
+            if not public.is_api_limit_ip(api_config['limit_addr'],client_ip): #client_ip in api_config['limit_addr']:
                 public.set_error_num(num_key)
-                return public.returnJson(False,'%s[' % public.GetMsg("AUTH_FAILED1")+client_ip+']')
+                return public.returnJson(False,'%s[' % public.get_msg_gettext("20 consecutive verification failures, prohibited for 1 hour")+client_ip+']')
         else:
             num_key = client_ip + '_app'
             if not public.get_error_num(num_key,20):
-                return public.returnJson(False,'AUTH_FAILED1')
+                return public.returnJson(False,'20 consecutive verification failures, prohibited for 1 hour')
             a_file = '/dev/shm/' + get.client_bind_token
+
+            if not public.path_safe_check(get.client_bind_token):
+                public.set_error_num(num_key)
+                return public.returnJson(False, 'illegal request')
+
             if not os.path.exists(a_file):
                 import panelApi
                 if not panelApi.panelApi().get_app_find(get.client_bind_token):
                     public.set_error_num(num_key)
-                    return public.returnJson(False,'UNBOUND_DEVICE')
+                    return public.returnJson(False,'Unbound device')
                 public.writeFile(a_file,'')
 
             if not 'key' in api_config:
                 public.set_error_num(num_key)
-                return public.returnJson(False, 'KEY_ERR')
+                return public.returnJson(False, 'Key verification failed')
             if not 'form_data' in get:
                 public.set_error_num(num_key)
-                return public.returnJson(False, 'FORM_DATA_ERR')
+                return public.returnJson(False, 'No form_data data found')
 
             g.form_data = json.loads(public.aes_decrypt(get.form_data, api_config['key']))
 
             get = get_input()
             if not 'request_token' in get or not 'request_time' in get:
-                return abort(404)
+                return  public.error_not_login('/login')
             g.is_aes = True
             g.aes_key = api_config['key']
         request_token = public.md5(get.request_time + api_config['token'])
@@ -259,7 +265,7 @@ class panelAdmin(panelSetup):
             public.set_error_num(num_key,True)
             return False
         public.set_error_num(num_key)
-        return public.returnJson(False,'SECRET_KEY_CHECK_FALSE')
+        return public.returnJson(False,'Secret key verification failed')
 
     # 检查系统配置
 

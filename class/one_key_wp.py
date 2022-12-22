@@ -196,13 +196,13 @@ class one_key_wp:
         self.write_logs("|-Start downloading the installation package...")
         if not self.check_package():
             print("|-MD5 consistent, no need to download...")
-            return public.returnMsg(True, 'MD5 consistent!')
+            return public.return_msg_gettext(True, 'MD5 consistent!')
         self.download_file()
         if not os.path.exists(self.package_zip):
             self.write_logs("|-Download failed...")
             print("Download failed...")
-            return public.returnMsg(False, 'File download failed!')
-        return public.returnMsg(True,"Download successfully")
+            return public.return_msg_gettext(False, 'File download failed!')
+        return public.return_msg_gettext(True,"Download successfully")
 
     def unzip_package(self,site_path):
         print("Start unzipping the installation package...")
@@ -252,7 +252,7 @@ class one_key_wp:
         self.write_logs("|-Start initializing Wordpress...")
         self.request_setup_0(values)
         if not self.request_setup_2(values):
-            return public.returnMsg(False,"The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
+            return public.return_msg_gettext(False,"The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
         self.request_setup_3(values)
         self.request_setup_4(values)
         self.set_urlrewrite(values['site_name'])
@@ -439,8 +439,8 @@ class one_key_wp:
         os.remove(self.__php_tmp_file)
         res = a.split('|')
         if res[0] == "True":
-            return public.returnMsg(True,res[1])
-        return public.returnMsg(False, 'Generated password detection failed!')
+            return public.return_msg_gettext(True,res[1])
+        return public.return_msg_gettext(False, 'Generated password detection failed!')
 
     def get_cache_status(self,s_id):
         """
@@ -461,13 +461,16 @@ class one_key_wp:
             return values
         values = values['msg']
         db_info = public.M('wordpress_onekey').where('s_id=?', (values['s_id'],)).find()
-        db_name = public.M('databases').where('id=?', (db_info['d_id'],)).field('name').find()['name']
+        db_name = public.M('databases').where('id=?', (db_info['d_id'],)).field('name').find()
+        if "name" not in db_name:
+            return public.return_msg_gettext(False,"The database of this wordpress was not found, this may be caused by the fact that you have manually deleted the database")
+        db_name = db_name['name']
         mysql_obj = panelMysql.panelMysql()
         res = mysql_obj.query('select * from {}.{}users'.format(
             db_name,db_info['prefix']))
         if not res:
-            return public.returnMsg(False,"Get failed wordpress user failed!")
-        return public.returnMsg(True,[i[1] for i in res])
+            return public.return_msg_gettext(False,"Get failed wordpress user failed!")
+        return public.return_msg_gettext(True,[i[1] for i in res])
 
     def reset_wp_password(self,get):
         """
@@ -493,7 +496,7 @@ class one_key_wp:
         sql = 'update {}.{}users set user_pass = "{}" where user_login = "{}"'.format(
             db_name,db_info['prefix'],passwd,values['user'])
         mysql_obj.execute(sql)
-        return public.returnMsg(True,"Password reset successful")
+        return public.return_msg_gettext(True,"Password reset successful")
 
     def get_wp_version(self,s_id):
         """获取wordpress本地版本
@@ -538,17 +541,17 @@ class one_key_wp:
             "local_v": local_v,
             "update": update
         }
-        return public.returnMsg(True,data)
+        return public.return_msg_gettext(True,data)
 
     def purge_all_cache(self,get):
         """
         清理所有缓存
         """
         if public.get_webserver() != "nginx":
-            return public.returnMsg(False,"This feature currently only supports Nginx")
+            return public.return_msg_gettext(False,"This feature currently only supports Nginx")
         cache_dir = "/dev/shm/nginx-cache/wp"
         public.ExecShell("rm -rf {}/*".format(cache_dir))
-        return public.returnMsg(True,"Cleaned up successfully!")
+        return public.return_msg_gettext(True,"Cleaned up successfully!")
 
     def set_fastcgi_cache(self,get):
         """
@@ -558,7 +561,7 @@ class one_key_wp:
         act disable/enable 开启关闭缓存
         """
         if public.get_webserver() != "nginx":
-            return public.returnMsg(False,"This feature currently only supports Nginx")
+            return public.return_msg_gettext(False,"This feature currently only supports Nginx")
         values = self.check_param(get)
         if not values['status']:
             return values
@@ -592,7 +595,7 @@ class one_key_wp:
             }
         }
         self.action_plugin_post(param)
-        return public.returnMsg(True,'Updated successfully!')
+        return public.return_msg_gettext(True,'Updated successfully!')
 
     def get_language(self,get=None):
         language = {
@@ -726,7 +729,7 @@ class one_key_wp:
             "zh_HK": "香港中文版	",
             "zh_CN": "简体中文",
         }
-        return public.returnMsg(True,language)
+        return public.return_msg_gettext(True,language)
 
     def check_param(self,args):
         """
@@ -742,22 +745,22 @@ class one_key_wp:
             if re.search('\d+', args.d_id):
                 values["d_id"] = args.d_id
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("d_id","99"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("d_id","99"))
         if hasattr(args, 's_id'):
             if re.search('\d+', args.s_id):
                 values["s_id"] = args.s_id
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("s_id","99"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("s_id","99"))
         if hasattr(args, 'language'):
             if args.language in self.get_language()['msg']:
                 values['language'] = args.language
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("language","en"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("language","en"))
         if hasattr(args, 'domain'):
             if re.search(rep_domain,args.domain):
                 values['domain'] = public.xssencode2(args.domain)
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("domain","aapanel.com"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("domain","aapanel.com"))
         if hasattr(args, 'weblog_title'):
             values['weblog_title'] = public.xssencode2(args.weblog_title)
         if hasattr(args, 'user_name'):
@@ -768,12 +771,12 @@ class one_key_wp:
             if args.pw_weak in ['on','off']:
                 values['pw_weak'] = args.pw_weak
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("pw_weak","on/off"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("pw_weak","on/off"))
         if hasattr(args, 'admin_email'):
             if re.search(rep_email,args.admin_email):
                 values['admin_email'] = public.xssencode2(args.admin_email)
             else:
-                return public.returnMsg(False, "Please check if the [{}] format is correct For example: {}",("admin_email","adimn@aapanel.com"))
+                return public.return_msg_gettext(False, "Please check if the [{}] format is correct For example: {}",("admin_email","adimn@aapanel.com"))
         if hasattr(args, 'prefix'):
             values['prefix'] = public.xssencode2(args.prefix)
         if hasattr(args, 'php_version'):
@@ -796,7 +799,7 @@ class one_key_wp:
             values['act'] = public.xssencode2(args.act)
         if hasattr(args, 'version'):
             values['version'] = public.xssencode2(args.version)
-        return public.returnMsg(True,values)
+        return public.return_msg_gettext(True,values)
 
     def del_site(self,get):
         import panelSite
@@ -890,10 +893,30 @@ class one_key_wp:
                 self.set_nginx_helper(get)
             public.ServiceReload()
             self.write_logs("\n\n\n|-Deployment was successful!")
-            return public.returnMsg(True,"Deployment was successful!")
+            return public.return_msg_gettext(True,"Deployment was successful!")
         except:
             self.del_site(get)
-            return public.returnMsg(False, "Deployment failed!")
+            return public.return_msg_gettext(False, "Deployment failed!")
+
+    def reset_wp_db(self,args):
+        """
+        :param args db_name 数据库名
+        :param args site_id 网站ID
+        """
+        db_name = public.xssencode2(args.db_name)
+        try:
+            site_id = int(args.site_id)
+        except:
+            return public.returnMsg(False,"Site ID must be numeric")
+        db_info = public.M("databases").where("name=?",(db_name,)).field('id').find()
+        if 'id' not in db_info:
+            return public.returnMsg(False,"This database was not found!")
+        pdata = {
+            "d_id": db_info['id']
+        }
+        public.M('wordpress_onekey').where("s_id=?",(site_id,)).update(pdata)
+        return public.returnMsg(True,"Setup successfully!")
+
 
 ##############################对外接口-END##############################
 
@@ -987,9 +1010,9 @@ class optimize_php:
         result = config.config().setFpmConfig(get)
         if not result['status']:
             one_key_wp().write_logs("|-PHP FPM Optimization failed: {}".format(result))
-            return public.returnMsg(False,"PHP FPM Optimization failed: {}",(result,))
+            return public.return_msg_gettext(False,"PHP FPM Optimization failed: {}",(result,))
         one_key_wp().write_logs("|-PHP FPM optimization succeeded")
-        return public.returnMsg(True, "PHP FPM optimization succeeded")
+        return public.return_msg_gettext(True, "PHP FPM optimization succeeded")
 
 class optimize_db:
 
@@ -1128,10 +1151,10 @@ class optimize_db:
         result = database.database().SetDbConf(get)
         if not result['status']:
             one_key_wp().write_logs("|-Mysql optimization failed {}".format(result))
-            return public.returnMsg(False,"Mysql optimization failed {}",(result,))
+            return public.return_msg_gettext(False,"Mysql optimization failed {}",(result,))
         public.ExecShell("/etc/init.d/mysqld restart")
         one_key_wp().write_logs("|-Mysql optimization succeeded")
-        return public.returnMsg(True, "Mysql optimization succeeded")
+        return public.return_msg_gettext(True, "Mysql optimization succeeded")
 
 class fast_cgi:
 
@@ -1209,7 +1232,7 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
             print("Nginx FastCgi cache configuration already exists")
-            return public.returnMsg(True,"Nginx FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True,"Nginx FastCgi cache configuration already exists")
         rep = "http\s*\n\s*{"
         content = re.sub(rep,"http\n\t{"+conf,content)
         public.writeFile(conf_path,content)
@@ -1220,10 +1243,10 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
             public.restore_file(conf_path)
             one_key_wp().write_logs("|-Nginx FastCgi configuration error! {}".format(conf_pass))
             print("Nginx FastCgi configuration error! {}".format(conf_pass))
-            return public.returnMsg(False,"Nginx FastCgi configuration error!")
+            return public.return_msg_gettext(False,"Nginx FastCgi configuration error!")
         one_key_wp().write_logs("|-Nginx FastCgi cache configuration complete...")
         print("Nginx FastCgi cache configuration complete")
-        return public.returnMsg(True, "Nginx FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, "Nginx FastCgi cache configuration complete")
 
     def set_fastcgi_php_conf(self,version):
         conf_path = "/www/server/nginx/conf/enable-php-{}-wpfastcgi.conf".format(version)
@@ -1246,14 +1269,14 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
             if fastcgi_conf not in conf:
                 print("FastCgi configuration does not exist in website configuration")
                 one_key_wp().write_logs("|-FastCgi configuration does not exist in website configuration, skip")
-                return public.returnMsg(False,"FastCgi configuration does not exist in website configuration")
+                return public.return_msg_gettext(False,"FastCgi configuration does not exist in website configuration")
             rep = "include\s+enable-php-{}-wpfastcgi.conf;".format(version)
             conf = re.sub(rep, "include enable-php-{}.conf;".format(version), conf)
         else:
             fastcgi_conf = "include enable-php-{}-wpfastcgi.conf;".format(version)
             if fastcgi_conf in conf:
                 one_key_wp().write_logs("|-The FastCgi configuration already exists in the website configuration, skip it")
-                return public.returnMsg(True,"The FastCgi configuration already exists in the website configuration")
+                return public.return_msg_gettext(True,"The FastCgi configuration already exists in the website configuration")
             rep = "include\s+enable-php-{}.conf;".format(version)
             conf = re.sub(rep,fastcgi_conf,conf)
         public.writeFile(conf_path,conf)
@@ -1262,10 +1285,10 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
             public.restore_file(conf_path)
             print("Website FastCgi configuration error {}".format(conf_pass))
             one_key_wp().write_logs("|-Website FastCgi configuration error: {}",(conf_pass,))
-            return public.returnMsg(False,"Website FastCgi configuration error！")
+            return public.return_msg_gettext(False,"Website FastCgi configuration error！")
         print("Website FastCgi configuration complete")
         one_key_wp().write_logs("|-Website FastCgi configuration complete...")
-        return public.returnMsg(True, "Website FastCgi configuration complete")
+        return public.return_msg_gettext(True, "Website FastCgi configuration complete")
 
     def set_fastcgi(self,values):
         """
@@ -1294,7 +1317,7 @@ define('RT_WP_NGINX_HELPER_CACHE_PATH','/dev/shm/nginx-cache/wp');
         if not conf:
             print("Wordpress configuration file does not exist: {}".format(conf_file))
             one_key_wp().write_logs("|-Wordpress configuration file does not exist: {}".format(conf_file))
-            return public.returnMsg(False,"Wordpress configuration file does not exist: {}",(conf_file,))
+            return public.return_msg_gettext(False,"Wordpress configuration file does not exist: {}",(conf_file,))
         if "AAPANEL_FASTCGICACHE_BEGIN" in conf:
             one_key_wp().write_logs("|-Cache cleaning configuration already exists, skip")
             print("Cache cleaning configuration already exists")
@@ -1308,7 +1331,7 @@ define('RT_WP_NGINX_HELPER_CACHE_PATH','/dev/shm/nginx-cache/wp');
         if not conf:
             print("Anti-cross-site configuration file does not exist: {}".format(conf_file))
             one_key_wp().write_logs("|-Anti-cross-site configuration file does not exist: {}".format(conf_file))
-            return public.returnMsg(False,"Anti-cross-site configuration file does not exist: {}",(conf_file,))
+            return public.return_msg_gettext(False,"Anti-cross-site configuration file does not exist: {}",(conf_file,))
         if "/dev/shm/nginx-cache/wp" in conf:
             print("Anti-cross-site configuration is successful")
             one_key_wp().write_logs("|-Anti-cross-site configuration is successful...")
