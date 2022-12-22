@@ -8,7 +8,7 @@
 # +-------------------------------------------------------------------
 
 #------------------------------
-# 工具箱/etc/resolv.conf
+# 工具箱
 #------------------------------
 import sys,os
 panelPath = '/www/server/panel/'
@@ -209,8 +209,6 @@ def CreateSSL():
         cert_ca = bytes.decode(cert_ca)
         private_key = bytes.decode(private_key)
     if len(cert_ca) > 100 and len(private_key) > 100:
-        if not os.path.exists('/www/server/panel/ssl'):
-            os.mkdir('/www/server/panel/ssl')
         public.writeFile('ssl/certificate.pem',cert_ca)
         public.writeFile('ssl/privateKey.pem',private_key)
         public.writeFile('/www/server/panel/data/ssl.pl','')
@@ -419,7 +417,7 @@ def update_to6():
     for pname in os.listdir('plugin/'):
         if not os.path.isdir('plugin/' + pname): continue
         if pname in exlodes: continue
-        print("|-upgrading【%s】..." % pname),
+        print("|-upgrading [ %s ]..." % pname),
         download_url = download_address + '/install/plugin/' + pname + '/install.sh'
         to_file = '/tmp/%s.sh' % pname
         public.downloadFile(download_url,to_file)
@@ -444,7 +442,7 @@ def bt_cli(u_input = 0):
         print("(22) %s                (15) %s"% ("Display panel error log",public.GetMsg("CLEAR_SYS_RUBBISH")))
         print("(23) %s      (16) %s"% ("Turn off BasicAuth authentication","Repair panel (check for errors and update panel files to the latest version)"))
         print("(24) Turn off Google Authenticator          (17) Set log cutting on/off compression")
-        print("(25) Set whether to back up the panel automatically  (18) Set whether to save a historical copy of the file")
+        print("(25) Set whether to save a historical copy of the file  (18) Set whether to back up the panel automatically")
         print("(26) Keep/Remove local backup when backing up to cloud storage")
         print("(0) Cancel")
         print(raw_tip)
@@ -611,7 +609,7 @@ def bt_cli(u_input = 0):
         ClearSystem()
     elif u_input == 16:
         os.system("/www/server/panel/pyenv/bin/pip install cachelib")
-        os.system("curl https://node.aapanel.com/install/update6_en.sh|bash")
+        os.system("curl http://download.bt.cn/install/update6_en.sh|bash")
     elif u_input == 17:
         l_path = '/www/server/panel/data/log_not_gzip.pl'
         if os.path.exists(l_path):
