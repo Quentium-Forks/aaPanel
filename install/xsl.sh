@@ -6,7 +6,7 @@ Install_Xsl()
 {
 	public_file=/www/server/panel/install/public.sh
 	if [ ! -f $public_file ];then
-		wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+		wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 	fi
 	. $public_file
 
@@ -54,9 +54,12 @@ Install_Xsl()
 		'74')
 		extFile='/www/server/php/74/lib/php/extensions/no-debug-non-zts-20190902/xsl.so'
 		;;
-		'80')
-		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/xsl.so'
-		;;
+        '80')
+        extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/xsl.so'
+        ;;
+        '81')
+        extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/xsl.so'
+        ;;
 	esac
 	
 	
@@ -73,6 +76,9 @@ Install_Xsl()
 	fi
 	
 	echo "extension=$extFile" >> /www/server/php/$version/etc/php.ini
+    if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+        echo -e "extension = $extFile" >> /www/server/php/$version/etc/php-cli.ini
+    fi
 	service php-fpm-$version reload
 	echo '==========================================================='
 	echo 'successful!'
@@ -92,6 +98,9 @@ Uninstall_Xsl()
 	fi
 	
 	sed -i '/xsl.so/d'  /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+        sed -i '/xsl.so/d' /www/server/php/$version/etc/php-cli.ini
+    fi
 	service php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'

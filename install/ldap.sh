@@ -37,6 +37,9 @@ Ext_Path(){
 		'80')
 		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/ldap.so'
 		;;
+		'81')
+		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/ldap.so'
+		;;
 	esac
 }
 
@@ -57,7 +60,7 @@ Install_ldap()
 	
 	public_file=/www/server/panel/install/public.sh
 	if [ ! -f $public_file ];then
-		wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+		wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 	fi
 	. $public_file
 	download_Url=$NODE_URL

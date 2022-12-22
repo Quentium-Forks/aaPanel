@@ -6,7 +6,7 @@ public_file=/www/server/panel/install/public.sh
 publicFileMd5=$(md5sum ${public_file} 2>/dev/null|awk '{print $1}')
 md5check="8e49712d1fd332801443f8b6fd7f9208"
 if [ "${publicFileMd5}" != "${md5check}"  ]; then
-	wget -O Tpublic.sh http://download.bt.cn/install/public.sh -T 20;
+	wget -O Tpublic.sh https://download.bt.cn/install/public.sh -T 20;
 	publicFileMd5=$(md5sum Tpublic.sh 2>/dev/null|awk '{print $1}')
 	if [ "${publicFileMd5}" == "${md5check}"  ]; then
 		\cp -rpa Tpublic.sh $public_file
@@ -37,8 +37,9 @@ php_71='7.1.33'
 php_72='7.2.33'
 php_73='7.3.32'
 php_74='7.4.33'
-php_80='8.0.25'
-php_81='8.1.12'
+php_80='8.0.26'
+php_81='8.1.13'
+php_82='8.2.0'
 opensslVersion="1.0.2u"
 openssl111Version="1.1.1o"
 nghttp2Version="1.42.0"
@@ -86,10 +87,19 @@ Error_Msg(){
 	echo -e "ERROR: php-${phpVersion} ${actionType} failed.";
 	if [ "${EN_CHECK}" ];then
 		echo -e "Please submit to https://forum.aapanel.com for help"
-	else 
+	else
+	    if [ -z "${SYS_VERSION}" ];then
+            echo -e "============================================"
+            echo -e "检测到为非常用系统安装,请尝试安装其他Mysql版本看是否正常"
+            echo -e "如无法正常安装，建议更换至Centos-7或Debian-10+或Ubuntu-20+系统安装宝塔面板"
+            echo -e "详情请查看系统兼容表：https://docs.qq.com/sheet/DUm54VUtyTVNlc21H?tab=BB08J2"
+            echo -e "特殊情况可通过以下联系方式寻求安装协助情况"
+            echo -e "============================================"
+        fi 
 		echo -e "${AC_TYPE}失败，请截图以上报错信息发帖至论坛www.bt.cn/bbs求助"
         echo -e "或手机访问以下链接、扫码联系企业微信技术求助"
-        echo -e "============================================"
+        echo -e "帖子或企业微信注明企业版用户，将获得极速响应技术支持"
+		echo -e "============================================"
         echo -e "联系链接:https://work.weixin.qq.com/kfid/kfc9072f0e29a53bd52"
         echo -e "============================================"
 	fi
@@ -626,6 +636,8 @@ Install_Zip_ext(){
 		extFile="/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/zip.so"
 	elif [ "${php_version}" == "81" ]; then
 		extFile="/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/zip.so"
+	elif [ "${php_version}" == "82" ]; then
+		extFile="/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/zip.so"
 	fi
 
 	if [ -f "${extFile}" ];then
@@ -678,7 +690,7 @@ SetPHPMyAdmin()
 		webserver="nginx"
 	fi
 	PHPVersion=""
-	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81
+	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82
 	do
 		if [ -f "/www/server/php/${phpV}/bin/php" ]; then
 			PHPVersion=${phpV}
@@ -723,7 +735,7 @@ Uninstall_PHP()
 		SetPHPMyAdmin
 	fi
 
-	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81
+	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82
 	do
 		if [ -f "/www/server/php/${phpV}/bin/php" ]; then
 			rm -f /usr/bin/php
@@ -762,6 +774,7 @@ elif [ "$actionType" == 'uninstall' ];then
 	Uninstall_PHP
 	Service_Del
 fi
+
 
 
 

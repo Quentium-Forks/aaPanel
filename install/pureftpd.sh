@@ -3,11 +3,11 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
 public_file=/www/server/panel/install/public.sh
-[ ! -f $public_file ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+[ ! -f $public_file ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 publicFileMd5=$(md5sum ${public_file}|awk '{print $1}')
-md5check="66c89de255c11b64d5215be67dc4fdc6"
-[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+md5check="8e49712d1fd332801443f8b6fd7f9208"
+[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 . $public_file
 download_Url=$NODE_URL
@@ -138,12 +138,6 @@ Update_Pureftpd(){
     rm -f ${Setup_Path}/version_check.pl
 }
 
-Bt_Check(){
-	checkFile="/www/server/panel/install/check.sh"
-	wget -O ${checkFile} ${download_Url}/tools/check.sh			
-	. ${checkFile} 
-}
-
 Uninstall_Pureftpd()
 {
 	if [ -f "/www/server/pure-ftpd/sbin/pure-ftpd" ];then
@@ -162,7 +156,6 @@ actionType=$1
 
 if [ "$actionType" == 'install' ];then
 	Install_Pureftpd
-	Bt_Check
 	Service_Add
 elif [ "$actionType" == 'uninstall' ];then
 	Service_Del

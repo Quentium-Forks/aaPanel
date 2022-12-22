@@ -20,7 +20,7 @@ Install_calendar()
 	if [ ! -d "/www/server/php/$version/src/ext/calendar" ];then
 		public_file=/www/server/panel/install/public.sh
 		if [ ! -f $public_file ];then
-			wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+			wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 		fi
 		. $public_file
 
@@ -64,6 +64,9 @@ Install_calendar()
 		;;
 		'80')
 		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/calendar.so'
+		;;
+		'81')
+		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/calendar.so'
 		;;
 	esac
 	

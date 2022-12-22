@@ -17,25 +17,14 @@ Install_gmp()
 		return
 	fi
 	
-	public_file=/www/server/panel/install/public.sh
-	if [ ! -f $public_file ];then
-		wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
-	fi
-	. $public_file
-	download_Url=$NODE_URL
-
-	if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ];then
-		Pack="gmp gmp-devel"
-		${PM} install ${Pack} -y
-	elif [ "${PM}" == "apt-get" ];then
-		Pack="libgmp3-dev"
-		${PM} install ${Pack} -y
-		if [ -f "/usr/include/x86_64-linux-gnu/gmp.h" ];then
-			ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
-		fi
-	fi
-	
 	if [ ! -d "/www/server/php/$version/src/ext/gmp" ];then
+		public_file=/www/server/panel/install/public.sh
+		if [ ! -f $public_file ];then
+			wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
+		fi
+		. $public_file
+
+		download_Url=$NODE_URL
 		mkdir -p /www/server/php/$version/src
 		wget -O $version-ext.tar.gz $download_Url/install/ext/$version-ext.tar.gz
 		tar -zxf $version-ext.tar.gz -C /www/server/php/$version/src/ 
@@ -76,7 +65,18 @@ Install_gmp()
 		'80')
 		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/gmp.so'
 		;;
+		'81')
+		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/gmp.so'
+		;;
 	esac
+	
+	if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ];then
+        Pack="gmp gmp-devel"
+        ${PM} install ${Pack} -y
+    elif [ "${PM}" == "apt-get" ];then
+        Pack="libgmp-dev"
+        ${PM} install ${Pack} -y
+    fi
 	
 	if [ ! -f "${extFile}" ];then
 		cd /www/server/php/$version/src/ext/gmp
@@ -91,6 +91,9 @@ Install_gmp()
 	fi
 
 	echo -e "extension = " ${extFile} >> /www/server/php/$version/etc/php.ini
+    if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+        echo -e "extension = $extFile" >> /www/server/php/$version/etc/php-cli.ini
+    fi
 	service php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'
@@ -112,6 +115,9 @@ Uninstall_gmp()
 	fi
 
 	sed -i '/gmp.so/d' /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+        sed -i '/gmp.so/d' /www/server/php/$version/etc/php-cli.ini
+    fi
 
 	service php-fpm-$version reload
 	echo '==============================================='

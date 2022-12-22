@@ -49,7 +49,7 @@ Install_Intl()
 	if [ ! -d "/www/server/php/$version/src/ext/intl" ];then
 		public_file=/www/server/panel/install/public.sh
 		if [ ! -f $public_file ];then
-			wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+			wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 		fi
 		. $public_file
 

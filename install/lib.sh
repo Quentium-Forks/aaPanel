@@ -5,12 +5,12 @@ export PATH
 public_file=/www/server/panel/install/public.sh
 public_file_Check=$(cat ${public_file} 2>/dev/null)
 if [ ! -f $public_file ] || [ -z "${public_file_Check}" ];then
-	wget -O $public_file http://download.bt.cn/install/public.sh -T 30;
+	wget -O $public_file https://download.bt.cn/install/public.sh -T 30;
 fi
 . $public_file
 
 if [ -z "${NODE_URL}" ];then
-	download_Url="http://download.bt.cn"
+	download_Url="https://download.bt.cn"
 else
 	download_Url=$NODE_URL
 fi
@@ -23,6 +23,12 @@ opensslVersion="1.0.2u"
 curlVersion="7.70.0"
 freetypeVersion="2.9.1"
 pcreVersion="8.42"
+
+loongarch64Check=$(uname -a|grep loongarch64)
+if [ "${loongarch64Check}" ];then
+	wget -O lib.sh ${download_Url}/install/0/loongarch64/lib.sh && sh lib.sh
+	exit;
+fi
 
 aarch64Check=$(uname -a|grep aarch64)
 if [ "${aarch64Check}" ];then
@@ -52,6 +58,9 @@ Install_Curl()
 		tar -zxf curl-${curlVersion}.tar.gz
 		cd curl-${curlVersion}
 		./configure --prefix=/usr/local/curl --enable-ares --without-nss --with-ssl=/usr/local/openssl
+		if [ "$?" != "0" ];then
+			./configure --prefix=/usr/local/curl --without-nss --with-ssl=/usr/local/openssl --disable-ldap --disable-ldaps
+		fi
 		make -j${cpuCore}
 		make install
 		cd ..
@@ -208,12 +217,25 @@ Install_Mhash()
 Install_Yumlib(){
 	sed -i "s#SELINUX=enforcing#SELINUX=disabled#" /etc/selinux/config
 	rpm -e --nodeps mariadb-libs-*
+	Maipo7Check=$(cat /etc/redhat-release|grep ' 7.')
 	Centos8Check=$(cat /etc/redhat-release|grep ' 8.'|grep -i centos)
 	CentosStream8Check=$(cat /etc/redhat-release|grep -i "Centos Stream"|grep 8)
+	OracleLinuxCheck=$(cat /etc/os-release|grep "Oracle Linux")
 	if [ "${Centos8Check}" ] || [ "${CentosStream8Check}" ];then
 		yum config-manager --set-enabled PowerTools
 		yum config-manager --set-enabled powertools
 	fi
+	if [ "${Maipo7Check}" ] && [ "${OracleLinuxCheck}" ];then
+		yum-config-manager --enable ol7_developer_EPEL
+	fi
+	
+	CentosStream9Check=$(cat /etc/redhat-release|grep -i "Centos Stream"|grep 9)
+	if [ "${CentosStream9Check}" ];then
+		yum update -y
+		yum install epel-release -y 
+		dnf config-manager --set-enabled crb -y
+	fi
+
 	mv /etc/yum.repos.d/epel.repo /etc/yum.repos.d/epel.repo.backup
 	rm -f /var/run/yum.pid
 	Packs="make cmake gcc gcc-c++ flex bison file libtool libtool-libs autoconf kernel-devel patch wget libjpeg libjpeg-devel libpng libpng-devel libpng10 libpng10-devel gd gd-devel libxml2 libxml2-devel zlib zlib-devel glib2 glib2-devel tar bzip2 bzip2-devel libevent libevent-devel ncurses ncurses-devel curl curl-devel libcurl libcurl-devel e2fsprogs e2fsprogs-devel krb5 krb5-devel libidn libidn-devel openssl openssl-devel vim-minimal gettext gettext-devel gmp-devel pspell-devel libcap diffutils ca-certificates net-tools libc-client-devel psmisc libXpm-devel c-ares-devel libicu-devel libxslt libxslt-devel zip unzip glibc.i686 libstdc++.so.6 cairo-devel bison-devel libaio-devel perl perl-devel perl-Data-Dumper lsof pcre pcre-devel vixie-cron crontabs expat-devel readline-devel oniguruma-devel libwebp-devel libvpx-devel"
@@ -241,7 +263,7 @@ Install_Aptlib(){
 	export DEBIAN_FRONTEND=noninteractive
 	apt-get install -y build-essential gcc g++ make
 
-	for aptPack in debian-keyring debian-archive-keyring build-essential gcc g++ make cmake autoconf automake re2c wget cron bzip2 libzip-dev libc6-dev bison file rcconf flex vim bison m4 gawk less cpp binutils diffutils unzip tar bzip2 libbz2-dev libncurses5 libncurses5-dev libtool libevent-dev openssl libssl-dev zlibc libsasl2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libjpeg62 libjpeg62-dev libpng12-0 libpng12-dev libkrb5-dev libpq-dev libpq5 gettext libpng12-dev libxml2-dev libcap-dev ca-certificates libc-client2007e-dev psmisc patch git libc-ares-dev libicu-dev e2fsprogs libxslt-dev libc-client-dev xz-utils libgd3 libgd-dev libwebp-dev libvpx-dev;
+	for aptPack in debian-keyring debian-archive-keyring build-essential gcc g++ make cmake autoconf automake re2c wget cron bzip2 libzip-dev libc6-dev bison file rcconf flex vim bison m4 gawk less cpp binutils diffutils unzip tar bzip2 libbz2-dev libncurses5 libncurses5-dev libtool libevent-dev openssl libssl-dev zlibc libsasl2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libjpeg62 libjpeg62-dev libpng12-0 libpng12-dev libkrb5-dev libpq-dev libpq5 gettext libpng12-dev libxml2-dev libcap-dev ca-certificates libc-client2007e-dev psmisc patch git libc-ares-dev libicu-dev e2fsprogs libxslt-dev libc-client-dev xz-utils libgd3 libgd-dev libwebp-dev libvpx-dev libfreetype6-dev libjpeg-dev;
 	do apt-get -y install $aptPack --force-yes; done
 
 	ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.8 /usr/lib/libjpeg.so
@@ -278,3 +300,4 @@ Install_Libmcrypt
 Install_Mcrypt	
 Install_Libiconv
 Install_Freetype
+

@@ -51,12 +51,15 @@ Install_Opcache()
 		'80')
 		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/opcache.so'
 		;;
+		'81')
+		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/opcache.so'
+		;;
 	esac
 	
 	if [ ! -f "$extFile" ];then
 		public_file=/www/server/panel/install/public.sh
 		if [ ! -f $public_file ];then
-			wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+			wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 		fi
 		. $public_file
 
@@ -78,6 +81,7 @@ Install_Opcache()
 	else
 		sed -i "s#;opcache#;opcache\n[Zend Opcache]\nzend_extension=${extFile}\nopcache.enable = 1\nopcache.memory_consumption=128\nopcache.interned_strings_buffer=32\nopcache.max_accelerated_files=80000\nopcache.revalidate_freq=3\nopcache.fast_shutdown=1\nopcache.enable_cli=1#" /www/server/php/$version/etc/php.ini
 	fi
+	
 	/etc/init.d/php-fpm-$version reload
 }
 

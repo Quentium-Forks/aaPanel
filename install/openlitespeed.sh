@@ -1,7 +1,7 @@
 #!/bin/sh
 public_file=/www/server/panel/install/public.sh
 if [ ! -f $public_file ];then
-	wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+	wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 fi
 . $public_file
 download_Url=$NODE_URL
@@ -132,8 +132,12 @@ Install_OLS(){
   check_os
   if [ -f '/etc/redhat-release' ];then
     rpm -Uvh $download_Url/src/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
+    if [ ! -f '/etc/yum.repos.d/litespeed.repo' ];then
+      rpm -e litespeed-repo
+      rpm -Uvh $download_Url/src/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
+    fi
     ols_check_repo=$(rpm -qa|grep litespeed)
-    if [ $ols_check_repo = '' ];then
+    if [ $ols_check_repo = 'litespeed-repo' ];then
       rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     fi
   else
@@ -162,11 +166,12 @@ update_OLS(){
 
 init_OLS() {
   cd /tmp
-  grep "English" /www/server/panel/config/config.json
+  grep "English" /www/server/panel/config/config.json > /dev/null
   if [ "$?" -ne 0 ];then
-    host=$(cat /etc/hosts|grep -E '103.224.251.67\s*rpms.litespeedtech.com')
+        sed -i "/116\.213\.43\.206/g" /etc/hosts
+    host=$(cat /etc/hosts|grep -E '103.179.243.14\s*rpms.litespeedtech.com')
     if [ "$host" == "" ];then
-      echo '103.224.251.67 rpms.litespeedtech.com www.litespeedtech.com'>> /etc/hosts
+      echo -e '\n103.179.243.14 rpms.litespeedtech.com www.litespeedtech.com'>> /etc/hosts
     fi
     wget -O openlitespeed-${ols_version}.tgz --no-check-certificate $download_Url/src/openlitespeed-${ols_version}.tgz
   else
@@ -195,27 +200,40 @@ process_OLS_conf () {
   echo "include /www/server/panel/vhost/openlitespeed/listen/*.conf" >> $ols_conf
 #  设置默认安装的php版本
   if [ -f '/etc/redhat-release' ];then
-    rm -f /usr/local/lsws/lsphp74/etc/php.ini_old
-    mv /usr/local/lsws/lsphp74/etc/php.ini /usr/local/lsws/lsphp74/etc/php.ini_old
-    wget -O /usr/local/lsws/lsphp74/etc/php.ini $download_Url/install/ols/php/centos/php74.ini
-    if [ ! -f /usr/local/lsws/lsphp74/etc/php.ini ];then
-      mv /usr/local/lsws/lsphp74/etc/php.ini_old /usr/local/lsws/lsphp74/etc/php.ini
-      sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp74/etc/php.ini
-      sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php.ini
-      sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php.ini
-      sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp74/etc/php.ini
-    fi
+      if [ ! -f /usr/local/lsws/lsphp74/etc/php.ini ];then
+      wget -O /usr/local/lsws/lsphp74/etc/php.ini $download_Url/install/ols/php/centos/php74.ini
+      fi
+      grep "/tmp/mysql.sock" /usr/local/lsws/lsphp74/etc/php.ini > /dev/null
+      if [ "$?" -ne 0 ];then
+        wget -O /usr/local/lsws/lsphp74/etc/php.ini $download_Url/install/ols/php/centos/php74.ini
+      fi
+    #rm -f /usr/local/lsws/lsphp74/etc/php.ini_old
+    #mv /usr/local/lsws/lsphp74/etc/php.ini /usr/local/lsws/lsphp74/etc/php.ini_old
+    #wget -O /usr/local/lsws/lsphp74/etc/php.ini $download_Url/install/ols/php/centos/php74.ini
+    #if [ ! -f /usr/local/lsws/lsphp74/etc/php.ini ];then
+      #mv /usr/local/lsws/lsphp74/etc/php.ini_old /usr/local/lsws/lsphp74/etc/php.ini
+      #sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp74/etc/php.ini
+      #sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php.ini
+      #sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php.ini
+      #sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp74/etc/php.ini
+#    fi
   else
-    rm -f /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old
-    mv /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old
-    wget -O /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php74.ini
+    #rm -f /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old
+    #mv /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old
+    #wget -O /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php74.ini
     if [ ! -f "/usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini" ];then
-      mv /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
-      sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
-      sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
-      sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
-      sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+      wget -O /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php74.ini
     fi
+    grep "/tmp/mysql.sock" /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini > /dev/null
+    if [ "$?" -ne 0 ];then
+      wget -O /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php74.ini
+    fi
+      #mv /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini_old /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+      #sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+      #sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+      #sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+      #sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp74/etc/php/7.4/litespeed/php.ini
+    #fi
   fi
   #检查已经安装了什么版本的php并安装对应的lsphp
   php_dir='/www/server/php/'
@@ -250,26 +268,28 @@ process_OLS_conf () {
 		  fi
     fi
     if [ -f '/etc/redhat-release' ];then
-      rm -f /usr/local/lsws/lsphp$v/etc/php.ini_old
-      mv /usr/local/lsws/lsphp$v/etc/php.ini /usr/local/lsws/lsphp$v/etc/php.ini_old
-      wget -O /usr/local/lsws/lsphp$v/etc/php.ini $download_Url/install/ols/php/centos/php$v.ini
+    #  rm -f /usr/local/lsws/lsphp$v/etc/php.ini_old
+    #  mv /usr/local/lsws/lsphp$v/etc/php.ini /usr/local/lsws/lsphp$v/etc/php.ini_old
+    #  wget -O /usr/local/lsws/lsphp$v/etc/php.ini $download_Url/install/ols/php/centos/php$v.ini
       if [ ! -f /usr/local/lsws/lsphp$v/etc/php.ini ];then
-        mv /usr/local/lsws/lsphp$v/etc/php.ini_old /usr/local/lsws/lsphp$v/etc/php.ini
-        sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp$v/etc/php.ini
-        sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php.ini
-        sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php.ini
-        sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp$v/etc/php.ini
+        wget -O /usr/local/lsws/lsphp$v/etc/php.ini $download_Url/install/ols/php/centos/php$v.ini
+    #    mv /usr/local/lsws/lsphp$v/etc/php.ini_old /usr/local/lsws/lsphp$v/etc/php.ini
+    #    sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp$v/etc/php.ini
+    #    sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php.ini
+    #    sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php.ini
+    #    sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp$v/etc/php.ini
       fi
     else
-      rm -f /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old
-      mv /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old
-      wget -O /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php$v.ini
+    #  rm -f /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old
+    #  mv /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old
+    #  wget -O /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php$v.ini
       if [ ! -f "/usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini" ];then
-		    mv /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
-        sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
-        sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
-        sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
-        sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
+        wget -O /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini $download_Url/install/ols/php/ubuntu/php$v.ini
+#		    mv /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini_old /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
+    #    sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
+    #    sed -i 's/mysqli.default_socket.*/mysqli.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
+    #    sed -i 's/mysql.default_socket.*/mysql.default_socket = \/tmp\/mysql.sock/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
+    #    sed -i 's/session.save_path.*/session.save_path = "\/tmp"/g' /usr/local/lsws/lsphp$v/etc/php/${v:0:1}.${v:1:2}/litespeed/php.ini
 	    fi
     fi
   done
@@ -524,7 +544,9 @@ Uninstall_OLS () {
 actionType=$1
 ols_version=$2
 if [ "$ols_version" == "1.6" ];then
-  ols_version=1.6.21
+  ols_version=1.7.16
+else
+  ols_version=1.7.16
 fi
 
 if [ "${actionType}" == "uninstall" ]; then

@@ -2,8 +2,8 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-memcachedVer="1.6.9"
-memcachedPhpVer="3.1.5"
+memcachedVer="1.6.17"
+memcachedPhpVer="3.2.0"
 
 Centos6Check=$(cat /etc/redhat-release|grep ' 6.'|grep -i centos)
 if [ "${Centos6Check}" ];then
@@ -11,11 +11,11 @@ if [ "${Centos6Check}" ];then
 fi
 
 public_file=/www/server/panel/install/public.sh
-[ ! -f $public_file ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+[ ! -f $public_file ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 publicFileMd5=$(md5sum ${public_file}|awk '{print $1}')
 md5check="84cc939e9cda4405b6fb0c6f5bbc93b5"
-[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 . $public_file
 download_Url=$NODE_URL

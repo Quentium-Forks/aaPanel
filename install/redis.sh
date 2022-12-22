@@ -1,14 +1,14 @@
 #!/bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
-redis_version=6.2.6
+redis_version=7.0.5
 runPath=/root
 public_file=/www/server/panel/install/public.sh
-[ ! -f $public_file ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+[ ! -f $public_file ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 publicFileMd5=$(md5sum ${public_file}|awk '{print $1}')
-md5check="bbc7c9ebfee02b8e5158b509a6ad642d"
-[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file http://download.bt.cn/install/public.sh -T 5;
+md5check="8e49712d1fd332801443f8b6fd7f9208"
+[ "${publicFileMd5}" != "${md5check}"  ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
 
 . $public_file
 download_Url=$NODE_URL
@@ -210,7 +210,7 @@ Install_Redis()
 		if [ "${version}" == "52" ];then
 			rVersion='2.2.7'
 		elif [ "${version}" -ge "70" ];then
-			rVersion='5.3.4'
+			rVersion='5.3.7'
 		else
 			rVersion='4.3.0'
 		fi
@@ -232,25 +232,25 @@ Install_Redis()
 	fi
 	
 	echo -e "\n[redis]\nextension = ${extFile}\n" >> /www/server/php/$version/etc/php.ini
+	if [ -f "/www/server/php/$version/etc/php-cli.ini" ]; then
+		echo -e "\n[redis]\nextension = ${extFile}\n" >> /www/server/php/$version/etc/php-cli.ini
+	fi
 
-	/etc/init.d/php-fpm-$version reload
+	/etc/init.d/php-fpm-$version restart
 	echo '==============================================='
 	echo 'successful!'
 }
 
 Uninstall_Redis()
 {
-	if [ ! -d /www/server/php/$version/bin ];then
-		pkill -9 redis
-		rm -f /var/run/redis_6379.pid
-		Service_Del
-		rm -f /usr/bin/redis-cli
-		rm -f /etc/init.d/redis
-		rm -rf /www/server/redis
-		rm -rf /www/server/panel/plugin/redis
-
-		return;
-	fi
+	pkill -9 redis
+	rm -f /var/run/redis_6379.pid
+	Service_Del
+	rm -f /usr/bin/redis-cli
+	rm -f /etc/init.d/redis
+	rm -rf /www/server/redis
+	rm -rf /www/server/panel/plugin/redis
+	
 	if [ ! -f "/www/server/php/$version/bin/php-config" ];then
 		echo "php-$vphp 未安装,请选择其它版本!"
 		echo "php-$vphp not install, Plese select other version!"
@@ -266,8 +266,12 @@ Uninstall_Redis()
 	
 	sed -i '/redis.so/d' /www/server/php/$version/etc/php.ini
 	sed -i '/\[redis\]/d' /www/server/php/$version/etc/php.ini
+	if [ -f "/www/server/php/$version/etc/php-cli.ini" ]; then
+		sed -i '/redis.so/d' /www/server/php/$version/etc/php-cli.ini
+		sed -i '/\[redis\]/d' /www/server/php/$version/etc/php-cli.ini
+	fi
 	
-	/etc/init.d/php-fpm-$version reload
+	/etc/init.d/php-fpm-$version restart
 	echo '==============================================='
 	echo 'successful!'
 }
@@ -344,6 +348,13 @@ EOF
 actionType=$1
 version=$2
 vphp=${version:0:1}.${version:1:1}
+
+if [ "$version" == "7.0" ];then
+	redis_version="7.0.5"
+elif [ "$version" == "6.2" ]; then
+	redis_version="6.2.7"
+fi
+
 if [ "$actionType" == 'install' ];then
 	System_Lib
 	ext_Path
@@ -356,4 +367,5 @@ elif [ "${actionType}" == "update" ]; then
 	Gcc_Version_Check
 	Update_redis
 fi
+
 
