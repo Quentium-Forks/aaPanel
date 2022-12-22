@@ -219,13 +219,14 @@
 {% endblock %}
 
 {% block scripts %}
-	<script src="/static/js/crontab.js?date20200106={{g['version']}}"></script>
-	<script type="text/javascript">
-	    setCookie('serverType',"{{session['webserver']}}");
-		toWeek();
-		toHour();
-		toMinute();
-		toShell();
-		getCronData();
-	</script>
+{{ super() }}
+<script src="/static/js/crontab.js?date20200106={{g['version']}}"></script>
+<script type="text/javascript">
+    setCookie('serverType', "{{session['webserver']}}");
+    toWeek();
+    toHour();
+    toMinute();
+    toShell();
+    getCronData();
+</script>
 {% endblock %}

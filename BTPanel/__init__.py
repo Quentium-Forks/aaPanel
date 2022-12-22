@@ -185,17 +185,17 @@ def request_check():
 
     if not request.path in ['/safe', '/hook', '/public', '/mail_sys', '/down']:
         ip_check = public.check_ip_panel()
-        if ip_check: return abort(401)
+        if ip_check: return ip_check
 
     if request.path.find('/static/') != -1 or request.path == '/code':
         if not 'login' in session and not 'admin_auth' in session and not 'down' in session:
             return abort(401)
     domain_check = public.check_domain_panel()
-    if domain_check: return abort(401)
+    if domain_check: return domain_check
     if public.is_local():
         not_networks = ['uninstall_plugin','install_plugin','UpdatePanel']
-        if request.args.get('action') in not_networks:
-            return public.returnJson(False,'INIT_REQUEST_CHECK_LOCAL_ERR'),json_header
+        if request.args.get('action') in not_networks: 
+            return public.returnJson(False,'This feature cannot be used in offline mode!'),json_header
 
     if request.path in ['/site','/ftp','/database','/soft','/control','/firewall','/files','/xterm','/crontab','/config']:
         if public.is_error_path():
@@ -355,7 +355,7 @@ def site(pdata = None):
         return render_template( 'site.html',data=data)
     import panelSite
     siteObject = panelSite.panelSite()
-
+        
     defs = ('get_auto_restart_rph','remove_auto_restart_rph','auto_restart_rph','check_del_data','upload_csv','create_website_multiple','del_redirect_multiple','del_proxy_multiple','delete_dir_auth_multiple',
             'delete_dir_bind_multiple','delete_domain_multiple','set_site_etime_multiple','set_site_php_version_multiple',
             'delete_website_multiple','set_site_status_multiple','get_site_err_log','get_site_domains','GetRedirectFile',
@@ -565,6 +565,8 @@ def panel_warning(pdata=None):
     import panelWarning
     dataObject = panelWarning.panelWarning()
     defs = ('get_list', 'set_ignore', 'check_find')
+    if get.action in ['set_ignore','check_find']:
+        cache.delete(ikey)
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -729,11 +731,11 @@ def config(pdata = None):
         'send_by_telegram','set_empty','set_backup_notification','get_panel_ssl_status','set_file_deny', 'del_file_deny', 'get_file_deny',
         'get_httpd_access_log_format_parameter','set_httpd_format_log_to_website','get_httpd_access_log_format',
         'del_httpd_access_log_format','add_httpd_access_log_format','get_nginx_access_log_format_parameter',
-        'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format','set_click_logs','get_node_config'
-        'add_nginx_access_log_format','get_ols_private_cache_status','get_ols_value','set_ols_value','set_node_config'
+        'set_format_log_to_website','get_nginx_access_log_format','del_nginx_access_log_format','set_click_logs','get_node_config',
+        'add_nginx_access_log_format','get_ols_private_cache_status','get_ols_value','set_ols_value','set_node_config',
         'get_ols_private_cache','get_ols_static_cache','set_ols_static_cache','switch_ols_private_cache','set_ols_private_cache',
         'set_coll_open','get_qrcode_data','check_two_step','set_two_step_auth','create_user','remove_user','modify_user',
-        'get_key','get_php_session_path','set_php_session_path','get_cert_source','get_users','set_request_iptype'
+        'get_key','get_php_session_path','set_php_session_path','get_cert_source','get_users','set_request_iptype',
         'set_local','set_debug','get_panel_error_logs','clean_panel_error_logs','get_menu_list','set_hide_menu_list',
         'get_basic_auth_stat','set_basic_auth','get_cli_php_version','get_tmp_token','get_temp_login','set_temp_login','remove_temp_login','clear_temp_login','get_temp_login_logs',
         'set_cli_php_version','DelOldSession', 'GetSessionCount', 'SetSessionConf','set_not_auth_status',
@@ -995,8 +997,8 @@ def login():
         for v in v_list:
             pv = request.form.get(v,'').strip()
             if v == 'cdn_url':
-                if len(pv) > 32: return public.returnMsg(False,'PARAMETER_LEN_ERR'),json_header
-                if not re.match(r"^[\w\.-]+$",pv): public.returnJson(False,'PARAMETER_FORMAT_ERR'),json_header
+                if len(pv) > 32: return public.return_msg_gettext(False,'Wrong parameter length!'),json_header
+                if not re.match(r"^[\w\.-]+$",pv): public.return_msg_gettext(False,'Wrong parameter format!'),json_header
                 continue
 
             if not pv: continue
@@ -1026,7 +1028,7 @@ def login():
         if session['login'] != False:
             session['login'] = False
             cache.set('dologin',True)
-            public.WriteLog('TYPE_LOGOUT','MANUALLY_LOGOUT',(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT')),))
+            public.write_log_gettext('Logout','Client: {}, has manually exited the panel',(public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT')),))
             if 'tmp_login_expire' in session:
                 s_file = 'data/session/{}'.format(session['tmp_login_id'])
                 if os.path.exists(s_file):
@@ -1052,7 +1054,6 @@ def login():
             if referer_path == '':
                 referer_path = referer_tmp[-2]
             if route_path != '/' + referer_path:
-                return abort(404)
                 g.auth_error = True
                 # return render_template('autherr.html')
                 return public.error_not_login(None)
@@ -1276,7 +1277,7 @@ def panel_public():
     get.client_ip = public.GetClientIp()
     num_key = get.client_ip + '_wxapp'
     if not public.get_error_num(num_key, 10):
-        return public.returnMsg(False, 'AUTH_FAILED')
+        return public.return_msg_gettext(False, '10 consecutive authentication failures are prohibited for 1 hour')
     if not hasattr(get, 'name'): get.name = ''
     if not hasattr(get, 'fun'): return abort(404)
     if not public.path_safe_check("%s/%s" % (get.name, get.fun)): return abort(404)
@@ -1285,7 +1286,7 @@ def panel_public():
         if admin_path != '/bt' and os.path.exists(admin_path_file) and not 'admin_auth' in session:
             return abort(404)
         #验证是否绑定了设备
-        if not public.check_app('app'):return public.returnMsg(False,'UNBOUND_USER')
+        if not public.check_app('app'):return public.return_msg_gettext(False,'Unbound user')
         import wxapp
         pluwx = wxapp.wxapp()
         checks = pluwx._check(get)
@@ -1376,7 +1377,7 @@ def panel_other(name=None, fun=None, stype=None):
     if not args: args = get_input()
     args.client_ip = public.GetClientIp()
     args.fun = fun
-
+    
     #初始化插件对象
     try:
         is_php = os.path.exists(p_path + '/index.php')
@@ -1492,7 +1493,7 @@ def install():
         data['status'] = os.path.exists('install.pl')
         data['username'] = public.GetRandomString(8).lower()
         return render_template( 'install.html',data = data)
-
+    
     elif request.method == method_post[0]:
         if not os.path.exists('install.pl'): return redirect(ret_login)
         get = get_input()
@@ -1583,7 +1584,7 @@ def get_dir_down(filename,token,find):
         if find['expire'] < (time.time() + (86400 * 365 * 10)):
             pdata['expire'] = public.format_date(times=find['expire'])
         else:
-            pdata['expire'] = public.getMsg('NEVER_EXPIRES')
+            pdata['expire'] = public.get_msg_gettext('Never Expires')
         pdata['filename'] = (find['filename'].split('/')[-1] + '/' + to_path).strip('/')
         return render_template('down.html',data = pdata,to_size=public.to_size)
 
@@ -1692,7 +1693,7 @@ def publicObject(toObject, defs, action=None, get=None):
 def check_login(http_token=None):
     #检查是否登录面板
     if cache.get('dologin'): return False
-    if 'login' in session:
+    if 'login' in session: 
         loginStatus = session['login']
         if loginStatus and http_token:
             if session['request_token_head'] != http_token: return False

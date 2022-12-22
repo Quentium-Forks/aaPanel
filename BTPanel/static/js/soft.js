@@ -542,10 +542,10 @@ var soft = {
     },
     set_soft_tips:function(rdata,type){
         var tips_info = $('<div class="alert" style="margin-bottom:15px"><div class="soft_tips_text"></div><div class="btn-ground" style="display:inline-block;"></div></div>'),
-            explain = tips_info.find('.soft_tips_text'),
-            btn_ground = tips_info.find('.btn-ground'),
-            _this = this,
-            el = '#updata_pro_info';
+        explain = tips_info.find('.soft_tips_text'),
+        btn_ground = tips_info.find('.btn-ground'),
+        _this = this,
+        el = '#updata_pro_info';
         $(el).empty()
         type = parseInt(type);
         if(type != 11) $(el).next('.onekey-menu-sub').remove();
@@ -582,7 +582,6 @@ var soft = {
             if (rdata.ltd > 0 || rdata.pro >= 0) is_buy = true
             if (type === 12 && rdata.ltd < 0) is_buy = false
             var buy_type = is_buy?30:29
-
             var ltd = parseInt(bt.get_cookie('ltd_end') || -1),pro = parseInt(bt.get_cookie('pro_end')  || -1),todayDate = parseInt(new Date().getTime()/1000),_ltd = null;
             if((ltd > 0 && (ltd == pro || pro < 0)) || (ltd < 0 && pro >= 0) || (ltd > 0 && pro >= 0)){
                 _ltd = ((ltd > 0 && (ltd == pro || pro < 0)) || (ltd > 0 && pro >= 0))?1:0;
@@ -616,14 +615,14 @@ var soft = {
                 }else{
                     var btn = $('<a title="' + (is_buy ? 'Renew Now' : 'Upgrade now') + '" href="javascript:;" class="btn btn-success btn-xs va0 ml15" style="margin-left:10px;">' + (is_buy ? 'Renew Now' : 'Upgrade now') + '</a>')
                     btn.on('click', function () {
-                        bt.soft.updata_pro(buy_type)
+                        genre ? bt.soft.updata_pro(buy_type) : bt.soft.updata_ltd(undefined,buy_type)
                     })
                     tips_info.addClass('showprofun').find('.btn-ground').append(btn)
                 }
               }
               // if(_ltd != 2){
               //   if(!(pro == 0 && ltd < 0)){
-              //     btn_ground  = soft.render_tips_btn(btn_ground,btn_config);
+              //     btn_ground  = soft.render_tips_btn(btn_ground);
               //   }
               // }
               $(el).append(tips_info.addClass(_ltd == 1?'alert-ltd-success':'alert-success'));
@@ -717,6 +716,7 @@ var soft = {
         $.post('/deployment?action=GetList', pdata, function(rdata) {
             layer.close(loadT)
             var tBody = '';
+            soft.set_soft_tips(rdata, 11);
             rdata.type.unshift({
                 icon: 'icon',
                 id: 0,

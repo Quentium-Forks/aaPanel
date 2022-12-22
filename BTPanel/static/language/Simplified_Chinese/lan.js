@@ -139,7 +139,7 @@ var lan = {
 		"update_time": "Update time",
 		"update_verison_click": "If you need to update the beta version, please click",
 		"check_detail": "see details",
-		"change_final_click": "If you need to switch back to the official version, please click",
+		"change_final_click": "If you need to switch back to the stable version, click ",
 		"change_final": "Switch to the official version",
 		"have_new_version": "Is there a new panel version update, is it updated?",
 		"last_version": "The latest version of: ",

@@ -718,87 +718,86 @@ var index = {
 
 
     get_index_list: function () {
-			bt.soft.get_index_list(function (rdata) {
-				var con = '';
-				var icon = '';
-				var rlen = rdata.length;
-				var clickName = '';
-				var setup_length = 0;
-				var softboxsum = 12;
-				var softboxcon = '';
-				for (var i = 0; i < rlen; i++) {
-					if (rdata[i].setup) {
-						setup_length++;
-						if (rdata[i].admin) {
-							clickName = ' onclick="bt.soft.set_lib_config(\'' + rdata[i].name + '\',\'' + rdata[i].title + '\')"';
-						} else {
-							clickName = 'onclick="soft.set_soft_config(\'' + rdata[i].name + '\')"';
-						}
-						var icon = rdata[i].name;
-						if (bt.contains(rdata[i].name, 'php-')) {
-							icon = 'php';
-							rdata[i].version = '';
-						}
-						var status = '';
-						if (rdata[i].status) {
-							status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
-						} else {
-							status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>'
-						}
-						con += '<div class="col-sm-3 col-md-3 col-lg-3" data-id="' + rdata[i].name + '">\
+        bt.soft.get_index_list(function (rdata) {
+            var con = '';
+            var icon = '';
+            var rlen = rdata.length;
+            var clickName = '';
+            var setup_length = 0;
+            var softboxsum = 12;
+            var softboxcon = '';
+            for (var i = 0; i < rlen; i++) {
+                if (rdata[i].setup) {
+                    setup_length++;
+                    if (rdata[i].admin) {
+                        clickName = ' onclick="bt.soft.set_lib_config(\'' + rdata[i].name + '\',\'' + rdata[i].title + '\')"';
+                    }
+                    else {
+                        clickName = 'onclick="soft.set_soft_config(\'' + rdata[i].name + '\')"';
+                    }
+                    var icon = rdata[i].name;
+                    if (bt.contains(rdata[i].name, 'php-')) {
+                        icon = 'php';
+                        rdata[i].version = '';
+                    }
+                    var status = '';
+                    if (rdata[i].status) {
+                        status = '<span style="color:#20a53a" class="glyphicon glyphicon-play"></span>';
+                    } else {
+                        status = '<span style="color:red" class="glyphicon glyphicon-pause"></span>'
+                    }
+                    con += '<div class="col-sm-3 col-md-3 col-lg-3" data-id="' + rdata[i].name + '">\
 							<span class="spanmove"></span>\
 							<div '+ clickName + '>\
 							<div class="image"><img width="48" src="/static/img/soft_ico/ico-'+ icon + '.png"></div>\
 							<div class="sname">'+ rdata[i].title + ' ' + rdata[i].version + status + '</div>\
 							</div>\
 						</div>'
-					}
-				}
-				$("#indexsoft").html(con);
+                }
+            }
+            $("#indexsoft").html(con);
+            // 推荐安装软件
+            try {
+                var recomConfig = product_recommend.get_recommend_type(1)
+                if(recomConfig){
+                    var pay_status = product_recommend.get_pay_status();
+                    for (var i = 0; i < recomConfig['list'].length; i++) {
+                        const item = recomConfig['list'][i];
+                        if(setup_length > softboxsum) break;
+                        if(pay_status.is_pay && item['install']) continue;
+                        softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3">\
+                      <div class="recommend-soft recom-iconfont">\
+                        <div class="product-close hide">关闭推荐</div>\
+                        <div class="images"><img src="/static/img/soft_ico/ico-'+ item['name'] +'.png"></div>\
+                        <div class="product-name">'+ item['title'] +'</div>\
+                        <div class="product-pay-btn">\
+                        '+ ((item['isBuy'] && !item['install'])?
+                            '<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\''+ item['name'] +'\')">Install</button>':
+                            '<a class="btn btn-sm btn-default mr5 '+ (!item.preview?'hide':'') +'" href="'+ item.preview +'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick=\"product_recommend.pay_product_sign(\'pro\','+ item.pay +')\">Buy now</button>') +'\
+                        </div>\
+                      </div>\
+                    </div>'
+                        setup_length ++;
+                    }
+                }
+            } catch (error) {
+                console.log(error)
+            }
+            //软件位置移动
+            if (setup_length <= softboxsum) {
+                for (var i = 0; i < softboxsum - setup_length; i++) {
+                    softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3 no-bg"></div>'
+                }
+                $("#indexsoft").append(softboxcon);
+            }
+            $("#indexsoft").dragsort({ dragSelector: ".spanmove", dragBetween: true, dragEnd: saveOrder, placeHolderTemplate: "<div class='col-sm-3 col-md-3 col-lg-3 dashed-border'></div>" });
 
-				// 推荐安装软件
-				try {
-					var recomConfig = product_recommend.get_recommend_type(1)
-					if(recomConfig){
-						var pay_status = product_recommend.get_pay_status();
-						for (var i = 0; i < recomConfig['list'].length; i++) {
-							const item = recomConfig['list'][i];
-							if(setup_length > softboxsum) break;
-							if(pay_status.is_pay && item['install']) continue;
-							softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3">\
-								<div class="recommend-soft recom-iconfont">\
-									<div class="product-close hide">关闭推荐</div>\
-									<div class="images"><img src="/static/img/soft_ico/ico-'+ item['name'] +'.png"></div>\
-									<div class="product-name">'+ item['title'] +'</div>\
-									<div class="product-pay-btn">\
-									'+ ((item['isBuy'] && !item['install'])?
-											'<button class="btn btn-sm btn-success home_recommend_btn" style="margin-left:0;" onclick="bt.soft.install(\''+ item['name'] +'\')">Install</button>':
-											'<a class="btn btn-sm btn-default mr5 '+ (!item.preview?'hide':'') +'" href="'+ item.preview +'" target="_blank">Preview</a><button type="submit" class="btn btn-sm btn-success home_recommend_btn" onclick=\"product_recommend.pay_product_sign(\'pro\','+ item.pay +')\">Buy now</button>') +'\
-									</div>\
-								</div>\
-							</div>'
-							setup_length ++;
-						}
-					}
-				} catch (error) {
-					console.log(error)
-				}
-
-				//软件位置移动
-				if (setup_length <= softboxsum) {
-					for (var i = 0; i < softboxsum - setup_length; i++) {
-						softboxcon += '<div class="col-sm-3 col-md-3 col-lg-3 no-bg"></div>'
-					}
-				}
-				$("#indexsoft").append(softboxcon);
-				$("#indexsoft").dragsort({ dragSelector: ".spanmove", dragBetween: true, dragEnd: saveOrder, placeHolderTemplate: "<div class='col-sm-3 col-md-3 col-lg-3 dashed-border'></div>" });
-
-				function saveOrder() {
-					var data = $("#indexsoft > div").map(function () { return $(this).attr("data-id"); }).get();
-					data = data.join('|');
-					bt.soft.set_sort_index(data)
-				};
-			})
+            function saveOrder() {
+                var data = $("#indexsoft > div").map(function () { return $(this).attr("data-id"); }).get();
+                data = data.join('|');
+                bt.soft.set_sort_index(data)
+            };
+        })
     },
     check_update: function () {
     	var _load = bt.load('Getting updates, please wait...');
@@ -822,7 +821,7 @@ var index = {
                                 <div class="update_title"><i class="layui-layer-ico layui-layer-ico1"></i><span>'+lan.index.last_version_now+'</span></div>\
                                 <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&nbsp;'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
                                 <div class="update_conter">\
-                                        <div class="update_tips">'+ (is_beta != 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_tips">'+ lan.index.last_version_is+(is_beta != 1 ? lan.index.test_version : lan.index.final_version)  + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">&nbsp;&nbsp;'+lan.index.change_final+'</a></span>') + '\
                                     </div>\
                                 <div class="bt-form-submit-btn">\
@@ -862,11 +861,11 @@ var index = {
                     content: '<div class="setchmod bt-form" style="padding-bottom:50px;">\
                                     <div class="update_title"><i class="layui-layer-ico layui-layer-ico0"></i><span>'+lan.index.have_new_version+'</span></div>\
                                     <div class="update_conter">\
-                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) +' '+ rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         <div class="update_logs">'+ rdata.updateMsg + '</div>\
                                     </div>\
                                     <div class="update_conter">\
-                                        <div class="update_tips">'+ (is_beta !== 1 ? lan.index.test_version : lan.index.final_version) + lan.index.last_version_is + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
+                                        <div class="update_tips">'+ lan.index.last_version_is +(is_beta !== 1 ? lan.index.test_version : lan.index.final_version) +  (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
                                         '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
                                     </div>\
                                     <div class="bt-form-submit-btn">\
@@ -1096,6 +1095,7 @@ var index = {
         }, 100)
     },
     open_log: function () {
+			return
         bt.open({
             type: 1,
             area: '640px',
@@ -1105,7 +1105,7 @@ var index = {
             shadeClose: false,
             content: '<div class="DrawRecordCon"></div>'
         });
-        $.get('https://www.bt.cn/Api/getUpdateLogs?type=' + bt.os, function (rdata) {
+        $.get('https://www.bt.cn/api/panel/updateLinuxEn', function (rdata) {
             var body = '';
             for (var i = 0; i < rdata.length; i++) {
                 body += '<div class="DrawRecord DrawRecordlist">\
@@ -1272,7 +1272,7 @@ var index = {
                         break;
                         case 1:
                             if(data.type != 'ignore'){
-                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore【'+ data.title +'】risk?'},function(){
+                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore [ '+ data.title +' ] risk?'},function(){
                                     that.warning_set_ignore(data.model,function(res){
                                         that.get_warning_list(false,function(){
                                             bt.msg(res)
