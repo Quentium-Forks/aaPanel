@@ -1229,6 +1229,8 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         conf_path = "/www/server/nginx/conf/nginx.conf"
         public.back_file(conf_path)
         content = public.readFile(conf_path)
+        if not content:
+            return
         if "#AAPANEL_FASTCGI_CONF_BEGIN" in content:
             one_key_wp().write_logs("|-Nginx FastCgi cache configuration already exists")
             print("Nginx FastCgi cache configuration already exists")

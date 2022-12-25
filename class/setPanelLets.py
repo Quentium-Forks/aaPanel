@@ -93,6 +93,7 @@ class setPanelLets:
                 now = time.time()
                 if time_stamp > int(now):
                     return i
+        for i in gcl:
             for d in i['dns']:
                 d = d.split('.')
                 if '*' in d and d[1:] == get.domain.split('.')[1:]:
@@ -139,8 +140,8 @@ class setPanelLets:
         public.writeFile(self.__panel_cert_path + "certificate.pem", self.__tmp_cert)
 
     # 记录证书源
-    def __save_cert_source(self,domain,email):
-        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2","email":email}))
+    def __save_cert_source(self,domain):
+        public.writeFile(self.__panel_cert_path+"lets.info",json.dumps({"domain":domain,"cert_type":"2"}))
 
     # 获取证书源
     def get_cert_source(self):
@@ -219,7 +220,7 @@ class setPanelLets:
                 return res
             public.writeFile("/www/server/panel/data/ssl.pl", "True")
             # public.writeFile("/www/server/panel/data/reload.pl","1")
-            self.__save_cert_source(domain,get.email)
+            self.__save_cert_source(domain)
             return public.returnMsg(True, 'Setup successfully!')
         if not create_site:
             create_lets = self.__create_lets(get)
@@ -230,7 +231,7 @@ class setPanelLets:
                 self.copy_cert(domain_cert)
                 public.writeFile("/www/server/panel/data/ssl.pl", "True")
                 # public.writeFile("/www/server/panel/data/reload.pl", "1")
-                self.__save_cert_source(domain, get.email)
+                self.__save_cert_source(domain)
                 return  public.returnMsg(True, 'Setup successfully!')
             else:
                 return public.returnMsg(False, create_lets)

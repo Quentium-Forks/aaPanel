@@ -703,7 +703,7 @@ class ajax:
 
     # 下载云端php扩展配置
     def _get_cloud_phplib(self):
-        if not session.get('download_url'): session['download_url'] = 'http://node.aapanel.com'
+        if not session.get('download_url'): session['download_url'] = 'https://node.aapanel.com'
         download_url = session['download_url'] + '/install/lib/phplib_en.json'
         tstr = public.httpGet(download_url)
         data = json.loads(tstr)

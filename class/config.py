@@ -914,53 +914,126 @@ class config:
         return public.return_msg_gettext(True,'Setup successfully!')
 
     #设置面板SSL
-    def SetPanelSSL(self,get):
-        if hasattr(get,"email"):
-            rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
-            if not re.search(rep_mail,get.email):
-                return public.return_msg_gettext(False,'The E-Mail format is illegal')
+    def SetPanelSSL(self, get):
+        if hasattr(get, "cert_type") and str(get.cert_type) == "2":
+            # rep_mail = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+            # if not re.search(rep_mail,get.email):
+            #     return public.return_msg_gettext(False,'The E-Mail format is illegal')
             import setPanelLets
             sp = setPanelLets.setPanelLets()
             sps = sp.set_lets(get)
             return sps
         else:
-            sslConf = self._setup_path+'/data/ssl.pl'
+            sslConf = self._setup_path + '/data/ssl.pl'
             if os.path.exists(sslConf):
-                public.ExecShell('rm -f ' + sslConf)
+                public.ExecShell('rm -f ' + sslConf + '&& rm -f /www/server/panel/ssl/*')
                 g.rm_ssl = True
-                return public.return_msg_gettext(True,'SSL turned off，Please use http protocol to access the panel!')
+                return public.return_msg_gettext(True, 'SSL turned off，Please use http protocol to access the panel!')
             else:
                 public.ExecShell('btpip install cffi')
                 public.ExecShell('btpip install cryptography')
                 public.ExecShell('btpip install pyOpenSSL')
                 try:
-                    if not self.CreateSSL(): return public.return_msg_gettext(False,'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
-                    public.writeFile(sslConf,'True')
+                    if not self.CreateSSL():
+                        return public.return_msg_gettext(False,
+                                                         'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
+                    public.writeFile(sslConf, 'True')
                 except:
-                    return public.return_msg_gettext(False,'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
-                return public.return_msg_gettext(True,'SSL is turned on, plesea use https protocol to access the panel!')
+                    return public.return_msg_gettext(False,
+                                                     'Error, unable to auto install pyOpenSSL!<p>Plesea try to manually install: pip install pyOpenSSL</p>')
+                return public.return_msg_gettext(True,
+                                                 'SSL is turned on, plesea use https protocol to access the panel!')
     #自签证书
+    # def CreateSSL(self):
+    #     if os.path.exists('ssl/input.pl'): return True
+    #     import OpenSSL
+    #     key = OpenSSL.crypto.PKey()
+    #     key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    #     cert = OpenSSL.crypto.X509()
+    #     cert.set_serial_number(0)
+    #     cert.get_subject().CN = public.GetLocalIp()
+    #     cert.set_issuer(cert.get_subject())
+    #     cert.gmtime_adj_notBefore( 0 )
+    #     cert.gmtime_adj_notAfter(86400 * 3650)
+    #     cert.set_pubkey( key )
+    #     cert.sign( key, 'md5' )
+    #     cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+    #     private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    #     if len(cert_ca) > 100 and len(private_key) > 100:
+    #         public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
+    #         public.writeFile('ssl/privateKey.pem',private_key,'wb+')
+    #         return True
+    #     return False
+    # 自签证书
+
     def CreateSSL(self):
-        if os.path.exists('ssl/input.pl'): return True
-        import OpenSSL
-        key = OpenSSL.crypto.PKey()
-        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-        cert = OpenSSL.crypto.X509()
-        cert.set_serial_number(0)
-        cert.get_subject().CN = public.GetLocalIp()
-        cert.set_issuer(cert.get_subject())
-        cert.gmtime_adj_notBefore( 0 )
-        cert.gmtime_adj_notAfter(86400 * 3650)
-        cert.set_pubkey( key )
-        cert.sign( key, 'md5' )
-        cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
-        private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
-        if len(cert_ca) > 100 and len(private_key) > 100:
-            public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
-            public.writeFile('ssl/privateKey.pem',private_key,'wb+')
-            return True
+        import base64
+        userInfo = public.get_user_info()
+        if not userInfo:
+            userInfo['uid'] = 0
+            userInfo['access_key'] = 'B' * 32
+        domains = self.get_host_all()
+        pdata = {
+            "action": "get_domain_cert",
+            "company": "aapanel.com",
+            "domain": ','.join(domains),
+            "uid": userInfo['uid'],
+            "access_key": 'B' * 32,
+            "panel": 1
+        }
+        cert_api = 'https://api.aapanel.com/aapanel_cert'
+        result = json.loads(public.httpPost(cert_api, {'data': json.dumps(pdata)}))
+        if 'status' in result:
+            if result['status']:
+                # if os.path.exists('ssl/certificate.pem'):
+                #     os.remove('ssl/certificate.pem')
+                # if os.path.exists('ssl/privateKey.pem'):
+                #     os.remove('ssl/privateKey.pem')
+                # if os.path.exists('ssl/baota_root.pfx'):
+                #     os.remove('ssl/baota_root.pfx')
+                # if os.path.exists('ssl/root_password.pl'):
+                #     os.remove('ssl/root_password.pl')
+                public.writeFile('ssl/certificate.pem', result['cert'])
+                public.writeFile('ssl/privateKey.pem', result['key'])
+                public.writeFile('ssl/baota_root.pfx', base64.b64decode(result['pfx']), 'wb+')
+                public.writeFile('ssl/root_password.pl', result['password'])
+                public.writeFile('data/ssl.pl', 'True')
+                # public.ExecShell("/etc/init.d/bt reload")
+                print('1')
+                return True
+        print('0')
         return False
 
+    def get_ipaddress(self):
+        '''
+            @name 获取本机IP地址
+            @author hwliang<2020-11-24>
+            @return list
+        '''
+        ipa_tmp = \
+        public.ExecShell("ip a |grep inet|grep -v inet6|grep -v 127.0.0.1|awk '{print $2}'|sed 's#/[0-9]*##g'")[
+            0].strip()
+        iplist = ipa_tmp.split('\n')
+        return iplist
+
+    def get_host_all(self):
+        local_ip = ['127.0.0.1', '::1', 'localhost']
+        ip_list = []
+        bind_ip = self.get_ipaddress()
+
+        for ip in bind_ip:
+            ip = ip.strip()
+            if ip in local_ip: continue
+            if ip in ip_list: continue
+            ip_list.append(ip)
+        net_ip = public.httpGet("https://www.aapanel.com/api/common/getClientIP")
+
+        if net_ip:
+            net_ip = net_ip.strip()
+            if not net_ip in ip_list:
+                ip_list.append(net_ip)
+        ip_list = [ip_list[-1], ip_list[0]]
+        return ip_list
     #生成Token
     def SetToken(self,get):
         data = {}

@@ -89,7 +89,7 @@ class database(datatool.datatools):
         public.M('databases').where('sid=?', id).delete()
         result = public.M('database_servers').where('id=?', id).delete()
         if isinstance(result, int):
-            public.WriteLog('Database manager', 'Delete the remote MySQL server [{}:{}]',(db_find['db_host'], int(db_find['db_port'])))
+            public.write_log_gettext('Database manager', 'Delete the remote MySQL server [{}:{}]',(db_find['db_host'], int(db_find['db_port'])))
             return public.return_msg_gettext(True, 'Successfully deleted!')
         return public.return_msg_gettext(False, 'Failed to delete: {}',(result,))
 
@@ -145,7 +145,7 @@ class database(datatool.datatools):
 
         result = public.M("database_servers").where('id=?', (id,)).update(pdata)
         if isinstance(result, int):
-            public.WriteLog('Database manager', 'Edit remote MySQL server [{}:{}]',(get.db_host, get.db_port))
+            public.write_log_gettext('Database manager', 'Edit remote MySQL server [{}:{}]',(get.db_host, get.db_port))
             return public.return_msg_gettext(True, 'Setup successfully!')
         return public.return_msg_gettext(False, 'Fail to edit: {}',(result))
 
@@ -615,10 +615,13 @@ SetLink
         users = panelMysql.panelMysql().query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'")
         if isinstance(users,str):
             return public.return_msg_gettext(False,'Delete failed, failed to connect to database!')
-        for us in users:
-            panelMysql.panelMysql().execute("drop user '" + username + "'@'" + us[0] + "'")
+        try:
+            for us in users:
+                panelMysql.panelMysql().execute("drop user '" + username + "'@'" + us[0] + "'")
+        except Exception:
+            pass
         panelMysql.panelMysql().execute("flush privileges")
-        rPath = '/www/Recycle_bin/'
+        rPath = '/www/.Recycle_bin/'
         data['rmtime'] = int(time.time())
         u_name = self.db_name_to_unicode(name)
         rm_path = '{}/BTDB_{}_t_{}'.format(rPath,u_name,data['rmtime'])
@@ -991,7 +994,7 @@ SetLink
             finally:
                 os.environ["MYSQL_PWD"] = ""
 
-        public.WriteLog("TYPE_DATABASE", 'Successfully imported database [{}]',(name,))
+        public.write_log_gettext("TYPE_DATABASE", 'Successfully imported database [{}]',(name,))
         return public.return_msg_gettext(True, 'Successfully imported database!')
         #except Exception as ex:
             #public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_ERR',(name,str(ex)))

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#coding: utf-8
+# coding: utf-8
 # -------------------------------------------------------------------
 # 宝塔Linux面板
 # -------------------------------------------------------------------
@@ -21,10 +21,12 @@ import json
 import time
 import os
 import sys
+
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
-    sys.path.insert(0,'class/')
+    sys.path.insert(0, 'class/')
 import http_requests as requests
+
 requests.DEFAULT_TYPE = 'curl'
 import public
 
@@ -38,6 +40,7 @@ try:
 except:
     public.ExecShell("pip install dnspython")
     import dns.resolver
+
 
 class acme_v2:
     _url = None
@@ -1667,24 +1670,33 @@ fullchain.pem       Paste into certificate input box
                 write_log("|-Renewal failed:")
 
     def renew_cert_to(self, domains, auth_type, auth_to, index=None):
+        siteName = None
         cert = {}
-
+        args = public.dict_obj()
+        if auth_to[-1] == "/":
+            auth_to = auth_to[:-1]
+        site_id = public.M('sites').where('path=?', auth_to).getField('id')
+        args.id = site_id
         if os.path.exists(auth_to):
-            if public.M('sites').where('path=?',auth_to).count() == 1:
-                site_id = public.M('sites').where('path=?',auth_to).getField('id')
+            if public.M('sites').where('path=?', auth_to).count() == 1:
+                # site_id = public.M('sites').where('path=?',auth_to).getField('id')
+                siteName = public.M('sites').where('path=?', auth_to).getField('name')
                 import panelSite
                 siteObj = panelSite.panelSite()
-                args = public.dict_obj()
-                args.id = site_id
+                # args = public.dict_obj()
+                # args.id = site_id
                 runPath = siteObj.GetRunPath(args)
                 if runPath and not runPath in ['/']:
                     path = auth_to + '/' + runPath
-                    if os.path.exists(path): auth_to = path.replace('//','/')
+                    if os.path.exists(path): auth_to = path.replace('//', '/')
+
+            else:
+                siteName = self.get_site_name_by_domains(domains)
         try:
             index = self.create_order(
                 domains,
                 auth_type,
-                auth_to.replace('//','/'),
+                auth_to.replace('//', '/'),
                 index
             )
 
@@ -1722,6 +1734,8 @@ fullchain.pem       Paste into certificate input box
             msg = str(e).split('>>>>')[0]
             write_log("|-" + msg)
             return public.returnMsg(False, msg)
+        finally:
+            self.turnon_redirect_proxy_httptohttps(args)
         write_log("-" * 70)
         return cert
 

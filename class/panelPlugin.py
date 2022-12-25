@@ -163,8 +163,8 @@ class panelPlugin:
         if not self.check_sys_write(): return public.return_msg_gettext(False,'<a style=color:red;>ERROR:{}</a><br>{}<br><br>{}<br>{}<br><br>'.format(str1,str2,str3,str4))
         if not 'sName' in get: return public.return_msg_gettext(False,'Please specify the software name!')
         #处理ols还不支持php81的情况
-        if get.sName == "php-8.1" and public.get_webserver() == 'openlitespeed':
-            return public.return_msg_gettext(False, 'Sorry, currently OLS official does not support php8.1')
+        # if get.sName == "php-8.1" and public.get_webserver() == 'openlitespeed':
+        #     return public.return_msg_gettext(False, 'Sorry, currently OLS official does not support php8.1')
         pluginInfo = self.get_soft_find(get.sName)
         get.pluginInfo = pluginInfo
         check_result = self.check_install_limit(get)
@@ -352,29 +352,46 @@ class panelPlugin:
         if force_refresh == 1:
             focre = 1
         if not softList or focre > 0:
-            self.clean_panel_log()
-            # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
-            cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
-            import panelAuth
-            import requests
-            pdata = panelAuth.panelAuth().create_serverid(None)
-            # listTmp = public.httpPost(cloudUrl,pdata,6)
-            url_headers={}
-            if 'token' in pdata:
-                url_headers = {"authorization": "bt {}".format(pdata['token'])}
-            pdata['environment_info'] = json.dumps(public.fetch_env_info())
-            listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
-            listTmp=listTmp.json()
-            if not listTmp:
-                listTmp = public.readFile(lcoalTmp)
+            requesting_tag_key = "REQUESTING_SERVER_SOFTWARE_LIST"
             try:
-                softList = listTmp
-            except: pass
-            if softList: public.writeFile(lcoalTmp,json.dumps(softList))
-            public.ExecShell('rm -f /tmp/bmac_*')
-            public.run_thread(self.getCloudPHPExt)
-            # 专业版和企业版到期提醒，aaPanel目前没有先注释
-            # self.expire_msg(softList)
+                max_waiting_time = 120
+                has_waiting =  False
+                while cache.get(requesting_tag_key):
+                    has_waiting = True
+                    time.sleep(0.1)
+
+                if has_waiting:
+                    return self.get_cloud_list(get)
+                    
+                cache.set(requesting_tag_key, True, timeout=max_waiting_time)
+
+                self.clean_panel_log()
+                # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
+                cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
+                import panelAuth
+                import requests
+                pdata = panelAuth.panelAuth().create_serverid(None)
+                # listTmp = public.httpPost(cloudUrl,pdata,6)
+                url_headers={}
+                if 'token' in pdata:
+                    url_headers = {"authorization": "bt {}".format(pdata['token'])}
+                pdata['environment_info'] = json.dumps(public.fetch_env_info())
+                try:
+                    listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
+                    listTmp=listTmp.json()
+                    if not listTmp:
+                        listTmp = public.readFile(lcoalTmp)
+                    softList = listTmp
+                except: pass
+                if softList: public.writeFile(lcoalTmp,json.dumps(softList))
+                public.ExecShell('rm -f /tmp/bmac_*')
+                public.run_thread(self.getCloudPHPExt)
+                # 专业版和企业版到期提醒，aaPanel目前没有先注释
+                # self.expire_msg(softList)
+            except:
+                pass
+            finally:
+                cache.delete(requesting_tag_key)
         try:
             public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
         except:pass
@@ -687,9 +704,11 @@ class panelPlugin:
 
     #取软件列表
     def get_soft_list(self,get = None):
+        print("get soft list normal.")
         softList = self.get_cloud_list(get)
         if not softList:
             get.force = 1
+            print("get soft list force.")
             softList = self.get_cloud_list(get)
             if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
         softList['list'] = self.set_coexist(softList['list'])
@@ -1848,12 +1867,21 @@ class panelPlugin:
         mimetype = 'text/html'
         cache_time = 0 if public.is_debug() else 86400
         self.plugin_open_total(get.name)
-        return send_file(filename,
-                    mimetype = mimetype,
-                    as_attachment = True,
-                    add_etags = True,
-                    conditional = True,
-                    cache_timeout = cache_time)
+        import flask
+        if flask.__version__ < "2.1.0":
+            return send_file(filename,
+                        mimetype = mimetype,
+                        as_attachment = True,
+                        add_etags = True,
+                        conditional = True,
+                        cache_timeout = cache_time)
+        else:
+            return send_file(filename,
+                        mimetype = mimetype,
+                        as_attachment = True,
+                        etag = True,
+                        conditional = True,
+                        max_age = cache_time)
 
 
     def creatab_open_total_table(self,sql):

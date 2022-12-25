@@ -11,10 +11,13 @@ class firewalls:
     __isFirewalld = False
     __isUfw = False
     __Obj = None
+    __ufw_exec = 'ufw'
     
     def __init__(self):
         if os.path.exists('/usr/sbin/firewalld'): self.__isFirewalld = True
-        if os.path.exists('/usr/sbin/ufw'): self.__isUfw = True
+        if os.path.exists('/usr/sbin/ufw'):
+            self.__ufw_exec = '/usr/sbin/ufw'
+            self.__isUfw = True
         if self.__isFirewalld:
             try:
                 self.__Obj = firewalld.firewalld()
@@ -53,30 +56,31 @@ class firewalls:
     #重载防火墙配置
     def FirewallReload(self):
         if self.__isUfw:
-            public.ExecShell('/usr/sbin/ufw reload')
+            public.ExecShell('{} reload &'.format(self.__ufw_exec))
             return
         if self.__isFirewalld:
             public.ExecShell('firewall-cmd --reload')
         else:
-            public.ExecShell('/etc/init.d/iptables save')
-            public.ExecShell('/etc/init.d/iptables restart')
+            public.ExecShell('/etc/init.d/iptables save &')
+            public.ExecShell('/etc/init.d/iptables restart &')
 
     #取防火墙状态
     def CheckFirewallStatus(self):
-        if self.__isUfw:
-            res = public.ExecShell('ufw status verbose')[0]
-            if res.find('inactive') != -1: return False
-            return True
+        # if self.__isUfw:
+        #     res = public.ExecShell('ufw status verbose')[0]
+        #     if res.find('inactive') != -1: return False
+        #     return True
 
-        if self.__isFirewalld:
-            res = public.ExecShell("systemctl status firewalld")[0]
-            if res.find('active (running)') != -1: return True
-            if res.find('disabled') != -1: return False
-            if res.find('inactive (dead)') != -1: return False
-        else:
-            res = public.ExecShell("/etc/init.d/iptables status")[0]
-            if res.find('not running') != -1: return False
-            return True
+        # if self.__isFirewalld:
+        #     res = public.ExecShell("systemctl status firewalld")[0]
+        #     if res.find('active (running)') != -1: return True
+        #     if res.find('disabled') != -1: return False
+        #     if res.find('inactive (dead)') != -1: return False
+        # else:
+        #     res = public.ExecShell("/etc/init.d/iptables status")[0]
+        #     if res.find('not running') != -1: return False
+        #     return True
+        return public.get_firewall_status() == 1
 
     def SetFirewallStatus(self,get=None):
         '''
@@ -87,9 +91,9 @@ class firewalls:
         status_msg = {False: 'Close', True: 'Open'}
         if self.__isUfw:
             if status:
-                public.ExecShell('echo y|ufw enable')
+                public.ExecShell('echo y|{} enable'.format(self.__ufw_exec))
             else:
-                public.ExecShell('echo y|ufw disable')
+                public.ExecShell('echo y|{} disable'.format(self.__ufw_exec))
         if self.__isFirewalld:
             if status:
                 public.ExecShell('systemctl enable firewalld')
@@ -119,9 +123,9 @@ class firewalls:
         if public.M('firewall').where("port=?",(address,)).count() > 0: return public.return_msg_gettext(False,'The IP exists in block list, no need to repeat processing!')
         if self.__isUfw:
             if public.is_ipv6(ip_format):
-                public.ExecShell('ufw deny from ' + address + ' to any')
+                public.ExecShell('{} deny from '.format(self.__ufw_exec) + address + ' to any')
             else:
-                public.ExecShell('ufw insert 1 deny from ' + address + ' to any')
+                public.ExecShell('{} insert 1 deny from '.format(self.__ufw_exec) + address + ' to any')
         else:
             if self.__isFirewalld:
                 #self.__Obj.AddDropAddress(address)
@@ -147,7 +151,7 @@ class firewalls:
         id = get.id
         ip_format = get.port.split('/')[0]
         if self.__isUfw:
-            public.ExecShell('ufw delete deny from ' + address + ' to any')
+            public.ExecShell('{} delete deny from '.format(self.__ufw_exec) + address + ' to any')
         else:
             if self.__isFirewalld:
                 if public.is_ipv6(ip_format):
@@ -176,22 +180,24 @@ class firewalls:
 
         import time
         port = get.port
-        ps = public.xssencode2(get.ps)
+        ps = ""
+        if get.ps:
+            ps = public.xssencode2(get.ps)
         is_exists = public.M('firewall').where("port=? or port=?",(port,src_port)).count()
         if is_exists: return public.return_msg_gettext(False,'The port exists, no need to repeat the release!')
         notudps = ['80','443','8888','888','39000:40000','21','22']
         if self.__isUfw:
-            public.ExecShell('ufw allow ' + port + '/tcp')
-            if not port in notudps: public.ExecShell('ufw allow ' + port + '/udp')
+            public.ExecShell('{} allow '.format(self.__ufw_exec) + port + '/tcp')
+            # if not port in notudps: public.ExecShell('ufw allow ' + port + '/udp')
         else:
             if self.__isFirewalld:
                 #self.__Obj.AddAcceptPort(port)
                 port = port.replace(':','-')
                 public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/tcp')
-                if not port in notudps: public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/udp')
+                # if not port in notudps: public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/udp')
             else:
                 public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport '+port+' -j ACCEPT')
-                if not port in notudps: public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m udp --dport '+port+' -j ACCEPT')
+                # if not port in notudps: public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m udp --dport '+port+' -j ACCEPT')
         public.WriteLog("TYPE_FIREWALL", 'FIREWALL_ACCEPT_PORT',(port,))
         addtime = time.strftime('%Y-%m-%d %X',time.localtime())
         if not is_exists: public.M('firewall').add('port,ps,addtime',(port,ps,addtime))
@@ -208,16 +214,16 @@ class firewalls:
         if not re.search(rep,port):
             return False
         if self.__isUfw:
-            public.ExecShell('ufw allow ' + port + '/tcp')
-            public.ExecShell('ufw allow ' + port + '/udp')
+            public.ExecShell('{} allow '.format(self.__ufw_exec) + port + '/tcp')
+            # public.ExecShell('ufw allow ' + port + '/udp')
         else:
             if self.__isFirewalld:
                 port = port.replace(':','-')
                 public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/tcp')
-                public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/udp')
+                # public.ExecShell('firewall-cmd --permanent --zone=public --add-port='+port+'/udp')
             else:
                 public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport '+port+' -j ACCEPT')
-                public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m udp --dport '+port+' -j ACCEPT')
+                # public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m udp --dport '+port+' -j ACCEPT')
         return True
 
     #删除放行端口
@@ -226,14 +232,14 @@ class firewalls:
         port = get.port
         id = get.id
 
-        if public.is_ipv6(port): return self.DelDropAddress(get) # 如果是ipv6地址，则调用DelDropAddress
+        if public.is_ipv6(str(port)): return self.DelDropAddress(get) # 如果是ipv6地址，则调用DelDropAddress
 
         try:
             if(port == public.GetHost(True) or port == public.readFile('data/port.pl').strip()):
                 return public.return_msg_gettext(False,'Failed,cannot delete current port of the panel')
             if self.__isUfw:
-                public.ExecShell('ufw delete allow ' + port + '/tcp')
-                public.ExecShell('ufw delete allow ' + port + '/udp')
+                public.ExecShell('{} delete allow '.format(self.__ufw_exec) + port + '/tcp')
+                public.ExecShell('{} delete allow '.format(self.__ufw_exec) + port + '/udp')
             else:
                 if self.__isFirewalld:
                     #self.__Obj.DelAcceptPort(port)
@@ -270,7 +276,10 @@ class firewalls:
         public.ExecShell('service ssh ' + act)
         public.ExecShell("systemctl "+act+" sshd")
         public.ExecShell("systemctl "+act+" ssh")
-
+        if act in ['start'] and not public.get_sshd_status():
+            msg = 'Service SSHD start failed!'
+            public.WriteLog("TYPE_FIREWALL", msg)
+            return public.returnMsg(False,msg)
         public.WriteLog("TYPE_FIREWALL", msg)
         return public.return_msg_gettext(True,'Setup successfully!')
 
@@ -292,11 +301,13 @@ class firewalls:
             conf += "\nnet.ipv4.icmp_echo_ignore_all="+get.status
 
 
-        public.writeFile(filename,conf)
-        public.ExecShell('sysctl -p')
-        return public.return_msg_gettext(True,'Setup successfully!')
-        
-    
+        if public.writeFile(filename,conf):
+            public.ExecShell('sysctl -p')
+            return public.return_msg_gettext(True,'Setup successfully!')
+        else:
+            return public.returnMsg(False,'Setup failed!')
+
+
     
     #改远程端口
     def SetSshPort(self,get):
@@ -322,7 +333,7 @@ class firewalls:
             public.ExecShell('sed -i "s#SELINUX=enforcing#SELINUX=disabled#" /etc/selinux/config')
             public.ExecShell("systemctl restart sshd.service")
         elif self.__isUfw:
-            public.ExecShell('ufw allow ' + port + '/tcp')
+            public.ExecShell('{} allow '.format(self.__ufw_exec) + port + '/tcp')
             public.ExecShell("service ssh restart")
         else:
             public.ExecShell('iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport '+port+' -j ACCEPT')
