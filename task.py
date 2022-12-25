@@ -500,7 +500,7 @@ def panel_status():
 
 
 def update_panel():
-    os.system("curl http://download.bt.cn/install/update6_en.sh|bash &")
+    os.system("curl https://download.bt.cn/install/update6_en.sh|bash &")
 
 
 def service_panel(action='reload'):
