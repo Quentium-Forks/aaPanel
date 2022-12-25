@@ -184,7 +184,7 @@ define(["require", "exports", "./snabbdom", "./configMixin"], function (require,
                 expire_time = pawComplexity.expire_time, expire_day = pawComplexity.expire_day;
             var isHttps = location.protocol.indexOf('https:') > -1;
             var statusCodeTips = this.getStatusCodeTips();
-            var paw_expire_time = expire > 0 ? "".concat(this.$formatTime(expire_time), " (\u5269\u4F59").concat(expire_day, "\u5929\u8FC7\u671F )") : lan.config.not_set;
+            var paw_expire_time = expire > 0 ? "".concat(this.$formatTime(expire_time), " (Exp in ").concat(expire_day, " days)") : lan.config.not_set;
             var formColumns = {
                 ssl: {value: isHttps},
                 basic_auth: {value: open},
@@ -324,8 +324,8 @@ define(["require", "exports", "./snabbdom", "./configMixin"], function (require,
                                 skin: 'panel-ssl',
                                 content: {
                                     data: {
-                                        cert_type: certSource.cert_type || 1,
-                                        email: '',
+																				cert_type: certSource.cert_type ? parseInt(certSource.cert_type) : 1,
+																				mail: certSource.email || '',
                                         certPem: certPem,
                                         privateKey: privateKey,
                                         agreement: false
@@ -992,7 +992,7 @@ define(["require", "exports", "./snabbdom", "./configMixin"], function (require,
                                 case 3:
                                     _a = _b.sent(), expire_time = _a.expire_time, expire_day = _a.expire_day;
                                     close();
-                                    val = expire > 0 ? "".concat(this.$formatTime(expire_time), " ( \u5269\u4F59").concat(expire_day, "\u5929\u8FC7\u671F )") : lan.config.not_set;
+                                    val = expire > 0 ? "".concat(this.$formatTime(expire_time), " ( Exp in ").concat(expire_day, " days )") : lan.config.not_set;
                                     $('input[name="paw_expire_time"]').val(val);
                                     this.formColumns.paw_expire_time.day = expire;
                                     return [3, 5];

@@ -21,15 +21,15 @@ if not os.name in ['nt']:
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
 
-from flask import Config, Flask, session, render_template, send_file, request, redirect, g, make_response, \
-    render_template_string, abort, stream_with_context,Response as Resp
+from flask import Flask, session, render_template, send_file, request, redirect, g, make_response, \
+    render_template_string, abort,stream_with_context, Response as Resp
 from cachelib import SimpleCache
 from werkzeug.wrappers import Response
 from flask_session import Session
 from flask_compress import Compress
-from flask_sockets import Sockets
 
-cache = SimpleCache()
+
+cache = SimpleCache(5000)
 import public
 
 # 初始化Flask应用
@@ -61,9 +61,8 @@ if os.path.exists(basic_auth_conf):
     except:
         pass
 
-#初始化SESSION服务
-# app.secret_key = uuid.UUID(int=uuid.getnode()).hex[-12:]
-app.secret_key = public.md5(str(os.uname())+str(psutil.boot_time()))
+# 初始化SESSION服务
+app.secret_key = public.md5(str(os.uname()) + str(psutil.boot_time())) # uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
 my_terms = {}
 app.config['SESSION_MEMCACHED'] = SimpleCache(1000,86400)
@@ -78,7 +77,6 @@ if app.config['SSL']:
     app.config['SESSION_COOKIE_SECURE'] = True
 else:
     app.config['SESSION_COOKIE_SAMESITE'] = None
-
 
 Session(app)
 
@@ -169,7 +167,12 @@ def request_check():
     session_id =  request.cookies.get(app.config['SESSION_COOKIE_NAME'],'')
     if session_id and not session_id_match.match(session_id): return abort(403)
 
+    # 请求头过滤
+    # if not public.filter_headers():
+    #     return abort(403)
+
     if session.get('debug') == 1: return
+    g.get_csrf_html_token_key = public.get_csrf_html_token_key()
 
 
     if app.config['BASIC_AUTH_OPEN']:
@@ -194,7 +197,7 @@ def request_check():
     if domain_check: return domain_check
     if public.is_local():
         not_networks = ['uninstall_plugin','install_plugin','UpdatePanel']
-        if request.args.get('action') in not_networks: 
+        if request.args.get('action') in not_networks:
             return public.returnJson(False,'This feature cannot be used in offline mode!'),json_header
 
     if request.path in ['/site','/ftp','/database','/soft','/control','/firewall','/files','/xterm','/crontab','/config']:
@@ -209,10 +212,8 @@ def request_check():
 @app.teardown_request
 def request_end(reques=None):
     if request.method not in ['GET','POST']:return
-    not_acts = ['GetTaskSpeed', 'GetNetWork', 'check_pay_status', 'get_re_order_status', 'get_order_stat']
-    key = request.args.get('action')
-    if not key in not_acts and request.full_path.find('/static/') == -1:
-        public.write_request_log()
+    if not request.path.startswith('/static/'):
+        public.write_request_log(reques)
         if 'api_request' in g:
             if g.api_request:
                 session.clear()
@@ -283,9 +284,9 @@ REQUEST_FORM: {request_form}
     request_date = public.getDate(),
     remote_addr = public.GetClientIp(),
     method = request.method,
-    full_path = request.full_path,
+    full_path = public.xsssec(request.full_path),
     request_form = _form,
-    user_agent = request.headers.get('User-Agent'),
+    user_agent = public.xsssec(request.headers.get('User-Agent')),
     panel_version = public.version(),
     os_version = public.get_os_version()
 )
@@ -355,7 +356,7 @@ def site(pdata = None):
         return render_template( 'site.html',data=data)
     import panelSite
     siteObject = panelSite.panelSite()
-        
+
     defs = ('get_auto_restart_rph','remove_auto_restart_rph','auto_restart_rph','check_del_data','upload_csv','create_website_multiple','del_redirect_multiple','del_proxy_multiple','delete_dir_auth_multiple',
             'delete_dir_bind_multiple','delete_domain_multiple','set_site_etime_multiple','set_site_php_version_multiple',
             'delete_website_multiple','set_site_status_multiple','get_site_err_log','get_site_domains','GetRedirectFile',
@@ -406,7 +407,8 @@ def database(pdata = None):
             if pmd:
                 session['phpmyadminDir'] = 'http://' + public.GetHost() + ':' + pmd[1] + '/' + pmd[0]
         ajax.ajax().set_phpmyadmin_session()
-        data = {}
+        import system
+        data = system.system().GetConcifInfo()
         data['isSetup'] = os.path.exists(public.GetConfigValue('setup_path') + '/mysql/bin')
         data['mysql_root'] = public.M('config').where('id=?',(1,)).getField('mysql_root')
         data['lan'] = public.GetLan('database')
@@ -465,8 +467,8 @@ def control(pdata = None):
     #监控页面
     comReturn = comm.local()
     if comReturn: return comReturn
-    # if request.method == method_get[0]:
-    data = {}
+    import system
+    data = system.system().GetConcifInfo()
     data['lan'] = public.GetLan('control')
     data['js_random'] = get_js_random()
     return render_template( 'control.html',data=data)
@@ -477,7 +479,8 @@ def firewall(pdata = None):
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
-        data = {}
+        import system
+        data = system.system().GetConcifInfo()
         data['lan'] = public.GetLan('firewall')
         data['js_random'] = get_js_random()
         return render_template( 'firewall.html',data=data)
@@ -642,7 +645,8 @@ def files(pdata=None):
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not request.args.get('path') and not pdata:
-        data = {}
+        import system
+        data = system.system().GetConcifInfo()
         data['recycle_bin'] = os.path.exists('data/recycle_bin.pl')
         data['lan'] = public.GetLan('files')
         data['js_random'] = get_js_random()
@@ -671,7 +675,8 @@ def crontab(pdata = None):
     comReturn = comm.local()
     if comReturn: return comReturn
     if request.method == method_get[0] and not pdata:
-        data = {}
+        import system
+        data = system.system().GetConcifInfo()
         data['lan'] = public.GetLan('crontab')
         data['js_random'] = get_js_random()
         return render_template( 'crontab.html',data=data)
@@ -900,12 +905,21 @@ def download():
         mimetype = "application/octet-stream"
         extName = filename.split('.')[-1]
         if extName in ['png','gif','jpeg','jpg']: mimetype = None
-        return send_file(filename,mimetype=mimetype,
+        import flask
+        if flask.__version__ < "2.1.0":
+            return send_file(filename,mimetype=mimetype,
                          as_attachment=True,
                          add_etags=True,
                          conditional=True,
                          attachment_filename=os.path.basename(filename),
                          cache_timeout=0)
+        else:
+            return send_file(filename, mimetype=mimetype,
+                         as_attachment=True,
+                         etag=True,
+                         conditional=True,
+                         download_name=os.path.basename(filename),
+                         max_age=0)
 '''
 @app.route('/cloud',methods=method_all)
 def panel_cloud():
@@ -983,6 +997,7 @@ if route_path[0] != '/': route_path = '/' + route_path
 @app.route(route_path + '/', methods=method_all)
 def login():
     # 面板登录接口
+    if public.is_spider(): return abort(404)
     if os.path.exists('install.pl'): return redirect('/install')
     global admin_check_auth, admin_path, route_path
     is_auth_path = False
@@ -1033,7 +1048,9 @@ def login():
                 s_file = 'data/session/{}'.format(session['tmp_login_id'])
                 if os.path.exists(s_file):
                     os.remove(s_file)
-            del(session['request_token_head'])
+            token_key = public.get_csrf_html_token_key()
+            if token_key in session:
+                del(session[token_key])
             session.clear()
             sess_file = 'data/sess_files/' + public.get_sess_key()
             if os.path.exists(sess_file):
@@ -1044,7 +1061,7 @@ def login():
             sess_tmp_file = public.get_full_session_file()
             if os.path.exists(sess_tmp_file): os.remove(sess_tmp_file)
             g.dologin = True
-            return redirect(login_path)
+            return redirect(public.get_admin_path())
 
     if is_auth_path:
         if route_path != request.path and route_path + '/' != request.path:
@@ -1082,6 +1099,9 @@ def login():
                 data['hosts'] = json.dumps(data['hosts'])
         data['app_login'] = os.path.exists('data/app_login.pl')
         public.cache_set(public.Md5(uuid.UUID(int=uuid.getnode()).hex[-12:]+public.GetClientIp()),'check',360)
+        last_key = 'last_login_token'
+        session[last_key] = public.GetRandomString(32)
+        data[last_key] = session[last_key]
         return render_template('login.html',data=data)
 
 @app.route('/close',methods=method_get)
@@ -1132,18 +1152,14 @@ def check_bind(pdata=None):
 def code():
     if not 'code' in session: return ''
     if not session['code']: return ''
-    get=get_input()
-    if len(get.__dict__.keys()) > 2:return abort(404)
     # 获取图片验证码
     try:
-        import vilidate,time
+        import vilidate
     except:
         public.ExecShell("pip install Pillow -I")
         return "Pillow not install!"
-    code_time = cache.get('codeOut')
-    if code_time: return u'Error: Don\'t request validation codes frequently'
     vie = vilidate.vieCode()
-    codeImage = vie.GetCodeImage(80,4)
+    codeImage = vie.GetCodeImage(80, 4)
     if sys.version_info[0] == 2:
         try:
             from cStringIO import StringIO
@@ -1154,15 +1170,15 @@ def code():
         from io import BytesIO
         out = BytesIO()
     codeImage[0].save(out, "png")
-    cache.set("codeStr",public.md5("".join(codeImage[1]).lower()),180)
-    cache.set("codeOut",1,0.1)
+    cache.set("codeStr", public.md5("".join(codeImage[1]).lower()), 180)
+    cache.set("codeOut", 1, 0.1)
     out.seek(0)
-    return send_file(out, mimetype='image/png', cache_timeout=0)
+    return send_file(out, mimetype='image/png', max_age=0)
 
 
-@app.route('/down/<token>',methods=method_all)
-def down(token=None,fname=None):
-    #文件分享对外接口
+@app.route('/down/<token>', methods=method_all)
+def down(token=None, fname=None):
+    # 文件分享对外接口
     try:
         if public.M('download_token').count()==0:return abort(404)
         fname = request.args.get('fname')
@@ -1170,7 +1186,10 @@ def down(token=None,fname=None):
             if (len(fname) > 256): return abort(404)
         if fname: fname = fname.strip('/')
         if not token: return abort(404)
-        if len(token) != 12: return abort(404)
+        if len(token) >48: return abort(404)
+        char_list = ['\\', '/', ':', '*', '?', '"', '<', '>', '|',';','&','`']
+        for char in char_list:
+            if char in token: return abort(404)
         if not request.args.get('play') in ['true', None, '']:
             return abort(404)
         args = get_input()
@@ -1178,8 +1197,7 @@ def down(token=None,fname=None):
         for n in args.__dict__.keys():
             if not n in v_list:
                 return public.returnJson(False, 'There can be no redundant parameters'), json_header
-
-        if not re.match(r"^\w+$", token): return abort(404)
+        if not re.match(r"^[\w\.]+$", token): return abort(404)
         find = public.M('download_token').where('token=?', (token,)).find()
 
         if not find: return abort(404)
@@ -1239,8 +1257,8 @@ def down(token=None,fname=None):
             b_name = os.path.basename(filename)
             return send_file(filename, mimetype=mimetype,
                              as_attachment=True,
-                             attachment_filename=b_name,
-                             cache_timeout=0)
+                             download_name=b_name,
+                             max_age=0)
     except:
         return abort(404)
 
@@ -1308,6 +1326,8 @@ def panel_other(name=None, fun=None, stype=None):
     if public.is_error_path():
         return redirect('/error',302)
     if not name: return abort(404)
+    if not re.match(r"^[\w\-]+$", name): return abort(404)
+    if fun and not re.match(r"^[\w\-\.]+$", fun): return abort(404)
     if name != "mail_sys" or fun != "send_mail_http.json":
         comReturn = comm.local()
         if comReturn: return comReturn
@@ -1319,12 +1339,14 @@ def panel_other(name=None, fun=None, stype=None):
         if fun:
             if name=='btwaf' and fun=='index':
                 pass
+            elif name=='firewall' and fun=='get_file':
+                pass
             elif fun=='static':
                 pass
             elif stype=='html':
                 pass
             else:
-                if 'request_token' in session and 'login' in session:
+                if public.get_csrf_cookie_token_key() in session and 'login' in session:
                     if not check_csrf(): return public.ReturnJson(False, 'CSRF calibration failed, please login again'), json_header
         args = None
     else:
@@ -1371,13 +1393,17 @@ def panel_other(name=None, fun=None, stype=None):
         if not re.match(r"^[\w\./-]+$",s_file): return abort(404)
         if not public.path_safe_check(s_file): return abort(404)
         if not os.path.exists(s_file): return abort(404)
-        return send_file(s_file,conditional=True,add_etags=True)
+        import flask
+        if flask.__version__ < "2.1.0":
+            return send_file(s_file,conditional=True,add_etags=True)
+        else:
+            return send_file(s_file,conditional=True,etag=True)
 
     #准备参数
     if not args: args = get_input()
     args.client_ip = public.GetClientIp()
     args.fun = fun
-    
+
     #初始化插件对象
     try:
         is_php = os.path.exists(p_path + '/index.php')
@@ -1493,7 +1519,7 @@ def install():
         data['status'] = os.path.exists('install.pl')
         data['username'] = public.GetRandomString(8).lower()
         return render_template( 'install.html',data = data)
-    
+
     elif request.method == method_post[0]:
         if not os.path.exists('install.pl'): return redirect(ret_login)
         get = get_input()
@@ -1537,10 +1563,17 @@ def proxy_rspamd_requests(path):
     for h in request.headers.keys():
         headers[h] = request.headers[h]
     if request.method == "GET":
+        import flask
         if re.search("\.(js|css)$",path):
-            return send_file('/usr/share/rspamd/www/rspamd/'+path,conditional=True,add_etags=True)
+            if flask.__version__ < "2.1.0":
+                return send_file('/usr/share/rspamd/www/rspamd/'+path,conditional=True,add_etags=True)
+            else:
+                return send_file('/usr/share/rspamd/www/rspamd/'+path,conditional=True,etag=True)
         if path == "/":
-            return send_file('/usr/share/rspamd/www/rspamd/',conditional=True,add_etags=True)
+            if flask.__version__ < "2.1.0":
+                return send_file('/usr/share/rspamd/www/rspamd/',conditional=True,add_etags=True)
+            else:
+                return send_file('/usr/share/rspamd/www/rspamd/',conditional=True,etag=True)
         url = "http://127.0.0.1:11334/rspamd/" + path + "?" +param
         for i in ['stat','auth','neighbours','list_extractors','list_transforms','graph','maps','actions','symbols','history','errors','check_selector','saveactions','savesymbols','getmap']:
             if i in path:
@@ -1645,22 +1678,18 @@ class run_exec:
 
 
 def check_csrf():
-    #CSRF校验
+    # CSRF校验
     if app.config['DEBUG']: return True
-    request_token = request.cookies.get('request_token')
-    if session['request_token'] != request_token: return False
     http_token = request.headers.get('x-http-token')
     if not http_token: return False
-    if http_token != session['request_token_head']: return False
-    cookie_token = request.headers.get('x-cookie-token')
-    if cookie_token != session['request_token']: return False
+    if http_token != public.get_csrf_sess_html_token_value(): return False
     return True
 
 
-def publicObject(toObject, defs, action=None, get=None):
+def publicObject(toObject, defs, action=None, get=None,is_csrf=True):
     try:
         # 模块访问前置检查
-        if 'request_token' in session and 'login' in session:
+        if is_csrf and public.get_csrf_sess_html_token_value() and session.get('login',None):
             if not check_csrf(): return public.ReturnJson(False, 'CSRF calibration failed, please login again'), json_header
 
         if not get: get = get_input()
@@ -1693,10 +1722,10 @@ def publicObject(toObject, defs, action=None, get=None):
 def check_login(http_token=None):
     #检查是否登录面板
     if cache.get('dologin'): return False
-    if 'login' in session: 
+    if 'login' in session:
         loginStatus = session['login']
         if loginStatus and http_token:
-            if session['request_token_head'] != http_token: return False
+            if public.get_csrf_sess_html_token_value() != http_token: return False
         return loginStatus
     return False
 
@@ -1820,22 +1849,24 @@ def FtpPort():
 
 
 def is_login(result):
-    #判断是否登录2
+    # 判断是否登录2
     if 'login' in session:
         if session['login'] == True:
-            result = make_response(result)
-            request_token = public.GetRandomString(48)
-            session['request_token'] = request_token
-            samesite = app.config['SESSION_COOKIE_SAMESITE']
-            secure = app.config['SESSION_COOKIE_SECURE']
-            if app.config['SSL'] and request.full_path.find('/login?tmp_token=') == 0:
-                samesite = 'None'
-                secure = True
-            result.set_cookie('request_token', request_token,
-            max_age=86400 * 30,
-            samesite= samesite,
-            secure=secure
-            )
+            # result = make_response(result)
+            # request_token = public.GetRandomString(48)
+            # request_token_key = public.get_csrf_cookie_token_key()
+            # session[request_token_key] = request_token
+            # samesite = app.config['SESSION_COOKIE_SAMESITE']
+            # secure = app.config['SESSION_COOKIE_SECURE']
+            # if app.config['SSL'] and request.full_path.find('/login?tmp_token=') == 0:
+            #     samesite = 'None'
+            #     secure = True
+            # result.set_cookie(request_token_key, request_token,
+            # max_age=86400 * 30,
+            # samesite= samesite,
+            # secure=secure
+            # )
+            pass
     return result
 
 # js随机数模板使用，用于不更新版本号时更新前端文件不需要用户强制刷新浏览器
@@ -2160,12 +2191,7 @@ def check_csrf_websocket(ws,args):
         is_success = False
 
     if is_success:
-        if session['request_token_head'] != args['x-http-token']:
-            is_success = False
-
-    if is_success and 'request_token' in session:
-        cookie_token = request.cookies.get('request_token')
-        if cookie_token != session['request_token']:
+        if public.get_csrf_sess_html_token_value() != args['x-http-token']:
             is_success = False
 
     if not is_success:
@@ -2222,7 +2248,7 @@ def webssh(ws):
     p = ssh_terminal.ssh_terminal()
     p.run(ws, ssh_info)
     del (p)
-    if not ws.closed:
+    if ws.connected:
         ws.close()
     return 'False'
 

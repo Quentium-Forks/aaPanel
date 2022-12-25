@@ -474,15 +474,15 @@
                 return -1;
             }
         }());
-        if (ie_version != -1 && ie_version < 9) {
-            window.location.href = '/tips';
-        }
+        if (ie_version != -1 && ie_version < 9) window.location.href = '/tips'
     </script>
 </head>
 <body>
     <div class="main">
+{#        <div class="login-images"><img src="/static/images/bt_logo_new.png"></div>#}
 		<div class="login{% if session['code'] %} code{% endif %}">
             <div class="account">
+                <div class="last_token" style="display: block;" data="{{data['last_login_token']}}"></div>
                 <form class="login_form" onsubmit="return false;">
                     <div class="form_title">{{g.title}}</div>
                     <div class="form_item">
@@ -639,8 +639,9 @@
                     codeInput.focus();
                     return;
                 }
+                var last_token = document.querySelector(".last_token").attributes.data.value;
                 var data = {
-                    username: md5(username),
+                    username: md5(md5(username + last_token)),
                     password: md5(md5(password) + '' + '_bt.cn'),
                     code: code
                 };
@@ -751,7 +752,7 @@
                                     };
                                     btn.onclick = function () {
                                         var code = codeInput.value.trim();
-                                        if (is_empty(code)) {
+                                        if (code === '') {
                                             popup.msg('Please enter Verification code!');
                                             return;
                                         }

@@ -2388,6 +2388,8 @@ var docker = {
 												that.initTabConfig('model')  //刷新列表
 											}
 										} 
+										var entry = { "'": "&apos;", '"': '&quot;', '<': '&lt;', '>': '&gt;' };
+									 	res.msg = res.msg.replace(/(['")-><&\\\/\.])/g, function ($0) { return entry[$0] || $0; });
 										bt_tools.msg(res)
 									})
                 } else {

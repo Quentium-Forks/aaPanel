@@ -1847,7 +1847,13 @@ define(["require", "exports", "./snabbdom", "./public/public", "./panelConfig", 
                                 return [4, this.$request('setPanelConfig', data)];
                             case 1:
                                 res = _a.sent();
-                                res.status && this.$refreshBrowser();
+																var href = '';
+																if (data.domain) {
+																	href = window.location.protocol + '//' + data.domain + ':' + window.location.port + window.location.pathname;
+																} else {
+																	href = window.location.protocol + '//' + data.address + ':' + window.location.port + window.location.pathname;
+																}
+                                res.status && this.$refreshBrowser(href);
                                 return [2];
                         }
                     });
