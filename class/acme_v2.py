@@ -1679,19 +1679,12 @@ fullchain.pem       Paste into certificate input box
         args.id = site_id
         if os.path.exists(auth_to):
             if public.M('sites').where('path=?', auth_to).count() == 1:
-                # site_id = public.M('sites').where('path=?',auth_to).getField('id')
-                siteName = public.M('sites').where('path=?', auth_to).getField('name')
                 import panelSite
                 siteObj = panelSite.panelSite()
-                # args = public.dict_obj()
-                # args.id = site_id
                 runPath = siteObj.GetRunPath(args)
                 if runPath and not runPath in ['/']:
                     path = auth_to + '/' + runPath
                     if os.path.exists(path): auth_to = path.replace('//', '/')
-
-            else:
-                siteName = self.get_site_name_by_domains(domains)
         try:
             index = self.create_order(
                 domains,
