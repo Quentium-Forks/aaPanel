@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache , request, redirect, g
+from BTPanel import session, cache, request, abort, redirect, g
 from datetime import datetime
 from public import dict_obj
 import os
@@ -140,7 +140,7 @@ class panelAdmin(panelSetup):
     # 检查面板是否关闭
     def checkClose(self):
         if os.path.exists('data/close.pl'):
-            return redirect('/close')
+            return abort(404)
 
     # 检查登录
     def check_login(self):
@@ -156,21 +156,21 @@ class panelAdmin(panelSetup):
             else:
                 if session['login'] == False:
                     session.clear()
-                    return redirect('/login')
+                    return abort(404)
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
-                        return redirect('/login')
+                        return abort(404)
                     if not os.path.exists(s_file):
                         session.clear()
-                        return redirect('/login')
+                        return abort(404)
                 ua_md5 = public.md5(g.ua)
                 if ua_md5 != session.get('login_user_agent',ua_md5):
                     session.clear()
-                    return redirect('/login')
+                    return abort(404)
 
             if api_check:
                 now_time = time.time()
@@ -197,7 +197,7 @@ class panelAdmin(panelSetup):
         except:
             public.WriteLog('Login auth',public.get_error_info())
             session.clear()
-            return redirect('/login')
+            return abort(404)
 
     # 获取sk
     def get_sk(self):
@@ -205,12 +205,11 @@ class panelAdmin(panelSetup):
         if not os.path.exists(save_path):
             return public.error_not_login('/login')
 
-
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return  public.error_not_login('/login')
+            return public.error_not_login('/login')
 
         if not api_config['open']:
             return  public.error_not_login('/login')
@@ -219,7 +218,7 @@ class panelAdmin(panelSetup):
         client_ip = public.GetClientIp()
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return  public.error_not_login('/login')
+                return public.error_not_login('/login')
 
             num_key = client_ip + '_api'
             if not public.get_error_num(num_key,20):

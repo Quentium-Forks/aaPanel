@@ -4374,7 +4374,7 @@ def error_not_login(e = None,_src = None):
         @author hwliang<2021-12-16>
         @return Response
     '''
-    from BTPanel import Response,render_template,redirect
+    from BTPanel import Response,abort,redirect
 
     try:
         abort_code = read_config('abort')
@@ -4386,12 +4386,12 @@ def error_not_login(e = None,_src = None):
         pass
 
     if e in ['/login']:
-        return redirect(e)
+        return abort(404)
 
     if _src:
         return e
     else:
-        return render_template('autherr.html')
+        return abort(404)
 
 def error_403(e):
     from BTPanel import Response,session
