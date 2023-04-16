@@ -24,8 +24,8 @@ run_path='/root'
 mysql_51='5.1.73'
 mysql_55='5.5.62'
 mysql_56='5.6.50'
-mysql_57='5.7.40'
-mysql_80='8.0.24'
+mysql_57='5.7.41'
+mysql_80='8.0.32'
 mariadb_55='5.5.55'
 mysql_mariadb_100='10.0.38'
 mysql_mariadb_101='10.1.47'
@@ -40,6 +40,10 @@ alisql_version='AliSQL-5.6.32'
 Centos7Check=$(cat /etc/redhat-release | grep ' 7.' | grep -iE 'centos')
 Centos8Check=$(cat /etc/redhat-release | grep ' 8.' | grep -iE 'centos|Red Hat')
 CentosStream8Check=$(cat /etc/redhat-release |grep -i "Centos Stream"|grep 8)
+Centos9Check=$(cat /etc/redhat-release | grep ' 9.')
+if [ "${Centos9Check}" ];then 
+    dnf --enablerepo=crb install libtirpc-devel -y
+fi 
 
 if [ -z "${cpuCore}" ]; then
     cpuCore="1"
@@ -477,6 +481,15 @@ Install_Ready(){
 Download_Src(){
     cd ${Setup_Path}
 
+    if [ "${version}" == "8.0" ] && [ "${actionType}" == "update" ];then
+    	echo "======================================================================="
+    	echo "当前Mysql-8.0版本不支持升级操作"
+    	echo "如需升级使用最新的8.0.32版本,需备份好数据重装mysql-8.0(编译方式)才可使用"
+    	echo "注：备份后数据可能无法兼容最新版本的Mysql，请谨慎更新"
+    	echo "未作升级变更 不影响当前Mysql运行"
+    	exit 0
+    fi
+
     if [ "${version}" == "greatsql_5.7" ];then
         version="5.7"
         wget -O ${Setup_Path}/src.tar.gz ${download_Url}/src/greatsql-5.7.36-39.tar.gz
@@ -582,11 +595,11 @@ Install_Configure(){
         if [ "${PM}" = "yum" ]; then
             if [ "${Centos7Check}" ];then
                 yum install centos-release-scl-rh -y
-                yum install devtoolset-7-gcc devtoolset-7-gcc-c++ -y
+                yum install devtoolset-8-gcc devtoolset-8-gcc-c++ -y
                 yum install cmake3 -y
                 cmakeV="cmake3"
-                export CC=/opt/rh/devtoolset-7/root/usr/bin/gcc
-                export CXX=/opt/rh/devtoolset-7/root/usr/bin/g++
+                export CC=/opt/rh/devtoolset-8/root/usr/bin/gcc
+                export CXX=/opt/rh/devtoolset-8/root/usr/bin/g++
             else
                 export CC=/usr/bin/gcc
                 export CXX=/usr/bin/g++
@@ -852,11 +865,13 @@ if [ "${actionType}" == 'install' ] || [ "${actionType}" == "update" ];then
     else
         python /www/server/panel/tools.pyc root $mysqlpwd
     fi
+    if [ "btpython" ];then
+	btpython /www/server/panel/tools.py root $mysqlpwd
+    fi
     Drop_Test_Databashes
 elif [ "$actionType" == 'uninstall' ];then
     Close_MySQL del
 fi
-
 
 
 

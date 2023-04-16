@@ -46,6 +46,9 @@ extPath(){
 		'81')
         extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/imagick.so'
         ;;
+		'82')
+		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/imagick.so'
+		;;
 	esac
 }
 Install_imagemagick()
@@ -56,7 +59,7 @@ Install_imagemagick()
 		return
 	fi
 	
-	isInstall=`cat /www/server/php/$version/etc/php.ini|grep 'imagick.so'`
+	isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'imagick.so')
 	if [ "${isInstall}" != "" ];then
 		echo "php-$vphp 已安装过imagemagick,请选择其它版本!"
 		echo "php-$vphp not install, Plese select other version!"
@@ -93,7 +96,7 @@ Install_imagemagick()
 		if [ "${version}" -ge "80" ];then
 			wget $download_Url/src/imagick-3.7.0.tgz
 			tar -xvf imagick-3.7.0.tgz
-			cd imagick-3.7.0
+			cd imagick-3.7.0 || exit
 		else
 			wget $download_Url/src/imagick-3.4.4.tgz -T 5
 			tar -zxf imagick-3.4.4.tgz
@@ -111,7 +114,10 @@ Install_imagemagick()
 	
 	
 	echo -e "\n[ImageMagick]\nextension = \"imagick.so\"\n" >> /www/server/php/$version/etc/php.ini
-	
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		echo -e "\n[ImageMagick]\nextension = \"imagick.so\"\n" >> /www/server/php/$version/etc/php-cli.ini
+	fi
+
 	cd ../
 	rm -rf imagick-*
 	/etc/init.d/php-fpm-$version reload
@@ -127,7 +133,7 @@ Uninstall_imagemagick()
 		return
 	fi
 	
-	isInstall=`cat /www/server/php/$version/etc/php.ini|grep 'imagick.so'`
+	isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'imagick.so')
 	if [ "${isInstall}" = "" ];then
 		echo "php-$vphp 未安装imagemagick,请选择其它版本!"
 		echo "php-$vphp not install imagemagick, Plese select other version!"
@@ -136,6 +142,10 @@ Uninstall_imagemagick()
 	
 	sed -i '/imagick.so/d' /www/server/php/$version/etc/php.ini
 	sed -i '/ImageMagick/d' /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		sed -i '/imagick.so/d' /www/server/php/$version/etc/php-cli.ini
+		sed -i '/ImageMagick/d' /www/server/php/$version/etc/php-cli.ini
+	fi
 	rm -f ${extFile}
 	/etc/init.d/php-fpm-$version reload
 	echo '==============================================='

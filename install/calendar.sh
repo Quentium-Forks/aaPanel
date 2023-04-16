@@ -68,6 +68,9 @@ Install_calendar()
 		'81')
 		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/calendar.so'
 		;;
+		'82')
+        extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/calendar.so'
+        ;;
 	esac
 	
 	if [ ! -f "${extFile}" ];then
@@ -83,6 +86,9 @@ Install_calendar()
 	fi
 
 	echo -e "extension = " ${extFile} >> /www/server/php/$version/etc/php.ini
+	if [[ -f /www/server/php/$version/etc/php-cli.ini ]];then
+		echo -e "extension = " ${extFile} >> /www/server/php/$version/etc/php-cli.ini
+	fi
 	service php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'
@@ -104,7 +110,9 @@ Uninstall_calendar()
 	fi
 
 	sed -i '/calendar.so/d' /www/server/php/$version/etc/php.ini
-
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		sed -i '/calendar.so/d' /www/server/php/$version/etc/php-cli.ini
+	fi
 	service php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'

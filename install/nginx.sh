@@ -52,13 +52,6 @@ if [ "${loongarch64Check}" ]; then
     exit
 fi
 
-#HUAWEI_CLOUD_EULER=$(cat /etc/os-release |grep '"Huawei Cloud EulerOS 1')
-#EULER_OS=$(cat /etc/os-release |grep "EulerOS 2.0 ")
-#if [ "${HUAWEI_CLOUD_EULER}" ] || [ "${EULER_OS}" ];then
-#        wget -O nginx.sh ${download_Url}/install/1/nginx.sh && sh nginx.sh $1 $2
-#        exit
-#fi
-
 if [ -z "${cpuCore}" ]; then
     cpuCore="1"
 fi

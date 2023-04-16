@@ -40,6 +40,10 @@ Ext_Path(){
 		'81')
 		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/ldap.so'
 		;;
+		'82')
+        extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/ldap.so'
+        ;;
+
 	esac
 }
 
@@ -95,6 +99,9 @@ Install_ldap()
 	fi
 
 	echo -e "extension = ldap.so" >> /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		echo -e "extension = ldap.so" >> /www/server/php/$version/etc/php-cli.ini
+	fi
 	service php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'
@@ -116,6 +123,9 @@ Uninstall_ldap()
 	fi
 
 	sed -i '/ldap.so/d' /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		sed -i '/ldap.so/d' /www/server/php/$version/etc/php-cli.ini
+	fi
 	rm -f ${extFile}
 
 	service php-fpm-$version reload

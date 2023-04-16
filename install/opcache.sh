@@ -54,6 +54,8 @@ Install_Opcache()
 		'81')
 		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/opcache.so'
 		;;
+		'82')
+		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/opcache.so'
 	esac
 	
 	if [ ! -f "$extFile" ];then

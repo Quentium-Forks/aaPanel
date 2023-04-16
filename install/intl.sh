@@ -38,9 +38,12 @@ Install_Intl()
 		'81')
 		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/intl.so'
 		;;
+		'82')
+		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/intl.so'
+		;;
 	esac
 	
-	isInstall=`cat /www/server/php/$version/etc/php.ini|grep 'intl.so'`
+	isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'intl.so')
 	if [ "${isInstall}" != "" ];then
 		echo "php-$vphp 已安装intl,请选择其它版本!"
 		return
@@ -122,6 +125,9 @@ Uninstall_Intl()
 		;;
 		'80')
 		extFile='/www/server/php/80/lib/php/extensions/no-debug-non-zts-20200930/intl.so'
+		;;
+		'82')
+		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/intl.so'
 		;;
 	esac
 	if [ ! -f "$extFile" ];then

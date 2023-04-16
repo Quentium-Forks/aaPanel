@@ -12,7 +12,7 @@ Install_Exif()
 
     download_Url=$NODE_URL
     
-    isInstall=`cat /www/server/php/$version/etc/php.ini|grep 'exif.so'`
+    isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'exif.so')
     if [ "${isInstall}" != "" ];then
         echo "php-$vphp 已安装exif,请选择其它版本!"
         return
@@ -60,6 +60,9 @@ Install_Exif()
         '81')
         extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/exif.so'
         ;;
+        '82')
+		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/exif.so'
+		;;
     esac
 
     Centos7Check=$(cat /etc/redhat-release|grep ' 7.'|grep -i centos)
@@ -103,7 +106,7 @@ Uninstall_Exif()
         echo "php-$vphp 未安装,请选择其它版本!"
         return
     fi
-    isInstall=`cat /www/server/php/$version/etc/php.ini|grep 'exif.so'`
+    isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'exif.so')
     if [ "${isInstall}" == "" ];then
         echo "php-$vphp 未安装exif,请选择其它版本!"
         return

@@ -350,7 +350,7 @@ server {
 	}
 EOF
  	echo > /www/server/nginx/conf/enable-php-00.conf
-	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81;
+	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82;
 	do
 		cat > ${Setup_Path}/conf/enable-php-${phpV}.conf<<EOF
 	location ~ [^/]\.php(/|$)
@@ -414,7 +414,7 @@ EOF
 	#fi
 
 	PHPVersion=""
-	for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81;
+	for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81 82;
 	do
 		if [ -d "/www/server/php/${phpVer}/bin" ]; then
 			PHPVersion=${phpVer}

@@ -38,8 +38,8 @@ php_72='7.2.33'
 php_73='7.3.32'
 php_74='7.4.33'
 php_80='8.0.26'
-php_81='8.1.13'
-php_82='8.2.0'
+php_81='8.1.17'
+php_82='8.2.4'
 opensslVersion="1.0.2u"
 openssl111Version="1.1.1o"
 nghttp2Version="1.42.0"
@@ -56,13 +56,6 @@ if [ "${loongarch64Check}" ];then
 	wget -O php.sh ${download_Url}/install/0/loongarch64/php.sh && sh php.sh $1 $2
 	exit;
 fi
-
-#HUAWEI_CLOUD_EULER=$(cat /etc/os-release |grep '"Huawei Cloud EulerOS 1')
-#EULER_OS=$(cat /etc/os-release |grep "EulerOS 2.0 ")
-#if [ "${HUAWEI_CLOUD_EULER}" ] || [ "${EULER_OS}" ];then
-#        wget -O php.sh ${download_Url}/install/1/php.sh && sh php.sh $1 $2
-#        exit
-#fi
 
 if [ -z "${cpuCore}" ]; then
 	cpuCore="1"
@@ -147,6 +140,9 @@ Service_Del(){
 		chkconfig --level 2345 php-fpm-${php_version} off
 	elif [ "${PM}" == "apt-get" ]; then
 		update-rc.d php-fpm-${php_version} remove
+	fi
+	if [ -f "/usr/lib/systemd/system/php-fpm-${php_version}.service" ];then
+		systemctl disable php-fpm-${php_version}.service
 	fi
 	rm -f /etc/init.d/php-fpm-$php_version
 }

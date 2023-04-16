@@ -88,6 +88,9 @@ Ext_Path(){
 		'81')
 		extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/memcached.so'
 		;;
+		'82')
+        extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/memcached.so'
+		;;
 	esac
 }
 
@@ -213,6 +216,9 @@ Uninstall_Memcached()
 
 	rm -f ${extFile}
 	sed -i '/memcached.so/d'  /www/server/php/$version/etc/php.ini
+	if [ -f /www/server/php/$version/etc/php-cli.ini ];then
+		sed -i '/memcached.so/d' /www/server/php/$version/etc/php-cli.ini
+	fi
 	/etc/init.d/php-fpm-$version reload
 	echo '==============================================='
 	echo 'successful!'
