@@ -126,7 +126,7 @@ Install_Rpcgen(){
 Install_Openssl111(){
     opensslCheck=$(/usr/local/openssl111/bin/openssl version|grep 1.1.1)
     if [ -z "${opensslCheck}" ]; then
-        opensslVersion="1.1.1o"
+        opensslVersion="1.1.1t"
         cd ${run_path}
         wget ${download_Url}/src/openssl-${opensslVersion}.tar.gz -T 20
         tar -zxf openssl-${opensslVersion}.tar.gz

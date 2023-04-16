@@ -41,7 +41,7 @@ php_80='8.0.26'
 php_81='8.1.17'
 php_82='8.2.4'
 opensslVersion="1.0.2u"
-openssl111Version="1.1.1o"
+openssl111Version="1.1.1t"
 nghttp2Version="1.42.0"
 curlVersion="7.70.0"
 

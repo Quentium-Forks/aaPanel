@@ -459,7 +459,7 @@ Install_Python_Lib(){
 Other_Openssl(){
 	openssl_version=$(openssl version|grep -Eo '[0-9]\.[0-9]\.[0-9]')
 	if [ "$openssl_version" = '1.0.1' ] || [ "$openssl_version" = '1.0.0' ];then	
-		opensslVersion="1.0.2r"
+		opensslVersion="1.1.1t"
 		if [ ! -f "/usr/local/openssl/lib/libssl.so" ];then
 			cd /www
 			openssl_src_file=/www/openssl.tar.gz
@@ -467,7 +467,7 @@ Other_Openssl(){
 			tmp_size=$(du -b $openssl_src_file|awk '{print $1}')
 			if [ $tmp_size -lt 703460 ];then
 				rm -f $openssl_src_file
-				Red_Error "ERROR: Download openssl-1.0.2 source code fielded."
+				Red_Error "ERROR: Download openssl source code fielded."
 			fi
 			tar -zxf $openssl_src_file
 			rm -f $openssl_src_file
@@ -489,7 +489,7 @@ Other_Openssl(){
 Insatll_Libressl(){
 	openssl_version=$(openssl version|grep -Eo '[0-9]\.[0-9]\.[0-9]')
 	if [ "$openssl_version" = '1.0.1' ] || [ "$openssl_version" = '1.0.0' ];then	
-		opensslVersion="3.0.2"
+		opensslVersion="3.0.8"
 		cd /www
 		openssl_src_file=/www/openssl.tar.gz
 		wget -O $openssl_src_file ${download_Url}/install/pyenv/libressl-${opensslVersion}.tar.gz
@@ -520,7 +520,7 @@ Centos6_Openssl(){
 	if [ "$os_version" != '6' ];then
 		return
 	fi
-	echo 'Centos6 install openssl-1.0.2...'
+	echo 'Centos6 install openssl...'
 	openssl_rpm_file="/www/openssl.rpm"
 	wget -O $openssl_rpm_file $download_Url/rpm/centos6/${is64bit}/bt-openssl102.rpm -T 10
 	tmp_size=$(du -b $openssl_rpm_file|awk '{print $1}')
