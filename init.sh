@@ -150,7 +150,7 @@ panel_port_check()
 		  fi
 
 		  if [ "$pn" = "php-fpm" ];then
-				php_v=(52 53 54 55 56 70 71 72 73 74);
+				php_v=(52 53 54 55 56 70 71 72 73 74 80 81 82);
 				for pv in ${php_v[@]};
 				do
 					if [ -f /etc/init.d/php-fpm-${pv} ];then
