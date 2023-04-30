@@ -157,16 +157,13 @@ Download_Src() {
     if [ -z "${GMSSL}" ]; then
         TLSv13_NGINX=$(echo ${nginxVersion} | tr -d '.' | cut -c 1-3)
         if [ "${TLSv13_NGINX}" -ge "115" ] && [ "${TLSv13_NGINX}" != "181" ]; then
-            opensslVer="1.1.1t"
+            opensslVersion="1.1.1t"
         else
-            opensslVer="1.0.2u"
+            opensslVersion="1.0.2u"
         fi
-        # if [ "$version" == "1.23" ];then
-        #     opensslVer="3.0.8"
-        # fi
-        wget -O openssl.tar.gz ${download_Url}/src/openssl-${opensslVer}.tar.gz
+        wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
         tar -xvf openssl.tar.gz
-        mv openssl-${opensslVer} openssl
+        mv openssl-${opensslVersion} openssl
         rm -f openssl.tar.gz
     else
         wget -O GmSSL-master.zip ${download_Url}/src/GmSSL-master.zip

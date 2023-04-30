@@ -171,7 +171,7 @@ Install_Openssl_1_0_2()
 {
 	if [ ! -f "/usr/local/openssl/bin/openssl" ];then
 		cd ${run_path}
-		wget ${download_Url}/src/openssl-${opensslVersion}.tar.gz
+		wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
 		tar -zxf openssl-${opensslVersion}.tar.gz
 		cd openssl-${opensslVersion}
 		./config --openssldir=/usr/local/openssl zlib-dynamic shared
@@ -189,7 +189,7 @@ Install_Openssl_1_1_1(){
 	openssl111Check=$(openssl version |grep 1.1.1)
 	if [ ! -f "/usr/local/openssl111/bin/openssl" ] && [ -z "${openssl111Check}" ];then
 		cd ${run_path}
-		wget ${download_Url}/src/openssl-${openssl111Version}.tar.gz -T 20
+		wget https://www.openssl.org/source/openssl-${openssl111Version}.tar.gz
 		tar -zxf openssl-${openssl111Version}.tar.gz
 		rm -f openssl-${openssl111Version}.tar.gz
 		cd openssl-${openssl111Version}

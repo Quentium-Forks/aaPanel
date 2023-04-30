@@ -463,7 +463,7 @@ Other_Openssl(){
 		if [ ! -f "/usr/local/openssl/lib/libssl.so" ];then
 			cd /www
 			openssl_src_file=/www/openssl.tar.gz
-			wget -O $openssl_src_file ${download_Url}/src/openssl-${opensslVersion}.tar.gz
+			wget -O $openssl_src_file https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
 			tmp_size=$(du -b $openssl_src_file|awk '{print $1}')
 			if [ $tmp_size -lt 703460 ];then
 				rm -f $openssl_src_file

@@ -73,7 +73,7 @@ Install_Openssl()
 {
 	if [ ! -f "/usr/local/openssl/lib/libssl.so" ];then
 		cd ${run_path}
-		wget ${download_Url}/src/openssl-${opensslVersion}.tar.gz
+		wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
 		tar -zxf openssl-${opensslVersion}.tar.gz
 		cd openssl-${opensslVersion}
 		./config --openssldir=/usr/local/openssl zlib-dynamic shared

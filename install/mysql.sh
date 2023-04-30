@@ -128,7 +128,7 @@ Install_Openssl111(){
     if [ -z "${opensslCheck}" ]; then
         opensslVersion="1.1.1t"
         cd ${run_path}
-        wget ${download_Url}/src/openssl-${opensslVersion}.tar.gz -T 20
+        wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz -T 20
         tar -zxf openssl-${opensslVersion}.tar.gz
         rm -f openssl-${opensslVersion}.tar.gz
         cd openssl-${opensslVersion}
