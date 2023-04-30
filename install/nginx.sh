@@ -29,7 +29,8 @@ nginx_119='1.19.8'
 nginx_120='1.20.2'
 nginx_121='1.21.4'
 nginx_122='1.22.1'
-nginx_123='1.23.2'
+nginx_123='1.23.4'
+nginx_124='1.24.0'
 openresty='1.19.9.1'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
@@ -109,8 +110,29 @@ Install_Jemalloc() {
         rm -rf jemalloc*
     fi
 }
+Install_LuaJIT2(){
+    LUAJIT_INC_PATH="luajit-2.1"
+    wget -c -O luajit2-2.1-20230410.zip ${download_Url}/src/luajit2-2.1-20230410.zip
+    unzip luajit2-2.1-20230410.zip
+    cd luajit2-2.1-20230410
+    make -j${cpuCore}
+    make install
+    cd .. 
+    rm -rf luajit2-2.1-20230410*
+    ln -sf /usr/local/lib/libluajit-5.1.so.2 /usr/local/lib64/libluajit-5.1.so.2
+    LD_SO_CHECK=$(cat /etc/ld.so.conf|grep /usr/local/lib)
+    if [ -z "${LD_SO_CHECK}" ];then
+         echo "/usr/local/lib" >>/etc/ld.so.conf
+    fi
+    ldconfig
+}
 Install_LuaJIT() {
-    if [ ! -f '/usr/local/lib/libluajit-5.1.so' ] || [ ! -f "/usr/local/include/${LUAJIT_INC_PATH}/luajit.h" ]; then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+        Install_LuaJIT2
+        return
+    fi
+    OEPN_LUAJIT=$(cat /usr/local/include/luajit-2.1/luajit.h|grep 2022)
+    if [ ! -f '/usr/local/lib/libluajit-5.1.so' ] || [ ! -f "/usr/local/include/${LUAJIT_INC_PATH}/luajit.h" ] || [ "${OEPN_LUAJIT}" ]; then
         wget -c -O LuaJIT-${LUAJIT_VER}.tar.gz ${download_Url}/install/src/LuaJIT-${LUAJIT_VER}.tar.gz -T 10
         tar xvf LuaJIT-${LUAJIT_VER}.tar.gz
         cd LuaJIT-${LUAJIT_VER}
@@ -121,7 +143,10 @@ Install_LuaJIT() {
         export LUAJIT_LIB=/usr/local/lib
         export LUAJIT_INC=/usr/local/include/${LUAJIT_INC_PATH}/
         ln -sf /usr/local/lib/libluajit-5.1.so.2 /usr/local/lib64/libluajit-5.1.so.2
-        echo "/usr/local/lib" >>/etc/ld.so.conf
+        LD_SO_CHECK=$(cat /etc/ld.so.conf|grep /usr/local/lib)
+        if [ -z "${LD_SO_CHECK}" ];then
+             echo "/usr/local/lib" >>/etc/ld.so.conf
+        fi
         ldconfig
     fi
 }
@@ -192,6 +217,9 @@ Download_Src() {
 
     #lua_nginx_module
     LuaModVer="0.10.13"
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+        LuaModVer="0.10.24"
+    fi
     wget -c -O lua-nginx-module-${LuaModVer}.zip ${download_Url}/src/lua-nginx-module-${LuaModVer}.zip
     unzip -o lua-nginx-module-${LuaModVer}.zip
     mv lua-nginx-module-${LuaModVer} lua_nginx_module
@@ -253,8 +281,7 @@ Install_Configure() {
     fi
 	
     ENABLE_STICKY="--add-module=${Setup_Path}/src/nginx-sticky-module"
-	if [ "$version" == "1.23" ];then
-		ENABLE_LUA=""
+	if [ "$version" == "1.23" ] || [ "$version" == "1.24" ];then
         ENABLE_STICKY=""
 	fi
 
@@ -313,14 +340,36 @@ Install_Nginx() {
             echo -e "特殊情况可通过以下联系方式寻求安装协助情况"
             echo -e "============================================"
         fi
-		echo -e "安装失败，请截图以上报错信息发帖至论坛www.bt.cn/bbs求助"
+        Centos8Check=$(cat /etc/redhat-release | grep ' 8.' | grep -iE 'centos')
+        if [ "${Centos8Check}" ];then
+            echo -e "Centos8官方已经停止支持"
+            echo -e "如是新安装系统服务器建议更换至Centos-7/Debian-11/Ubuntu-22系统安装宝塔面板"
+        fi
+        echo -e "安装失败，请截图以上报错信息发帖至论坛www.bt.cn/bbs求助"
         echo -e "或手机访问以下链接、扫码联系企业微信技术求助"
-		echo -e "帖子或企业微信注明企业版用户，将获得极速响应技术支持"
+        echo -e "帖子或企业微信注明企业版用户，将获得极速响应技术支持"
         echo -e "============================================"
         echo -e "联系链接:https://work.weixin.qq.com/kfid/kfc9072f0e29a53bd52"
         echo -e "============================================"
         rm -rf ${Setup_Path}
         exit 1
+    fi
+
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+        wget -c -O lua-resty-core-0.1.26.zip ${download_Url}/src/lua-resty-core-0.1.26.zip
+        unzip lua-resty-core-0.1.26.zip
+        cd lua-resty-core-0.1.26
+        make install PREFIX=/www/server/nginx
+        cd ..
+        rm -rf lua-resty-core-0.1.26*
+
+        wget -c -O lua-resty-lrucache-0.13.zip ${download_Url}/src/lua-resty-lrucache-0.13.zip
+        unzip lua-resty-lrucache-0.13.zip
+        cd lua-resty-lrucache-0.13
+        make install PREFIX=/www/server/nginx
+        cd ..
+        rm -rf lua-resty-core-0.1.26*
+
     fi
 	
     \cp -rpa ${Setup_Path}/sbin/nginx /www/backup/nginxBak
@@ -480,6 +529,17 @@ EOF
         done
     fi
 
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+        if [ -d "/www/server/btwaf" ];then
+            rm -rf /www/server/btwaf/ngx
+            rm -rf /www/server/btwaf/resty
+            \cp -rpa /www/server/nginx/lib/lua/* /www/server/btwaf
+        else
+            sed -i "/lua_package_path/d" /www/server/nginx/conf/nginx.conf
+            sed -i '/include proxy\.conf;/a \        lua_package_path "/www/server/nginx/lib/lua/?.lua;;";' /www/server/nginx/conf/nginx.conf
+        fi
+    fi
+
     wget -O /etc/init.d/nginx ${download_Url}/init/nginx.init -T 5
     chmod +x /etc/init.d/nginx
 }
@@ -509,6 +569,8 @@ Uninstall_Nginx() {
     [ -f "${Setup_Path}/deb.pl" ] && apt-get remove bt-$(cat ${Setup_Path}/deb.pl) -y
     pkill -9 nginx
     rm -rf ${Setup_Path}
+    rm -rf /www/server/btwaf/ngx
+    rm -rf /www/server/btwaf/resty
 }
 
 actionType=$1
@@ -559,6 +621,9 @@ else
     '1.23')
         nginxVersion=${nginx_123}
         ;;
+    '1.24')
+        nginxVersion=${nginx_124}
+        ;;
     '1.8')
         nginxVersion=${nginx_108}
         ;;
@@ -593,5 +658,4 @@ else
         Update_Nginx
     fi
 fi
-
 
