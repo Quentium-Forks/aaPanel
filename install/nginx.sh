@@ -113,7 +113,7 @@ Install_Jemalloc() {
 Install_LuaJIT2(){
     LUAJIT_INC_PATH="luajit-2.1"
     wget -c -O luajit2-2.1-20230410.zip ${download_Url}/src/luajit2-2.1-20230410.zip
-    unzip luajit2-2.1-20230410.zip
+    unzip -o luajit2-2.1-20230410.zip
     cd luajit2-2.1-20230410
     make -j${cpuCore}
     make install
@@ -238,6 +238,11 @@ Download_Src() {
     tar -xvf nginx-dav-ext-module-${NgxDavVer}.tar.gz
     mv nginx-dav-ext-module-${NgxDavVer} nginx-dav-ext-module
     rm -f nginx-dav-ext-module-${NgxDavVer}.tar.gz
+    
+    wget -c -O ngx_http_substitutions_filter_module-master.zip ${download_Url}/src/ngx_http_substitutions_filter_module-master.zip
+    unzip -o ngx_http_substitutions_filter_module-master.zip
+    rm -f ngx_http_substitutions_filter_module-master.zip
+
 
     if [ "${Is_64bit}" = "64" ]; then
         if [ "${version}" == "1.15" ] || [ "${version}" == "1.17" ] || [ "${version}" == "tengine" ]; then
@@ -313,7 +318,7 @@ Install_Configure() {
     export LUAJIT_INC=/usr/local/include/${LUAJIT_INC_PATH}/
     export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 
-    ./configure --user=www --group=www --prefix=${Setup_Path} ${ENABLE_LUA} --add-module=${Setup_Path}/src/ngx_cache_purge ${ENABLE_STICKY} --with-openssl=${Setup_Path}/src/openssl --with-pcre=pcre-${pcre_version} ${ENABLE_HTTP2} --with-http_stub_status_module --with-http_ssl_module --with-http_image_filter_module --with-http_gzip_static_module --with-http_gunzip_module --with-ipv6 --with-http_sub_module --with-http_flv_module --with-http_addition_module --with-http_realip_module --with-http_mp4_module --with-ld-opt="-Wl,-E" --with-cc-opt="-Wno-error" ${jemallocLD} ${ENABLE_WEBDAV} ${ENABLE_NGX_PAGESPEED} ${ADD_EXTENSION} ${i_make_args}
+    ./configure --user=www --group=www --prefix=${Setup_Path} ${ENABLE_LUA} --add-module=${Setup_Path}/src/ngx_cache_purge ${ENABLE_STICKY} --with-openssl=${Setup_Path}/src/openssl --with-pcre=pcre-${pcre_version} ${ENABLE_HTTP2} --with-http_stub_status_module --with-http_ssl_module --with-http_image_filter_module --with-http_gzip_static_module --with-http_gunzip_module --with-ipv6 --with-http_sub_module --with-http_flv_module --with-http_addition_module --with-http_realip_module --with-http_mp4_module --add-module=${Setup_Path}/src/ngx_http_substitutions_filter_module-master --with-ld-opt="-Wl,-E" --with-cc-opt="-Wno-error" ${jemallocLD} ${ENABLE_WEBDAV} ${ENABLE_NGX_PAGESPEED} ${ADD_EXTENSION} ${i_make_args}
     make -j${cpuCore}
 }
 Install_Nginx() {
