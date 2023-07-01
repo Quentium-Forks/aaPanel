@@ -642,7 +642,7 @@ def bt_cli(u_input = 0):
         ClearSystem()
     elif u_input == 16:
         os.system("/www/server/panel/pyenv/bin/pip install cachelib")
-        os.system("curl https://download.bt.cn/install/update6_en.sh|bash")
+        os.system("curl https://node.aapanel.com/install/update6_en.sh|bash")
     elif u_input == 17:
         l_path = '/www/server/panel/data/log_not_gzip.pl'
         if os.path.exists(l_path):

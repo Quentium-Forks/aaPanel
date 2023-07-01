@@ -1,7 +1,7 @@
 #!/www/server/panel/pyenv/bin/python
 #coding: utf-8
 # +-------------------------------------------------------------------
-# | 宝塔Linux面板 
+# | 宝塔Linux面板
 # +-------------------------------------------------------------------
 # | Copyright (c) 2015-2099 宝塔软件(http://bt.cn) All rights reserved.
 # +-------------------------------------------------------------------
@@ -15,6 +15,14 @@ _PATH = '/www/server/panel'
 os.chdir(_PATH)
 os.system("nohup ./pyenv/bin/python3 class/jobs.py &>/dev/null &")
 upgrade_file = 'script/upgrade_flask.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+upgrade_file = 'script/upgrade_gevent.sh'
+if os.path.exists(upgrade_file):
+    os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
+
+upgrade_file = 'script/upgrade_telegram.sh'
 if os.path.exists(upgrade_file):
     os.system("nohup bash {} &>/dev/null &".format(upgrade_file))
 
@@ -103,8 +111,7 @@ if is_debug:
 
         def process_IN_MOVED_TO(self,event):
             if not self.is_ext(event.pathname): return
-            self.panel_reload(event.pathname,'[覆盖]')
-
+            self.panel_reload(event.pathname,'[Cover]')
     def debug_event():
         logger.debug('Launch the panel in debug mode')
         logger.debug('Listening port：0.0.0.0:{}'.format(public.readFile('data/port.pl')))
