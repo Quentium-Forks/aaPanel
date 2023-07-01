@@ -6238,4 +6238,3 @@ module.exports = Terminal_1.Terminal;
 
 },{"./Terminal":13}]},{},[34])(34)
 });
-//# sourceMappingURL=xterm.js.map

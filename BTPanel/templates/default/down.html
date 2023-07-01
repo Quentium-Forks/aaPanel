@@ -1182,7 +1182,6 @@ td {
     function play_file(obj,filename) {
         var imgUrl = "/down/{{data.token}}?fname={{data['to_path']}}/"+filename+'&play=true' //'/download?filename=' + filename + '&play=true';
         var video = $("#btvideo video");
-        console.log(video.attr('width'),video.attr('height'))
         var v = $('<video  controls="controls" playsinlin webkit-playsinline poster="" preload="auto" x5-playsinline=true  x5-video-player-type="h5" x5-video-player-fullscreen=true autoplay="autoplay" width="'+ video.width() +'" height="'+ video.height() +'">\
                         <source src="' + imgUrl +'"  type="video/mp4">\
                             Your browser does not support Video Tags.\

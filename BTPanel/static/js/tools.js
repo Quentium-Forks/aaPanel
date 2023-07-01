@@ -7,8 +7,15 @@ var bt_tools = {
      * @return 当前实例对象
      */
     table: function (config) {
-        var that = this;
-
+        var that = this, table = $(config.el), tableData = table.data('table')
+        if(tableData && table.find('table').length > 0) {
+          if (config.url !== undefined) {
+            tableData.$refresh_table_list(true);
+          } else if (config.data !== undefined) {
+            tableData.$reader_content(config.data);
+          }
+          return tableData
+        }
         function ReaderTable(config) {
             this.config = config;
             this.$load();
@@ -42,7 +49,7 @@ var bt_tools = {
                 if (this.config.tootls) {
                     this.$reader_tootls(this.config.tootls);
                 } else {
-                    if ($(_that.config.el + '.divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="height:' + (this.config.height || 'auto') + '"></div>');
+                    if ($(_that.config.el + '.divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="max-height:' + (this.config.height || 'auto') + '"></div>');
                 }
                 this.$reader_content();
                 if (_that.config.url !== undefined) {
@@ -65,13 +72,11 @@ var bt_tools = {
              * @return void
              */
             $refresh_table_list: function (load, callback) {
-                var _that = this, loadT;
-                if (load) loadT = bt_tools.load(lan.database.get_data);
-                this.$http(function (data) {
-                    if (loadT) loadT.close();
-                    if (callback) callback(data);
-                    _that.$reader_content(data.data, typeof data.total != "undefined" ? parseInt(data.total) : data.page);
-                });
+              var _that = this;
+              this.$http(load, function (data) {
+                if (callback) callback(data);
+                _that.$reader_content(data.data, typeof data.total != "undefined" ? parseInt(data.total) : data.page);
+              });
             },
 
             /**
@@ -149,7 +154,7 @@ var bt_tools = {
                         }
                     }
                     if (data.length > 0) tbody += '</tr>'
-                    if (data.length == 0) tbody += '<tr><td colspan="' + column.length + '" style="text-align:center;">' + (this.config['default'] || lan['public'].empty) + '</td></tr>';
+                    if (data.length == 0) tbody += '<tr class="no-tr"><td colspan="' + column.length + '" style="text-align:center;">' + (this.config['default'] || lan['public'].empty) + '</td></tr>';
                     i++;
                 } while (i < data.length);
                 if (!this.init) this.$style_bind(this.style_list);
@@ -229,7 +234,17 @@ var bt_tools = {
                     }
                 });
             },
-
+            /**
+             * @description 固定表头
+             * @param {string} el DOM选择器
+             * @return void
+             */
+            $fixed_table_thead: function (el) {
+              $(el).scroll(function () {
+                var scrollTop = this.scrollTop;
+                this.querySelector('thead').style.transform = 'translateY(' + (scrollTop-1) + 'px)';
+              });
+            },
             /**
              * @description 删除行内数据
              */
@@ -563,6 +578,7 @@ var bt_tools = {
                                 bt.confirm({
                                     title: 'Batch ' + active.title,
                                     msg: 'Please be cautious, The selected item will be [ ' + active.title + ' ] after confirmation',
+                                    shadeClose: active.shadeClose ? active.shadeClose : false
                                 }, function (index) {
                                     layer.close(index)
                                     if (!active.recursion) {
@@ -579,238 +595,255 @@ var bt_tools = {
                 }
 
                 for (var i = 0; i < config.length; i++) {
-                    var template = '',
-                        item = config[i];
-                    switch (item.type) {
-                        case 'group':
-                            $.each(item.list, function (index, items) {
-                                var _btn = item.type + '_' + _that.random + '_' + index,
-                                    html = '';
-                                if (items.type == 'division') {
-                                    template += '<span class="mlr5"></span>';
-                                } else {
-                                    if (!items.group) {
-                                        template += '<button type="button" title="' + (items.tips || items.title) + '" class="btn ' + (items.active ? 'btn-success' : 'btn-default') + ' ' + _btn + ' btn-sm mr5" ' + that.$verify(_that.$reader_style(items.style), 'style') + '>' + (items.icon ? '<span class="glyphicon glyphicon-' + items.icon + ' mr5"></span>' : '') + '<span>' + items.title + '</span></button>';
-                                    } else {
-                                        template += '<div class="btn-group" style="vertical-align: top;">\
-                                      <button type="button" class="btn btn-default ' + _btn + ' btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span style="margin-right:2px;">' + lan.site.category_manager + '</span><span class="caret" style="position: relative;top: -1px;"></span></button>\
-                                      <ul class="dropdown-menu"></ul>\
-                                  </div>'
-                                        if (item.list) {
-                                            $.each(item.list, function (index, items) {
-                                                html += '<li><a href="javascript:;" ' + +'>' + items[item.key] + '</a></li>';
-                                            });
-                                        }
-                                        if (items.init) setTimeout(function () {
-                                            items.init(_btn)
-                                        }, 400);
-                                    }
-                                }
-                                if (!event_list[_btn]) event_list[_btn] = {
-                                    event: items.event,
-                                    type: 'button'
-                                };
-                            });
-                            break;
-                        case 'search':
-                            this.config.search = item;
-                            var _input = 'search_input_' + this.random,
-                                _focus = 'search_focus_' + this.random,
-                                _btn = 'search_btn_' + this.random;
-                            template = '<div class="bt_search"><input type="text" class="search_input ' + _input + '" style="' + (item.width ? ('width:' + item.width) : '') + '" placeholder="' + (item.placeholder || '') + '"/><span class="glyphicon glyphicon-search ' + _btn + '" aria-hidden="true"></span></div>';
-                            if (!event_list[_input]) event_list[_input] = {
-                                eventType: 'keyup',
-                                type: 'search_input'
-                            };
-                            if (!event_list[_focus]) event_list[_focus] = {
-                                type: 'search_focus',
-                                eventType: 'focus'
-                            };
-                            if (!event_list[_btn]) event_list[_btn] = {
-                                type: 'search_btn'
-                            };
-                            break;
-                        case 'batch':
-                            this.config.batch = item;
-                            var batch_list = [],
-                                _html = '',
-                                active = item.config;
-                            if (typeof item.config != 'undefined') {
-                                _that.batch_active = active;
-                                $(_that.config.el).on('click', '.set_batch_option', function (e) {
-                                    var check_list = [];
-                                    for (var i = 0; i < _that.checkbox_list.length; i++) {
-                                        check_list.push(_that.data[_that.checkbox_list[i]]);
-                                    }
-                                    if ($(this).hasClass('bt-disabled')) {
-                                        layer.tips(_that.config.batch.disabledTips || 'Select batch operation', $(this), {
-                                            tips: [1, 'red'],
-                                            time: 2000
-                                        });
-                                        return false;
-                                    }
-                                    switch (typeof active.confirm) {
-                                        case 'function':
-                                            active.confirm(active, function (param, callback) {
-                                                active.param = $.extend(active.param, param);
-                                                execute_batch(active, check_list, callback);
-                                            });
-                                            break;
-                                        case 'undefined':
-                                            execute_batch(active, check_list);
-                                            break;
-                                        case 'object':
-                                            var config = active.confirm;
-                                            bt.open({
-                                                title: config.title || 'Batch execute',
-                                                area: config.area || '350px',
-                                                btn: config.btn || ['Confirm', 'Cancel'],
-                                                content: config.content,
-                                                success: function (layero, index) {
-                                                    config.success(layero, index, active);
-                                                },
-                                                yes: function (index, layero) {
-                                                    config.yes(index, layero, function (param, callback) {
-                                                        active.param = $.extend(active.param, param);
-                                                        request(active, check_list);
-                                                    });
-                                                }
-                                            });
-                                            break;
-                                    }
-                                });
-                            } else {
-                                $.each(item.selectList, function (index, items) {
-                                    if (items.group) {
-                                        $.each(items.group, function (indexs, itemss) {
-                                            batch_list.push($.extend({}, items, itemss));
-                                            _html += '<li class="item">' + itemss.title + '</li>';
-                                        });
-                                        delete items.group;
-                                    } else {
-                                        batch_list.push(items);
-                                        _html += '<li class="item">' + items.title + '</li>';
-                                    }
-                                });
-                                // 打开批量类型列表
-                                $(_that.config.el).unbind().on('click', '.bt_table_select_group .bt_select_value', function (e) {
-                                    var _this = this, $parent = $(this).parent(),
-                                        bt_selects = $parent.find('.bt_selects'), area = $parent.offset(),
-                                        _win_area = _that.$get_win_area();
-                                    if ($parent.hasClass('bt-disabled')) {
-                                        layer.tips(_that.config.batch.disabledSelectValue, $parent, {
-                                            tips: [1, 'red'],
-                                            time: 2000
-                                        })
-                                        return false;
-                                    }
-                                    if ($parent.hasClass('active')) {
-                                        $parent.removeClass('active');
-                                    } else {
-                                        $parent.addClass('active');
-                                    }
-                                    if (bt_selects.height() > (_win_area[1] - area.top)) {
-                                        bt_selects.addClass('top');
-                                    } else {
-                                        bt_selects.removeClass('top');
-                                    }
-                                    $(document).one('click', function () {
-                                        $(_that.config.el).find('.bt_table_select_group').removeClass('active');
-                                        return false;
-                                    });
-                                    return false;
-                                });
-                                // 选择批量的类型
-                                $(_that.config.el).on('click', '.bt_table_select_group .item', function (e) {
-                                    var _text = $(this).text(),
-                                        _index = $(this).index();
-                                    $(this).addClass('active').siblings().removeClass('active');
-                                    $(_that.config.el + ' .bt_select_tips').html('Batch execute ' + _text + '<em>(' + lan.site.have_been_selected + _that.checkbox_list.length + ')</em>');
-                                    _that.batch_active = batch_list[_index];
-                                    if (!_that.checked) $('.bt_table_select_group').removeClass('active');
-                                });
-                                // 执行批量操作
-                                $(_that.config.el).on('click', '.set_batch_option', function (e) {
-                                    var check_list = [],
-                                        active = _that.batch_active;
-                                    if ($(this).hasClass('bt-disabled')) {
-                                        layer.tips(_that.config.batch.disabledSelectValue, $(this), {
-                                            tips: [1, 'red'],
-                                            time: 2000
-                                        });
-                                        return false;
-                                    }
-                                    for (var i = 0; i < _that.checkbox_list.length; i++) {
-                                        check_list.push(_that.data[_that.checkbox_list[i]]);
-                                    }
-                                    if (JSON.stringify(active) === '{}') {
-                                        var bt_table_select_group = $(_that.config.el + ' .bt_table_select_group');
-                                        layer.tips(lan['public'].select_opt_type, bt_table_select_group, {
-                                            tips: [1, 'red'],
-                                            time: 2000
-                                        });
-                                        bt_table_select_group.css('border', '1px solid red');
-                                        setTimeout(function () {
-                                            bt_table_select_group.removeAttr('style');
-                                        }, 2000);
-                                        return false;
-                                    }
-                                    switch (typeof active.confirm) {
-                                        case 'function':
-                                            active.confirm(active, function (param, callback) {
-                                                active.param = $.extend(active.param, param);
-                                                execute_batch(active, check_list, callback);
-                                            });
-                                            break;
-                                        case 'undefined':
-                                            execute_batch(active, check_list);
-                                            break;
-                                        case 'object':
-                                            var config = active.confirm;
-                                            bt.open({
-                                                title: config.title || lan['public'].bulk_opt,
-                                                area: config.area || '350px',
-                                                btn: config.btn || [lan['public'].confirm, lan['public'].cancel],
-                                                content: config.content,
-                                                success: function (layero, index) {
-                                                    config.success(layero, index, active);
-                                                },
-                                                yes: function (index, layero) {
-                                                    config.yes(index, layero, function (param, callback) {
-                                                        active.param = $.extend(active.param, param);
-                                                        request(active, check_list);
-                                                    });
-                                                }
-                                            });
-                                            break;
-                                    }
-                                });
-                            }
-                            template = '<div class="bt_batch"><label><i class="cust—checkbox cursor-pointer checkbox_' + this.random + '" data-checkbox="all"></i><input type="checkbox" lass="cust—checkbox-input" /></label>' + (typeof item.config != 'undefined' ? '<button class="btn btn-default btn-sm set_batch_option bt-disabled">Batch' + item.config.title + '</button>' : '<div class="bt_table_select_group bt-disabled not-select"><span class="bt_select_value"><span class="bt_select_tips">' + lan['public'].select_opt_type + '<em></em></span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span><ul class="bt_selects ">' + _html + '</ul></div><button class="btn btn-default btn-sm set_batch_option bt-disabled" >' + item.buttonValue + '</button>') + '</div>';
-                            break;
-                        case 'page':
-                            this.config.page = item;
-                            var pageNumber = bt.get_cookie('page_number');
-                            if (this.config.cookiePrefix && pageNumber) this.config.page.number = pageNumber;
-                            template = this.$reader_page(this.config.page, '<div><span class="Pcurrent">1</span><span class="Pcount">' + lan.public_backup.total + '</span></div>');
-                            break;
-                    }
-                    if (template) {
-                        var tools_group = $(_that.config.el + ' .tootls_' + item.positon[1]);
-                        if (tools_group.length) {
-                            var tools_item = tools_group.find('.pull-' + item.positon[0]);
-                            tools_item.append(template);
-                        } else {
-                            var tools_group_elment = '<div class="tootls_group tootls_' + item.positon[1] + '"><div class="pull-left">' + (item.positon[0] == 'left' ? template : '') + '</div><div class="pull-right">' + (item.positon[0] == 'right' ? template : '') + '</div></div>';
-                            if (item.positon[1] === 'top') {
-                                $(_that.config.el).append(tools_group_elment);
-                                if ($(_that.config.el + ' .divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="max-height:' + _that.config.height + 'px"></div>');
-                            } else {
-                                if ($(_that.config.el + ' .divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="max-height:' + _that.config.height + 'px"></div>');
-                                $(_that.config.el).append(tools_group_elment);
-                            }
-                        }
-                    }
+									var template = '';
+									var item = config[i];
+									var positon = [];
+									switch (item.type) {
+										case 'group':
+											positon = item.positon || ['left', 'top'];
+											$.each(item.list, function (index, items) {
+												var _btn = item.type + '_' + _that.random + '_' + index,
+														html = '';
+												if (items.type == 'division') {
+													template += '<span class="mlr5"></span>';
+												} else {
+													if (!items.group) {
+														template += '<button type="button" title="' + (items.tips || items.title) + '" class="btn ' + (items.active ? 'btn-success' : 'btn-default') + ' ' + _btn + ' btn-sm mr5" ' + that.$verify(_that.$reader_style(items.style), 'style') + '>' + (items.icon ? '<span class="glyphicon glyphicon-' + items.icon + ' mr5"></span>' : '') + '<span>' + items.title + '</span></button>';
+													} else {
+														template += '<div class="btn-group" style="vertical-align: top;">\
+															<button type="button" class="btn btn-default ' + _btn + ' btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span style="margin-right:2px;">' + lan.site.category_manager + '</span><span class="caret" style="position: relative;top: -1px;"></span></button>\
+															<ul class="dropdown-menu"></ul>\
+														</div>'
+														if (item.list) {
+															$.each(item.list, function (index, items) {
+																html += '<li><a href="javascript:;" ' + +'>' + items[item.key] + '</a></li>';
+															});
+														}
+														if (items.init) setTimeout(function () {
+															items.init(_btn)
+														}, 400);
+													}
+												}
+												if (!event_list[_btn]) event_list[_btn] = {
+													event: items.event,
+													type: 'button'
+												};
+											});
+											break;
+										case 'search':
+                      positon = item.positon || ['right', 'top'];
+                      item.value  = item.value || '';
+											this.config.search = item;
+											var _input = 'search_input_' + this.random,
+													_focus = 'search_focus_' + this.random,
+													_btn = 'search_btn_' + this.random;
+											template = '<div class="bt_search"><input type="text" class="search_input ' + _input + '" style="' + (item.width ? ('width:' + item.width) : '') + '" placeholder="' + (item.placeholder || '') + '"/><span class="glyphicon glyphicon-search ' + _btn + '" aria-hidden="true"></span></div>';
+											if (!event_list[_input]) event_list[_input] = {
+												eventType: 'keyup',
+												type: 'search_input'
+											};
+											if (!event_list[_focus]) event_list[_focus] = {
+												type: 'search_focus',
+												eventType: 'focus'
+											};
+											if (!event_list[_btn]) event_list[_btn] = {
+												type: 'search_btn'
+											};
+											break;
+										case 'batch':
+                      positon = item.positon || ['left', 'bottom']
+                      item.placeholder = item.placeholder || '请选择批量操作';
+                      item.buttonValue = item.buttonValue || '批量操作';
+											this.config.batch = item;
+											var batch_list = [],
+													_html = '',
+													active = item.config;
+											if (typeof item.config != 'undefined') {
+													_that.batch_active = active;
+													$(_that.config.el).on('click', '.set_batch_option', function (e) {
+															var check_list = [];
+															for (var i = 0; i < _that.checkbox_list.length; i++) {
+																	check_list.push(_that.data[_that.checkbox_list[i]]);
+															}
+															if ($(this).hasClass('bt-disabled')) {
+																	layer.tips(_that.config.batch.disabledTips || 'Select batch operation', $(this), {
+																			tips: [1, 'red'],
+																			time: 2000
+																	});
+																	return false;
+															}
+															switch (typeof active.confirm) {
+																	case 'function':
+																			active.confirm(active, function (param, callback) {
+																					active.param = $.extend(active.param, param);
+																					execute_batch(active, check_list, callback);
+																			});
+																			break;
+																	case 'undefined':
+																			execute_batch(active, check_list);
+																			break;
+																	case 'object':
+																			var config = active.confirm;
+																			bt.open({
+																					title: config.title || 'Batch execute',
+																					area: config.area || '350px',
+																					btn: config.btn || ['Confirm', 'Cancel'],
+																					content: config.content,
+																					success: function (layero, index) {
+																							config.success(layero, index, active);
+																					},
+																					yes: function (index, layero) {
+																							config.yes(index, layero, function (param, callback) {
+																									active.param = $.extend(active.param, param);
+																									request(active, check_list);
+																							});
+																					}
+																			});
+																			break;
+															}
+													});
+											} else {
+													$.each(item.selectList, function (index, items) {
+															if (items.group) {
+																	$.each(items.group, function (indexs, itemss) {
+																			batch_list.push($.extend({}, items, itemss));
+																			_html += '<li class="item">' + itemss.title + '</li>';
+																	});
+																	delete items.group;
+															} else {
+																	batch_list.push(items);
+																	_html += '<li class="item">' + items.title + '</li>';
+															}
+													});
+													// 打开批量类型列表
+													$(_that.config.el).unbind().on('click', '.bt_table_select_group .bt_select_value', function (e) {
+															var _this = this, $parent = $(this).parent(),
+																	bt_selects = $parent.find('.bt_selects'), area = $parent.offset(),
+																	_win_area = _that.$get_win_area();
+															if ($parent.hasClass('bt-disabled')) {
+																	layer.tips(_that.config.batch.disabledSelectValue, $parent, {
+																			tips: [1, 'red'],
+																			time: 2000
+																	})
+																	return false;
+															}
+															if ($parent.hasClass('active')) {
+																	$parent.removeClass('active');
+															} else {
+																	$parent.addClass('active');
+															}
+															if (bt_selects.height() > (_win_area[1] - area.top)) {
+																	bt_selects.addClass('top');
+															} else {
+																	bt_selects.removeClass('top');
+															}
+															$(document).one('click', function () {
+																	$(_that.config.el).find('.bt_table_select_group').removeClass('active');
+																	return false;
+															});
+															return false;
+													});
+													// 选择批量的类型
+													$(_that.config.el).on('click', '.bt_table_select_group .item', function (e) {
+															var _text = $(this).text(),
+																	_index = $(this).index();
+															$(this).addClass('active').siblings().removeClass('active');
+															$(_that.config.el + ' .bt_select_tips').html('Batch execute ' + _text + '<em>(' + lan.site.have_been_selected + _that.checkbox_list.length + ')</em>');
+															_that.batch_active = batch_list[_index];
+															if (!_that.checked) $('.bt_table_select_group').removeClass('active');
+													});
+													// 执行批量操作
+													$(_that.config.el).on('click', '.set_batch_option', function (e) {
+															var check_list = [],
+																	active = _that.batch_active;
+															if ($(this).hasClass('bt-disabled')) {
+																	layer.tips(_that.config.batch.disabledSelectValue, $(this), {
+																			tips: [1, 'red'],
+																			time: 2000
+																	});
+																	return false;
+															}
+															for (var i = 0; i < _that.checkbox_list.length; i++) {
+																	check_list.push(_that.data[_that.checkbox_list[i]]);
+															}
+															if (JSON.stringify(active) === '{}') {
+																	var bt_table_select_group = $(_that.config.el + ' .bt_table_select_group');
+																	layer.tips(lan['public'].select_opt_type, bt_table_select_group, {
+																			tips: [1, 'red'],
+																			time: 2000
+																	});
+																	bt_table_select_group.css('border', '1px solid red');
+																	setTimeout(function () {
+																			bt_table_select_group.removeAttr('style');
+																	}, 2000);
+																	return false;
+															}
+															switch (typeof active.confirm) {
+																	case 'function':
+																			active.confirm(active, function (param, callback) {
+																					active.param = $.extend(active.param, param);
+																					execute_batch(active, check_list, callback);
+																			});
+																			break;
+																	case 'undefined':
+																			execute_batch(active, check_list);
+																			break;
+																	case 'object':
+																			var config = active.confirm;
+																			bt.open({
+                                          type: 1,
+																					title: config.title || lan['public'].bulk_opt,
+																					area: config.area || '350px',
+																					btn: config.btn || [lan['public'].confirm, lan['public'].cancel],
+																					content: config.content,
+																					success: function (layero, index) {
+																							config.success(layero, index, active);
+																					},
+																					yes: function (index, layero) {
+																							config.yes(index, layero, function (param, callback) {
+																									active.param = $.extend(active.param, param);
+                                                  layer.close(index);
+																									request(active, check_list);
+																							});
+																					}
+																			});
+																			break;
+															}
+													});
+											}
+											template = '<div class="bt_batch"><label><i class="cust—checkbox cursor-pointer checkbox_' + this.random + '" data-checkbox="all"></i><input type="checkbox" lass="cust—checkbox-input" /></label>' + (typeof item.config != 'undefined' ? '<button type="button" class="btn btn-default btn-sm set_batch_option bt-disabled">Batch' + item.config.title + '</button>' : '<div class="bt_table_select_group bt-disabled not-select"><span class="bt_select_value"><span class="bt_select_tips">' + lan['public'].select_opt_type + '<em></em></span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span><ul class="bt_selects ">' + _html + '</ul></div><button class="btn btn-default btn-sm set_batch_option bt-disabled" >' + item.buttonValue + '</button>') + '</div>';
+											break;
+										case 'page':
+											positon = item.positon || ['right', 'bottom'];
+											item.page = config.page || 1;
+											item.pageParam = item.pageParam || 'p';
+											item.number = item.number || 20;
+											item.numberList = item.numberList || [10, 20, 50, 100, 200];
+											item.numberParam = typeof item.numberParam === "boolean" ? item.numberParam : (item.numberParam || 'limit');
+											this.config.page = item;
+											// var pageNumber = bt.get_cookie('page_number')
+											var pageNumber = this.$get_page_number();
+											// if (this.config.cookiePrefix && pageNumber) this.config.page.number = pageNumber
+											if (pageNumber) this.config.page.number = pageNumber;
+											template = this.$reader_page(this.config.page, '<div><span class="Pcurrent">1</span><span class="Pcount">Total 0</span></div>')
+											break;
+									}
+									if (template) {
+										var tools_group = $(_that.config.el + ' .tootls_' + positon[1]);
+										if (tools_group.length) {
+											var tools_item = tools_group.find('.pull-' + positon[0]);
+											tools_item.append(template);
+										} else {
+											var tools_group_elment = '<div class="tootls_group tootls_' + positon[1] + '"><div class="pull-left">' + (positon[0] === 'left' ? template : '') + '</div><div class="pull-right">' + (positon[0] === 'right' ? template : '') + '</div></div>';
+											if (positon[1] === 'top') {
+												$(_that.config.el).append(tools_group_elment);
+												if ($(_that.config.el + ' .divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="max-height:' + _that.config.height + 'px"></div>');
+											} else {
+												if ($(_that.config.el + ' .divtable').length === 0) $(_that.config.el).append('<div class="divtable mtb10" style="max-height:' + _that.config.height + 'px"></div>');
+												$(_that.config.el).append(tools_group_elment);
+											}
+										}
+									}
                 }
                 if (!this.init) this.$event_bind(event_list);
             },
@@ -835,42 +868,48 @@ var bt_tools = {
              * @description 渲染分页
              * @param {object} config 配置文件
              * @param {object} page 分页
-             * @return void
+             * @return string
              */
             $reader_page: function (config, page) {
-                if (typeof page === 'number') {
-                    page = this.$custom_page(page);
-                }
-                var _that = this, $page = $(page), template = '', eventList = {};
-                $page.find('a').addClass('page_link_' + this.random);
-                template += $page.html();
-                if (config.numberStatus) {
-                    var className = 'page_select_' + this.random, number = bt.get_cookie('page_number');
-                    template += '<select class="page_select_number ' + className + '">';
-                    $.each(config.numberList, function (index, item) {
-                        template += '<option value="' + item + '" ' + ((number || config.number) == item ? 'selected' : '') + '>' + item + lan.site.items_page + '</option>';
-                    });
-                    template += '</select>';
-                    eventList[className] = {eventType: "change", type: 'page_select'};
-                }
-                if (config.jump) {
-                    var inputName = 'page_jump_input_' + this.random;
-                    var btnName = 'page_jump_btn_' + this.random;
-                    template += '<div class="page_jump_group"><span class="page_jump_title">' + lan['public'].jump_to_page + '</span><input type="number" class="page_jump_input ' + inputName + '" value="' + config.page + '" /><span class="page_jump_title"></span><button type="button" class="page_jump_btn ' + btnName + '">' + lan['public'].confirm + '</button></div>'
-                    eventList[inputName] = {
-                        eventType: 'keyup',
-                        type: 'page_jump_input'
-                    };
-                    eventList[btnName] = {
-                        type: 'page_jump_btn'
-                    };
-                }
-                eventList['page_link_' + this.random] = {
-                    type: 'cut_page_number'
-                };
-                _that.config.page.total = $page.length == 0 ? 0 : (typeof page == "number" ? page : parseInt($page.find('.Pcount').html().match(/([0-9]*)/g)[1]));
-                _that.$event_bind(eventList);
-                return '<div class="page">' + template + '</div>';
+							var template = '', eventList = {}, _that = this, $page = null;
+
+							if (config.number && !page) {
+								template = (config.page !== 1?'<a class="Pnum page_link_' + this.random +'"  data-page="1">Start</a>':'') + (config.page !== 1?'<a class="Pnum page_link_' + this.random +'" data-page="'+ (config.page - 1) +'">Prev</a>':'') + (_that.data.length === config.number?'<a class="Pnum page_link_' + this.random +'" data-page="'+ (config.page + 1) +'">Next</a>':'') + '<span class="Pcount">Page '+ config.page +'</span>'
+								eventList['page_link_' + this.random] = {type: 'cut_page_number'};
+							} else {
+								if (typeof page === 'number') page = this.$custom_page(page)
+								$page = $(page);
+								$page.find('a').addClass('page_link_' + this.random);
+								template += $page.html();
+								if (config.numberStatus) {
+									var className = 'page_select_' + this.random, number = _that.$get_page_number();
+									template += '<select class="page_select_number ' + className + '">';
+									$.each(config.numberList, function (index, item) {
+										template += '<option value="' + item + '" ' + ((number || config.number) == item ? 'selected' : '') + '>' + item + lan.site.items_page + '</option>';
+									});
+									template += '</select>';
+									eventList[className] = { eventType: "change", type: 'page_select' };
+								}
+								if (config.jump) {
+									var inputName = 'page_jump_input_' + this.random;
+									var btnName = 'page_jump_btn_' + this.random;
+									template += '<div class="page_jump_group"><span class="page_jump_title">' + lan['public'].jump_to_page + '</span><input type="number" class="page_jump_input ' + inputName + '" value="' + config.page + '" /><span class="page_jump_title"></span><button type="button" class="page_jump_btn ' + btnName + '">' + lan['public'].confirm + '</button></div>'
+									eventList[inputName] = {
+										eventType: 'keyup',
+										type: 'page_jump_input'
+									};
+									eventList[btnName] = {
+										type: 'page_jump_btn'
+									};
+								}
+								eventList['page_link_' + this.random] = {
+									type: 'cut_page_number'
+								};
+								_that.config.page.total = $page.length === 0 ? 0 : (typeof page == "number" ? page : parseInt($page.find('.Pcount').html().match(/([0-9]*)/g)[1]));
+							}
+			
+							_that.$event_bind(eventList);
+							return '<div class="page">' + template + '</div>';
             },
             /**
              * @description 渲染样式
@@ -896,7 +935,7 @@ var bt_tools = {
                     page = Math.ceil(total / config.number),
                     tmpPageIndex = 0;
                 if (config.page > 1 && page > 1) {
-                    html += '<a class="Pstart" href="p=1">首页</a><a class="Pstart" href="p=' + (config.page - 1) + '">上一页</a>';
+                    html += '<a class="Pstart" href="p=1">Home</a><a class="Pstart" href="p=' + (config.page - 1) + '">Prev</a>';
                 }
                 if (page <= 10) {
                     for (var i = 1; i <= page; i++) {
@@ -917,8 +956,8 @@ var bt_tools = {
                     html += "<span>...</span>",
                         html += '<a class="Pnum" href="p=' + page + '">' + page + "</a>"
                 }
-                return page > 1 && config.page < page && (html += '<a class="Pstart" href="p=' + (config.page + 1) + '">下一页</a><a class="Pstart" href="p=' + page + '">尾页</a>'),
-                    html += '<span class="Pcount">共' + total + "条</span></div>"
+                return page > 1 && config.page < page && (html += '<a class="Pstart" href="p=' + (config.page + 1) + '">Next</a><a class="Pstart" href="p=' + page + '">Last</a>'),
+                    html += '<span class="Pcount">Total ' + total + "</span></div>"
             },
 
 
@@ -1059,16 +1098,21 @@ var bt_tools = {
                                 break;
                             case 'search_btn':
                                 var _search = $(_that.config.el + ' .search_input'),
-                                    val = $(_that.config.el + ' .search_input').val();
-                                val = val.replace(/\s+/g, "");
-                                _search.val(val);
+                                    val = $(_that.config.el + ' .search_input').val(),
+                                    _filterBox = $('<div></div>').text(val),
+                                    _filterText = _filterBox.html();
+
+                                val = _filterText //过滤xss
+                                val = val.replace(/(^\s*)|(\s*$)/g, "");
+                                _search.text(val);
                                 _that.config.search.value = val;
+                                if (_that.config.page) _that.config.page.page = 1;
                                 _search.append('<div class="bt_search_tips"><span>' + val + '</span><i class="bt_search_close"></i></div>');
                                 _that.$refresh_table_list(true);
                                 break;
                             case 'page_select':
                                 var limit = parseInt($(this).val());
-                                bt.set_cookie('page_number', limit);
+                                _that.$set_page_number(limit);
                                 _that.config.page.number = limit;
                                 _that.config.page.page = 1;
                                 _that.$refresh_table_list(true);
@@ -1090,7 +1134,7 @@ var bt_tools = {
                                 _that.$refresh_table_list(true);
                                 break;
                             case 'cut_page_number':
-                                var page = parseInt($(this).attr('href').match(/([0-9]*)$/)[0])
+                                var page = $(this).data('page') || parseInt($(this).attr('href').match(/([0-9]*)$/)[0]);
                                 _that.config.page.page = page;
                                 _that.$refresh_table_list(true);
                                 return false;
@@ -1144,52 +1188,232 @@ var bt_tools = {
             },
 
             /**
+             * @description 获取分页条数
+             * @return 返回分页条数
+             */
+            $get_page_number: function () {
+              var name = this.config.pageName;
+              if (name) {
+                return bt.get_cookie(name + '_page_number');
+              }
+            },
+
+            /**
+             * @description 设置分页条数
+             * @param {object} limit 分页条数
+             * @return void
+             */
+            $set_page_number: function (limit) {
+              var name = this.config.pageName;
+              if (name) bt.set_cookie(name + '_page_number', limit);
+            },
+            /**
              * @description 请求数据，
              * @param {object} param 参数和请求路径
              * @return void
              */
-            $http: function (success) {
-                var page_number = bt.get_cookie('page_number'),
-                    that = this,
-                    param = {},
-                    config = this.config,
-                    _page = config.page,
-                    _search = config.search,
-                    _sort = config.sort || {};
-                if (_page) {
-                    if (page_number) _page.number = page_number
-                    param[_page.numberParam] = _page.number, param[_page.pageParam] = _page.page;
-                    bt.set_cookie('page_number', _page.number);
-                }
-                if (_search) param[_search.searchParam] = _search.value;
-                if (this.config.beforeRequest) {
-                    config.param = this.config.beforeRequest($.extend(config.param, param, _sort));
-                } else {
-                    config.param = $.extend(config.param, param, _sort)
-                }
-                bt_tools.send({
-                    url: config.url,
-                    data: config.param
-                }, function (res) {
-                    if (typeof config.dataFilter != "undefined") {
-                        var data = config.dataFilter(res, that);
-                        if (typeof data.tootls != "undefined") data.tootls = parseInt(data.tootls);
-                        if (success) success(data);
-                    } else {
-                        if (void 0 == res.data) {
-                            success && success({
-                                data: res
-                            })
-                        } else success && success({
-                            data: res.data,
-                            page: res.page
-                        })
-                    }
-                });
+            $http: function (load,success) {
+							var page_number = this.$get_page_number(),
+									that = this,
+									param = {},
+									config = this.config,
+									_page = config.page,
+									_search = config.search,
+									_sort = config.sort || {};
+							if (_page) {
+								if (page_number && !_page.number) _page.number = page_number
+								if (_page.defaultNumber) _page.number = _page.defaultNumber
+
+								if(_page.numberParam) param[_page.numberParam] = _page.number
+								param[_page.pageParam] = _page.page
+							}
+
+							if (_search) param[_search.searchParam] = _search.value;
+							var params = $.extend(config.param, param, _sort)
+							if (this.config.beforeRequest) {
+								if(this.config.beforeRequest === "model"){
+									config.param = (function () {
+										if (params.hasOwnProperty('data') && typeof params.data === 'string') {
+											var oldParams = JSON.parse(params['data'])
+											delete params['data']
+											return { data: JSON.stringify($.extend(oldParams, params)) }
+										}
+										return { data: JSON.stringify(params) }
+									})()
+								}else{
+									config.param = this.config.beforeRequest(params);
+								}
+							} else {
+								config.param = params
+							}
+
+							bt_tools.send({
+								url: config.url,
+								data: config.param
+							}, function (res) {
+								if (typeof config.dataFilter != "undefined") {
+									var data = config.dataFilter(res, that);
+									if (typeof data.tootls != "undefined") data.tootls = parseInt(data.tootls);
+									if (success) success(data);
+								} else {
+									if (void 0 === res.data) {
+										success && success({
+											data: res
+										})
+									} else success && success({
+										data: res.data,
+										page: res.page
+									})
+								}
+							}, { load: (load ? 'Getting Data' : false), verify: typeof config.dataVerify === "undefined" ? true : !!config.dataVerify });
             }
         }
-        return new ReaderTable(config);
+        var example = new ReaderTable(config);
+        $(config.el).data('table', example);
+        return example;
     },
+    /**
+     * @description 验证表单
+     * @param {object} el 节点
+     * @param {object} config 验证配置
+     * @param {function} callback 验证成功回调
+     */
+    verifyForm: function (el,config,callback) {
+      var verify = false, formValue = this.getFormValue(el,[])
+      for (var i = 0; i < config.length; i++) {
+        var item = config[i];
+        verify = item.validator.apply(this,[formValue[item.name],formValue])
+        if(typeof verify === "string"){
+          this.error(verify)
+          return false
+        }
+      }
+      callback && callback(typeof verify !== "string", formValue)
+    },
+    /**
+     * @description 获取表单值
+     * @param {String} el 表单元素
+     * @param {Array} filter 过滤列表
+     * @returns {Object} 表单值
+     */
+    getFormValue:function (el,filter){
+      var form = $(el).serializeObject()
+      filter = filter && []
+      for (var key in form) {
+        if(filter.indexOf(key) > -1) delete form[key]
+      }
+      return form
+    },
+
+    /**
+     * @description 设置layer定位
+     * @param {object} el 节点
+     */
+    setLayerArea:function (el){
+      var $el = $(el), width = $el.width(),height = $el.height() ,winWidth = $(window).width(),winHeight = $(window).height();
+      $el.css({left:(winWidth - width)/2,top:(winHeight - height)/2})
+    },
+
+    /**
+     * @description 渲染表单行内容
+     * @param {object} config 配置参数
+     */
+    line: function (config){
+      var $line = $('<div class="line" style="'+ (config.labelStyle || '') +'"><span class="tname" style="'+ (config.labelWidth?('width:' + config.labelWidth):'') +'">'+ ( (typeof config.must !== "undefined" && config.must != '' ? '<span class="color-red mr5">'+config.must+'</span>':'') + config.label || '') +'</span><div class="info-r" style="'+ (config.labelWidth?('margin-left:' + config.labelWidth):'') +'"></div></div>');
+      var $form = this.renderLineForm(config);
+      $form.data({line:$line});
+      $line.find('.info-r').append($form);
+      return {
+        $line: $line,
+        $form: $form
+      };
+    },
+
+    /**
+     * @description 帮助提示
+     * @param {object} config 配置参数
+     */
+    help:function (config) {
+      var $help = ''
+      for (var i = 0; i < config.list.length; i++) {
+        var item = config.list[i];
+        $help += '<li>'+ item +'</li>';
+      }
+      return $('<ul class="help-info-text c7" style="' + (config.style || '') + '">'+ $help +'</ul>');
+    },
+
+
+    /**
+     * @description 渲染表单行内容
+     * @param {object} config 配置参数
+     * @returns {jQuery|HTMLElement|*}
+     */
+    renderLineForm:function (config){
+      config.type = config.type || 'text'
+      var lineFilter = ["label","labelWidth","group","on","width",'options','type']; // 排除渲染这些属性
+      var $form = null;
+      var props = (function () {
+        var attrs = {};
+        for (var key in config) {
+          if (lineFilter.indexOf(key) === -1) {
+            attrs[key] = config[key];
+          }
+        }
+        return attrs;
+      })();
+      var width = (config.width ? 'style="width:'+ config.width +'"' : '')
+      switch (config.type){
+        case 'textarea':
+          $form = '<textarea class="bt-input-text mr5" '+ width +'></textarea>';
+          break;
+        case 'select':
+          var options = config.options, optionsHtml = '';
+          for (var i = 0; i < options.length; i++) {
+            var item = options[i],newItem = item;
+            if(typeof item === 'string') newItem = { label: item, value: item }
+            optionsHtml += '<option value="'+ newItem.value + '">' + newItem.label +'</option>'
+          }
+          $form = '<select class="bt-input-text mr5" '+ width +'>'+ optionsHtml +'</select>';
+          break;
+        case 'text':
+          $form = '<input type="text" class="bt-input-text mr5" />';
+          break;
+      }
+      $form = $($form);
+      $form.width(config.width || '100%').attr(props);
+      if(!config.on) config.on = {};
+      for (var onKey in config.on) {
+        (function (onKey) {
+          $form.on(onKey,function (ev){
+            config.on[onKey].apply(this, [ev,$(this).val()]);
+          });
+        })(onKey);
+      }
+      return $form
+    },
+
+    /**
+     * @description 渲染表单行组
+     * @param {object} el 配置参数
+     * @param {object} config 配置参数
+     * @param {object|undefined} formData 表单数据
+     */
+    fromGroup: function (el,config,formData){
+      var $el = $(el), lineList = {}
+      for (var i = 0; i < config.length; i++) {
+        var item = config[i];
+        if(item.type === 'tips'){
+          $el.append(this.help(item));
+        }else{
+          var line = this.line(item);
+          if(typeof formData != "undefined") line.$form.val(formData[item.name] || '');
+          lineList[line.$form.attr('name')] = line;
+          $el.append(line.$line);
+        }
+      }
+      return lineList
+    },
+
     /**
      * @description 渲染Form表单
      * @param {*} config
@@ -1257,15 +1481,13 @@ var bt_tools = {
                         labelWidth = data.formLabelWidth || this.config.formLabelWidth;
                     if (data.display === false) return '';
                     return '<div class="line' + _that.$verify(data['class']) + _that.$verify(data.hide, 'hide', true) + '"' + _that.$verify(data.id, 'id') + '>' +
-                        (typeof data.label !== "undefined" ? '<span class="tname" ' + (labelWidth ? 'style="width:' + labelWidth + '"' : '') + '>' + data.label + '</span>' : '') +
+                        (typeof data.label !== "undefined" ? '<span class="tname" ' + (labelWidth ? 'style="width:' + labelWidth + '"' : '') + '>' + (typeof data.must !== "undefined" && data.must != '' ? '<span class="color-red mr5">'+data.must+'</span>':'') + data.label + '</span>' : '') +
                         '<div class="' + (data.label ? 'info-r' : '') + _that.$verify(data.line_class) + '"' + _that.$verify(that.$reader_style($.extend(data.style, labelWidth ? {'margin-left': labelWidth} : {})), 'style') + '>' +
                         that.$reader_form_element(data.group, index) +
                         (help ? ('<div class="c9 mt5 ' + _that.$verify(help['class'], 'class') + '" ' + _that.$verify(that.$reader_style(help.style), 'style') + '>' + help.list.join('</br>') + '</div>') : '') +
                         '</div>' +
                         '</div>';
-                } catch (error) {
-                    console.log(error)
-                }
+                } catch (error) {}
             },
 
             /**
@@ -1312,19 +1534,15 @@ var bt_tools = {
                         switch (item.type) {
                             case 'checkbox': // 复选框
                                 html += '<label class="cursor-pointer form-checkbox-label" ' + _that.$verify(that.$reader_style(item.style), 'style') + '><i class="form-checkbox cust—checkbox cursor-pointer mr5 ' + _event + '_label ' + (_value ? 'active' : '') + '"></i><input type="checkbox" class="form—checkbox-input hide mr10 ' + _event + '" name="' + item.name + '" ' + (_value ? 'checked' : '') + '/><span class="vertical_middle">' + item.title + '</span></label>';
-                                that.$check_event_bind(_event + '_label', {
-                                    'click': {
-                                        type: 'checkbox_icon',
-                                        config: item
-                                    }
-                                })
-                                that.$check_event_bind(_event, {
-                                    'input': {
-                                        type: 'checkbox',
-                                        config: item,
-                                        event: item.event
-                                    }
-                                })
+																if (!(typeof item.disabled != 'undefined' && item.disabled)) {
+																	that.$check_event_bind(_event, {
+																		input: {
+																			type: 'checkbox',
+																			config: item,
+																			event: item.event
+																		}
+																	});
+																}
                                 break;
                             default:
                                 html += '<input type="' + item.type + '"' + attribute + ' ' + (item.icon ? 'id="' + _event + '"' : '') + ' class="bt-input-' + (item.type !== 'select_path' && item.type !== 'number' && item.type !== 'password' ? item.type : 'text') + ' mr10 ' + (item.label ? 'vertical_middle' : '') + _that.$verify(item['class']) + '"' + _that.$verify(style, 'style') + ' value="' + _value + '"/>';
@@ -1453,9 +1671,7 @@ var bt_tools = {
              */
             $check_event_bind: function (eventName, config) {
                 if (!this.event_list[eventName]) {
-                    // console.log(eventName)
                     if (!this.event_list.hasOwnProperty(eventName)) {
-                        // console.log('1')
                         this.event_list[eventName] = config
                     }
                 }
@@ -1927,7 +2143,6 @@ var bt_tools = {
                     $('#tab_' + that.random + ' .' + _theme['body'] + '>div:eq(' + index + ')').addClass(active).siblings().removeClass(active);
                     that.active = index;
                     if (!config.init) {
-                        // console.log(_theme)
                         var contentItem = $('#tab_' + that.random + ' .' + _theme['body'] + '>div:eq(' + index + ')')
                         contentItem.html(config.content);
                         if (config.success) config.success(contentItem);
@@ -2023,126 +2238,138 @@ var bt_tools = {
             }
         }
     },
-    /**
-     * @description 请求封装
-     * @param {string|object} conifg ajax配置参数/请求地址
-     * @param {function|object} callback 回调函数/请求参数
-     * @param {function} callback1 回调函数/可为空
-     * @returns void 无
-     */
-    send: function (param1, param2, param3, param4, param5, param6) {
-        var params = {},
-            success = null,
-            error = null,
-            config = [],
-            param_one = '';
-        $.each(arguments, function (index, items) {
-            config.push([items, typeof items]);
-        });
+  /**
+   * @description 成功提示
+   * @param {string} msg 信息
+   */
+  success: function (msg) {
+    this.msg({ msg: msg, status: true });
+  },
 
-        function diff_data(i) {
-            try {
-                success = config[i][1] == "function" ? config[i][0] : null;
-                error = config[(i + 1)][1] == "function" ? config[(i + 1)][0] : null;
-            } catch (error) {
+  /**
+   * @description 错误提示
+   * @param {string} msg 信息
+   */
+  error: function (msg) {
+    this.msg({msg: msg, status: false });
+  },
+  /**
+   * @description 请求封装
+   * @param {string|object} conifg ajax配置参数/请求地址
+   * @param {function|object} callback 回调函数/请求参数
+   * @param {function} callback1 回调函数/可为空
+   * @returns void 无
+   */
+  send: function (param1, param2, param3, param4, param5, param6) {
+    var params = {},
+        success = null,
+        error = null,
+        config = [],
+        param_one = '';
+    $.each(arguments, function (index, items) {
+      config.push([items, typeof items]);
+    });
+    function diff_data (i) {
+      try {
+        success = config[i][1] == "function" ? config[i][0] : null;
+        error = config[(i + 1)][1] == "function" ? config[(i + 1)][0] : null;
+      } catch (error) { }
+    }
+    param_one = config[0];
+    switch (param_one[1]) {
+      case "string":
+        $.each(config, function (index, items) {
+          var value = items[0], type = items[1];
+          if (index > 1 && (type == "boolean" || type == "string" || type == "object")) {
+            var arry = param_one[0].split('/');
+            params['url'] = '/' + arry[0] + '?action=' + arry[1];
+            if (type == "object") {
+              params['load'] = value.load;
+              params['verify'] = value.verify;
+              if (value.plugin) params['url'] = '/plugin?action=a&name=' + arry[0] + '&s=' + arry[1];
+            } else if (type == 'string') {
+              params['load'] = value;
             }
+            return false;
+          } else {
+            params['url'] = param_one[0];
+          }
+        });
+        if (config[1][1] === "object") {
+          params['data'] = config[1][0];
+          diff_data(2);
+        } else {
+          diff_data(1);
+        }
+        break;
+      case 'object':
+        params['url'] = param_one[0].url;
+        params['data'] = param_one[0].data || {};
+        $.each(config, function (index, items) {
+          var value = items[0], type = items[1];
+          if (index > 1 && (type == "boolean" || type == "string" || type == "object")) {
+            switch (type) {
+              case "object":
+                params['load'] = value.load;
+                params['verify'] = value.verify;
+                break;
+              case "string":
+                params['load'] = value;
+                break;
+            }
+            return true;
+          }
+        });
+        if (config[1][1] === "object") {
+          params['data'] = config[1][0];
+          diff_data(2);
+        } else {
+          diff_data(1);
+        }
+        break;
+    }
+    if (params.load) params.load = this.load(params.load);
+    $.ajax({
+      type: params.type || "POST",
+      url: params.url,
+      data: params.data || {},
+      dataType: params.dataType || "JSON",
+      complete: function (res) {
+        if (params.load) params.load.close();
+      },
+      success: function (res) {
+        if (typeof params.verify == "boolean" && !params.verify) {
+          if (success) success(res);
+          return false;
+        }
+        if (typeof res === "string") {
+          layer.msg(res, {
+            icon: 2,
+            time: 0,
+            closeBtn: 2
+          });
+          return false;
+        }
+        if (params.batch) {
+          if (success) success(res);
+          return false;
+        }
+        if (res.status === false && (res.hasOwnProperty('msg') || res.hasOwnProperty('error_msg'))) {
+          if (error) {
+            error(res)
+          } else {
+            bt_tools.msg({ status: res.status, msg: !res.hasOwnProperty('msg') ? res.error_msg : res.msg });
+          }
+          return false;
         }
 
-        param_one = config[0];
-        switch (param_one[1]) {
-            case "string":
-                $.each(config, function (index, items) {
-                    var value = items[0], type = items[1];
-                    if (index > 1 && (type == "boolean" || type == "string" || type == "object")) {
-                        var arry = param_one[0].split('/');
-                        params['url'] = '/' + arry[0] + '?action=' + arry[1];
-                        if (type == "object") {
-                            params['load'] = value.load;
-                            params['verify'] = value.verify;
-                            if (value.plugin) params['url'] = '/plugin?action=a&name=' + arry[0] + '&s=' + arry[1];
-                        } else if (type == 'string') {
-                            params['load'] = value;
-                        }
-                        return false;
-                    } else {
-                        params['url'] = param_one[0];
-                    }
-                });
-                if (config[1][1] === "object") {
-                    params['data'] = config[1][0];
-                    diff_data(2);
-                } else {
-                    diff_data(1);
-                }
-                break;
-            case 'object':
-                params['url'] = param_one[0].url;
-                params['data'] = param_one[0].data || {};
-                $.each(config, function (index, items) {
-                    var value = items[0], type = items[1];
-                    if (index > 1 && (type == "boolean" || type == "string" || type == "object")) {
-                        switch (type) {
-                            case "object":
-                                params['load'] = value.load;
-                                params['verify'] = value.verify;
-                                break;
-                            case "string":
-                                params['load'] = value;
-                                break;
-                        }
-                        return true;
-                    }
-                });
-                if (config[1][1] === "object") {
-                    params['data'] = config[1][0];
-                    diff_data(2);
-                } else {
-                    diff_data(1);
-                }
-                break;
+        if (params.tips) {
+          bt_tools.msg(res);
         }
-        if (params.load) params.load = this.load(params.load);
-        $.ajax({
-            type: params.type || "POST",
-            url: params.url,
-            data: params.data || {},
-            dataType: params.dataType || "JSON",
-            complete: function (res) {
-                if (params.load) params.load.close();
-            },
-            success: function (res) {
-                if (typeof params.verify == "boolean" && !params.verify) {
-                    if (success) success(res);
-                    return false;
-                }
-                if (typeof res === "string") {
-                    layer.msg(res, {
-                        icon: 2,
-                        time: 0,
-                        closeBtn: 2
-                    });
-                    return false;
-                }
-                if (params.batch) {
-                    if (success) success(res);
-                    return false;
-                }
-                if (res.status === false && (res.hasOwnProperty('msg') || res.hasOwnProperty('error_msg'))) {
-                    if (error) {
-                        error(res)
-                    } else {
-                        bt_tools.msg({status: res.status, msg: !res.hasOwnProperty('msg') ? res.error_msg : res.msg});
-                    }
-                    return false;
-                }
-
-                if (params.tips) {
-                    bt_tools.msg(res);
-                }
-                if (success) success(res);
-            }
-        });
-    },
+        if (success) success(res);
+      }
+    });
+  },
 
 
     /**
@@ -2428,15 +2655,19 @@ var bt_tools = {
         }, 500)
     }
 };
-$.fn.serializeObject = function () {
+
+setTimeout(function () {
+	$.fn.serializeObject = function () {
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     return this.serializeArray().reduce(function (data, pair) {
-        if (!hasOwnProperty.call(data, pair.name)) {
-            data[pair.name] = pair.value;
-        }
-        return data;
+			if (!hasOwnProperty.call(data, pair.name)) {
+				data[pair.name] = pair.value;
+			}
+			return data;
     }, {});
-};
+	};
+}, 300)
+
 
 function arryCopy(arrys) {
     var list = arrys.concat(), arry = []

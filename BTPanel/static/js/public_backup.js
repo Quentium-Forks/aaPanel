@@ -322,11 +322,14 @@ var bt = {
     select_path: function(id, type,success,default_path) {
         _this = this;
         _this.set_cookie("SetName", "");
-        if(typeof type !== 'string') success = type,type = 'dir';
+        if (typeof type !== 'string') {
+					success = type;
+					type = 'dir';
+				}
         var loadT = bt.open({
             type: 1,
             area: "680px",
-            title: type === 'all' ? 'Select directories or files' : lan.bt.dir,
+            title: type === 'all' ? 'Select directories or files' : type === 'file' ? lan.bt.file : lan.bt.dir,
             closeBtn: 2,
             shift: 5,
             content: "<div class='changepath'><div class='path-top'><button type='button' id='btn_back' class='btn btn-default btn-sm'><span class='glyphicon glyphicon-share-alt'></span> " + lan.public.return + "</button><div class='place' id='PathPlace'>" + lan.bt.path + "：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" + lan.bt.comp + "</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table id='file-list-table' class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" + lan.bt.filename + "</th><th width='24%'>" + lan.bt.etime + "</th><th width='8%'>" + lan.bt.access + "</th><th width='15%'>" + lan.bt.own + "</th></tr></thead><tbody id='tbody' class='list-list'></tbody></table></div></div></div></div><div class='getfile-btn' style='margin-top:0'><button type='button' class='btn btn-default btn-sm pull-left' onclick='CreateFolder()'>" + lan.bt.adddir + "</button><button type='button' class='btn btn-danger btn-sm mr5' onclick=\"layer.close(getCookie('ChangePath'))\">" + lan.public.close + "</button> <button type='button' id='bt_select' class='btn btn-success btn-sm' >" + lan.bt.path_ok + "</button></div>",
@@ -348,6 +351,9 @@ var bt = {
                         path = $('#tbody tr.active .bt_open_dir').attr('path');
                     }
                     path = bt.rtrim(path, '/');
+										if (path.length === 0) {
+											path = [$("#PathPlace").find("span").text()]
+										}
                     $("#" + id).val(path).change();
                     $("." + id).val(path).change();
                     if(typeof success === "function") success(path)
@@ -398,6 +404,7 @@ var bt = {
     //   }
     },
     get_file_list:function(path, type){
+			type = type || 'dir'
         var _that = this;
         bt.send('GetDir', 'files/GetDir', { path: path, disk: true }, function(rdata) {
             var d = '',a = '',disk = rdata.DISK;
@@ -418,7 +425,7 @@ var bt = {
                         e = e.substring(0, 10) + "..."
                     }
                 }
-                d += "<tr><td><input type=\"checkbox\" /></td><td class=\"bt_open_dir\" path =\"" + rdata.PATH + "/" + g[0] + "\" data-type=\"dir\" title='" + g[0] + "'><span class='glyphicon glyphicon-folder-open'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
+                d += "<tr><td>" + ((type === 'all' || type === 'dir') ? '<input type=\"checkbox\" />' : '') + "</td><td class=\"bt_open_dir\" path =\"" + rdata.PATH + "/" + g[0] + "\" data-type=\"dir\" title='" + g[0] + "'><span class='glyphicon glyphicon-folder-open'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
             }
 
             if (rdata.FILES != null && rdata.FILES != "") {
@@ -433,7 +440,7 @@ var bt = {
                             e = e.substring(0, 10) + "..."
                         }
                     }
-                    d += "<tr><td>" + (type === 'all' ? '<input type=\"checkbox\" />' : '') + "<td class=\"bt_open_dir\" title='" + g[0] + "' data-type=\"files\" path =\"" + rdata.PATH + "/" + g[0] + "\"><span class='glyphicon glyphicon-file'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
+                    d += "<tr><td>" + ((type === 'all' || type === 'file') ? '<input type=\"checkbox\" />' : '') + "<td class=\"bt_open_dir\" title='" + g[0] + "' data-type=\"files\" path =\"" + rdata.PATH + "/" + g[0] + "\"><span class='glyphicon glyphicon-file'></span><span>" + e + "</span></td><td>" + bt.format_data(g[2]) + "</td><td>" + g[3] + "</td><td>" + g[4] + "</td></tr>"
                 }
             }
 
@@ -550,6 +557,64 @@ var bt = {
             fun();
         })
     },
+    	/**
+	 * @description 计算提示弹窗
+	 * @param {Object} config 弹窗对象 {title: 提示标题, msg: 提示内容}
+	 * @param {function} callback 回调函数
+	 */
+	compute_confirm: function (config, callback) {
+		var d = Math.round(Math.random() * 9 + 1),
+			c = Math.round(Math.random() * 9 + 1),
+			t = d + ' + ' + c,
+			e = d + c;
+
+		function submit(index, layero) {
+			var a = $('#vcodeResult'),
+				val = a.val().replace(/ /g, '');
+			if (val == undefined || val == '') {
+				layer.msg(lan.bt.cal_err);
+				return;
+			}
+			if (val != a.data('value')) {
+				layer.msg(lan.bt.cal_err);
+				return;
+			}
+			layer.close(index);
+			if (callback) callback();
+		}
+		layer.open({
+			type: 1,
+			title: config.title,
+			area: '430px',
+			closeBtn: 2,
+			shadeClose: true,
+			btn: [lan['public'].ok, lan['public'].cancel],
+			content:
+				'<div class="bt-form hint_confirm pd30">\
+          <div class="hint_title">\
+            <i class="hint-confirm-icon"></i>\
+            <div class="hint_con">' +
+				config.msg +
+				'</div>\
+          </div>\
+          <div class="vcode">Result：<span class="text">' +
+				t +
+				'</span>=<input type="number" id="vcodeResult" data-value="' +
+				e +
+				'" value=""></div>\
+      </div>',
+			success: function (layero, index) {
+				$('#vcodeResult')
+					.focus()
+					.keyup(function (a) {
+						if (a.keyCode == 13) {
+							submit(index, layero);
+						}
+					});
+			},
+			yes: submit,
+		});
+	},
     to_login: function() {
         layer.confirm(lan.public_backup.login_expire, { title: lan.public_backup.session_expire, icon: 2, closeBtn: 1, shift: 5 }, function() {
             location.reload();
@@ -632,6 +697,7 @@ var bt = {
 				title: config.title ? config.title : false,
 				shadeClose: config.shadeClose ? config.shadeClose : true,
 				closeBtn: config.closeBtn ? config.closeBtn : 0,
+				area: config.area ? config.area : 'auto',
 				scrollbar: true,
 				shade: 0.3,
 			};
@@ -664,6 +730,7 @@ var bt = {
             scrollbar: true,
             shade: 0.3,
             icon: 3,
+						area: config.area ? config.area : 'auto',
             cancel: (config.cancel ? config.cancel : function() {})
         };
         layer.confirm(config.msg, btnObj, function(index) {
@@ -3376,6 +3443,7 @@ bt.firewall = {
     set_mstsc_status: function(status, callback) {
         var msg = status == 1 ? lan.firewall.ssh_off_msg : lan.firewall.ssh_on_msg;
         layer.confirm(msg, {
+						icon: 0,
             closeBtn: 2,
             title: lan.public.warning,
             cancel: function() {
@@ -3610,121 +3678,119 @@ bt.soft = {
         }
     },
     pro: {
-        conver_unit: function(name) {
-            var unit = '';
-            switch (name) {
-                case "year":
-                    unit = lan.public_backup.year;
-                    break;
-                case "month":
-                    unit = lan.public_backup.month;
-                    break;
-                case "day":
-                    unit = lan.public_backup.day;
-                    break;
-                case "1month":
-                    unit = lan.public_backup.month;
-                    break;
-                case "3month":
-                    unit = lan.public_backup.month3;
-                    break;
-                case "6month":
-                    unit = lan.public_backup.month6;
-                    break;
-                case "1year":
-                    unit = lan.public_backup.year1;
-                    break;
-                case "2year":
-                    unit = lan.public_backup.year2;
-                    break;
-                case "3year":
-                    unit = lan.public_backup.year3;
-                    break;
-                case "1":
-                    unit = lan.public_backup.month1;
-                    break;
-                case "3":
-                    unit = lan.public_backup.month3;
-                    break;
-                case "6":
-                    unit = lan.public_backup.month6;
-                    break;
-                case "12":
-                    unit = lan.public_backup.year1;
-                    break;
-                case "24":
-                    unit = lan.public_backup.year2;
-                    break;
-                case "36":
-                    unit = lan.public_backup.year3;
-                    break;
-                case "999":
-                    unit = lan.public_backup.permanent;
-                    break;
-            }
-            return unit;
-        },
-        get_product_discount_by: function(product_id, callback) {
-          if (product_id) {
-            bt.send('get_plugin_price', 'auth/get_plugin_price', { product_id: product_id }, function(rdata) {
-              if (callback) callback(rdata)
-            })
-          } else {
-            bt.send('get_product_discount_by', 'auth/get_product_discount_by', {}, function(rdata) {
-              if (callback) callback(rdata)
-            })
-          }
-        },
-        get_plugin_coupon: function(pid, callback) {
-          bt.send('check_pay_status', 'auth/check_pay_status', { id: pid }, function(rdata) {
-            if (callback) callback(rdata);
-          })
-        },
-        get_re_order_status: function(callback) {
-          bt.send('get_re_order_status', 'auth/get_re_order_status', {}, function(rdata) {
-            if (callback) callback(rdata);
-          })
-        },
-        get_voucher: function(pid, callback) {
-            if (pid) {
-                bt.send('get_voucher_plugin', 'auth/get_voucher_plugin', { pid: pid }, function(rdata) {
-                    if (callback) callback(rdata);
-                })
-            } else {
-                bt.send('get_voucher', 'auth/get_voucher', {}, function(rdata) {
-                    if (callback) callback(rdata);
-                })
-            }
-        },
-         get_check_out_info: function(order_no, callback) {
-            bt.send('get_stripe_session_id', 'auth/get_stripe_session_id', {order_no:order_no}, function(rdata) {
-                if (callback) callback(rdata);
-            })
-        },
-        create_order_voucher: function(pid, code, coupon_id, cycle, cycle_unit, charge_type,callback) {
-            var loading = bt.load();
-            if (pid) {
-                bt.send('create_order_voucher_plugin', 'auth/create_order_voucher_plugin', { pid: pid, coupon_id:coupon_id, cycle:cycle, cycle_unit:cycle_unit, charge_type:charge_type}, function(rdata) {
-                    loading.close();
-                    if (callback) callback(rdata);
-                    bt.msg(rdata);
-                })
-            } else {
-                bt.send('create_order_voucher', 'auth/create_order_voucher', { code: code }, function(rdata) {
-                    loading.close();
-                    if (callback) {
-                        callback(rdata);
-                    } else {
-                        bt.soft.pro.update();
-                    }
-                })
-            }
-
-
-    },
+			conver_unit: function(name) {
+					var unit = '';
+					switch (name) {
+							case "year":
+									unit = lan.public_backup.year;
+									break;
+							case "month":
+									unit = lan.public_backup.month;
+									break;
+							case "day":
+									unit = lan.public_backup.day;
+									break;
+							case "1month":
+									unit = lan.public_backup.month;
+									break;
+							case "3month":
+									unit = lan.public_backup.month3;
+									break;
+							case "6month":
+									unit = lan.public_backup.month6;
+									break;
+							case "1year":
+									unit = lan.public_backup.year1;
+									break;
+							case "2year":
+									unit = lan.public_backup.year2;
+									break;
+							case "3year":
+									unit = lan.public_backup.year3;
+									break;
+							case "1":
+									unit = lan.public_backup.month1;
+									break;
+							case "3":
+									unit = lan.public_backup.month3;
+									break;
+							case "6":
+									unit = lan.public_backup.month6;
+									break;
+							case "12":
+									unit = lan.public_backup.year1;
+									break;
+							case "24":
+									unit = lan.public_backup.year2;
+									break;
+							case "36":
+									unit = lan.public_backup.year3;
+									break;
+							case "999":
+									unit = lan.public_backup.permanent;
+									break;
+					}
+					return unit;
+			},
+			get_product_discount_by: function(product_id, callback) {
+				if (product_id) {
+					bt.send('get_plugin_price', 'auth/get_plugin_price', { product_id: product_id }, function(rdata) {
+						if (callback) callback(rdata)
+					})
+				} else {
+					bt.send('get_product_discount_by', 'auth/get_product_discount_by', {}, function(rdata) {
+						if (callback) callback(rdata)
+					})
+				}
+			},
+			get_plugin_coupon: function(pid, callback) {
+				bt.send('check_pay_status', 'auth/check_pay_status', { id: pid }, function(rdata) {
+					if (callback) callback(rdata);
+				})
+			},
+			get_re_order_status: function(callback) {
+				bt.send('get_re_order_status', 'auth/get_re_order_status', {}, function(rdata) {
+					if (callback) callback(rdata);
+				})
+			},
+			get_voucher: function(pid, callback) {
+					if (pid) {
+							bt.send('get_voucher_plugin', 'auth/get_voucher_plugin', { pid: pid }, function(rdata) {
+									if (callback) callback(rdata);
+							})
+					} else {
+							bt.send('get_voucher', 'auth/get_voucher', {}, function(rdata) {
+									if (callback) callback(rdata);
+							})
+					}
+			},
+				get_check_out_info: function(order_no, callback) {
+					bt.send('get_stripe_session_id', 'auth/get_stripe_session_id', {order_no:order_no}, function(rdata) {
+							if (callback) callback(rdata);
+					})
+			},
+			create_order_voucher: function(pid, code, coupon_id, cycle, cycle_unit, charge_type,callback) {
+					var loading = bt.load();
+					if (pid) {
+							bt.send('create_order_voucher_plugin', 'auth/create_order_voucher_plugin', { pid: pid, coupon_id:coupon_id, cycle:cycle, cycle_unit:cycle_unit, charge_type:charge_type}, function(rdata) {
+									loading.close();
+									if (callback) callback(rdata);
+									bt.msg(rdata);
+							})
+					} else {
+							bt.send('create_order_voucher', 'auth/create_order_voucher', { code: code }, function(rdata) {
+									loading.close();
+									if (callback) {
+											callback(rdata);
+									} else {
+											bt.soft.pro.update();
+									}
+							})
+					}
+    	},
       create_order: function(data, callback) {
         if (data.pid) {
-          var loadT = bt.load("Getting product information!")
+          var loadT = bt.load("Getting product information!");
           bt.soft.get_panel_ssl_status(function (res) {
             loadT.close()
             if (res.status) {
@@ -3744,8 +3810,21 @@ bt.soft = {
             } else {
               $('#libPay-content').empty()
               $('.libPay-mask').hide();
-              $('#libPay-pay').empty().append('<div style="font-size: 18px;position: relative;top: 25px;text-align: center;">Please apply for SSL before purchasing!</div>\
-              <div class="lib-price-box text-center"><button type="button" id="turn_on_ssl" style="margin-top:50px" class="btn btn-success ">Turn on SSL</button></div>');
+              $('#libPay-pay').empty().append('\
+							<div style="font-size: 16px; position: relative; top: 25px;">\
+								<div style="font-weight: bold;">Purchase on the panel:</div>\
+								<ul class="help-info-text" style="margin-top: 10px; font-size: 14px;">\
+									<li>You need to open the panel SSL</li>\
+								</ul>\
+								<div style="margin-top: 20px; font-weight: bold;">Purchase on the official website: </div>\
+								<ul class="help-info-text" style="margin-top: 10px; font-size: 14px;">\
+									<li>No need to open panel SSL</li>\
+									<li>You can purchase multiple licenses at the same time and get higher discounts</li>\
+								</ul>\
+							</div>\
+              <div class="lib-price-box text-center">\
+								<button type="button" id="turn_on_ssl" style="margin-top:50px" class="btn btn-success ">Turn on SSL</button>\
+							</div>');
               $('#turn_on_ssl').on('click', function (e) {
                 setPanelSSL()
               })
@@ -3908,7 +3987,7 @@ bt.soft = {
     bt.open({
       type: 1,
       title: title,
-      area: ['650px', '760px'],
+      area: ['680px', '760px'],
       shadeClose: false,
       content: '\
                 <div class="libPay plr15" id="pay_product_view" ' + (config.totalNum ? 'data-index="'+config.totalNum+'"' : '') + '>\
@@ -4070,9 +4149,7 @@ bt.soft = {
             var index = 0;
             try {
               delete rdata.pid
-            } catch (error) {
-              console.log(rdata.pid);
-            }
+            } catch (error) {}
             that.each(rdata, function (key, item) {
               _arry.push($.extend({cycle: parseInt(key)}, item));
             });
@@ -5314,7 +5391,6 @@ bt.soft = {
             // })
             bt.soft.show_speed_window({title:'Updating to [' + title+'-'+version+'.'+min_version+'],Please wait...',status:true,soft:{type:parseInt(type)}},function(){
 				bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function (rdata) {
-                    console.log(rdata);
 					if (rdata.size) {
 						_this.install_other(rdata)
 						return;
@@ -5459,17 +5535,26 @@ bt.database = {
             if (callback) callback(rdata);
         })
     },
-    set_root: function() {
-        bt.database.get_root_pass(function(rdata) {
-            var bs = bt.render_form(bt.data.database.root);
-            $('.password' + bs).val(rdata);
-        })
+    set_root: function(type) {
+			if(type == 'mongo' || type == 'pgsql') {
+				var t = bt.data.database.getType();
+				bt_tools.send('database/' + t + '/get_root_pwd', function (rdata) {
+					if (type == 'pgsql') bt.data.database.mongo['list'][0]['title'] = lan.database.admin_password;
+					var bs = bt.render_form(bt.data.database.mongo);
+					$('.password' + bs).val(rdata.msg);
+				});				
+			} else {
+				bt.database.get_root_pass(function(rdata) {
+					var bs = bt.render_form(bt.data.database.root);
+					$('.password' + bs).val(rdata);
+				});
+			}
     },
     set_data_pass: function(callback) {
-        var bs = bt.render_form(bt.data.database.data_pass, function(rdata) {
-            if (callback) callback(rdata);
-        });
-        return bs;
+			var bs = bt.render_form(bt.data.database.data_pass, function(rdata) {
+				if (callback) callback(rdata);
+			});
+			return bs;
     },
     set_data_access: function(name) {
         var loading = bt.load();
@@ -5514,37 +5599,77 @@ bt.database = {
         })
     },
     add_database: function(cloudList, callback) {
+			var type = bt.data.database.getType();
+			if (type === 'mysql') {
         bt.data.database.data_add.list[2].items[0].value = bt.get_random(16);
-        bt.data.database.data_add.list[5].items[0].items = cloudList;
+        bt.data.database.data_add.list[4].items[0].items = cloudList;
         bt.render_form(bt.data.database.data_add, function(rdata) {
-            if (callback) callback(rdata);
+					if (callback) callback(rdata);
         });
+			} else {
+				var copyDataAdd = $.extend(true, {}, bt.data.database.data_add);
+				copyDataAdd.list[2].items[0].value = bt.get_random(16);
+				switch (type) {
+					case 'sqlserver':
+					case 'mongodb':
+					case 'pgsql':
+						delete copyDataAdd.list[0].items[1]
+						copyDataAdd.list.splice(3)
+						copyDataAdd.list.push(bt.data.database.data_add.list[4])
+						copyDataAdd.list.push(bt.data.database.data_add.list[5])
+						copyDataAdd.list[3].items[0].items = cloudList;
+						break;
+				}
+				// 没有本地或者远程数据库
+				if (cloudList.length == 0) {
+					copyDataAdd.list[copyDataAdd.list.length - 1].hide = true;
+				}
+				bt.render_form($.extend(true, {}, copyDataAdd), function (rdata) {
+					if (callback) callback(rdata);
+				});
+			}
     },
     del_database: function(data, callback) {
-        var loadT = bt.load(lan.get('del_all_task_the', [data.name]));
-        bt.send('DeleteDatabase', 'database/DeleteDatabase', data, function(rdata) {
-            loadT.close();
-            bt.msg(rdata);
-            if (callback) callback(rdata);
-        })
+			var loadT = bt.load(lan.get('del_all_task_the', [data.name]));
+			var type = bt.data.database.getType();
+			var params = { url: 'database?action=DeleteDatabase', data: data }
+			if (type != 'mysql') {
+				params.url = 'database/' + type + '/DeleteDatabase';
+				params.data = { data: JSON.stringify(data) };
+			}
+			bt_tools.send(params, function(rdata) {
+				loadT.close();
+				bt.msg(rdata);
+				if (callback) callback(rdata);
+			})
     },
     sync_database: function(sid, callback) {
-        var loadT = bt.load(lan.database.sync_the);
-        bt.send('SyncGetDatabases', 'database/SyncGetDatabases', {
-            sid: sid
-        }, function (rdata) {
-            loadT.close();
-            bt.msg(rdata);
-            if (callback) callback(rdata);
-        });
+			var loadT = bt.load(lan.database.sync_the);
+			var type = bt.data.database.getType();
+			var params = { url: 'database?action=SyncGetDatabases', data: { sid: sid } }
+			if (type != 'mysql') {
+				params.url = 'database/' + type + '/SyncGetDatabases';
+				params.data = { data: JSON.stringify({ sid: sid }) };
+			}
+			bt_tools.send(params, function (rdata) {
+				loadT.close();
+				bt.msg(rdata);
+				if (callback) callback(rdata);
+			});
     },
     sync_to_database: function(data, callback) {
-        var loadT = bt.load(lan.database.sync_the);
-        bt.send('SyncToDatabases', 'database/SyncToDatabases', data, function(rdata) {
-            loadT.close();
-            if (callback) callback(rdata);
-            bt.msg(rdata);
-        })
+			var loadT = bt.load(lan.database.sync_the);
+			var type = bt.data.database.getType();
+			var params = { url: 'database?action=SyncToDatabases', data: data }
+			if (type != 'mysql') {
+				params.url = 'database/' + type + '/SyncToDatabases';
+				params.data = { data: JSON.stringify(data) };
+			}
+			bt_tools.send(params, function(rdata) {
+				loadT.close();
+				if (callback) callback(rdata);
+				bt.msg(rdata);
+			})
     },
     open_phpmyadmin:function(name,username,password){
 
@@ -5581,34 +5706,47 @@ bt.database = {
 		},200);
 	},
     input_sql: function(fileName, dataName) {
-        bt.confirm({ msg: lan.database.input_confirm, title: lan.database.input_title }, function(index) {
-            var loading = bt.load(lan.database.input_the);
-            bt.send('InputSql', 'database/InputSql', { file: fileName, name: dataName }, function(rdata) {
-                loading.close();
-                bt.msg(rdata);
-            })
-        });
+			bt.confirm({ msg: lan.database.input_confirm, title: lan.database.input_title }, function(index) {
+				var loading = bt.load(lan.database.input_the);
+				var type = bt.data.database.getType();
+				var params = { url: 'database?action=InputSql', data: { file: fileName, name: dataName } }
+				if (type != 'mysql') {
+					params.url = 'database/' + type + '/InputSql';
+					params.data = { data: JSON.stringify({ file: fileName, name: dataName }) };
+				}
+				bt_tools.send(params, function(rdata) {
+					loading.close();
+					bt.msg(rdata);
+				})
+			});
     },
-    backup_data: function(id, dataname, callback) {
-        var loadT = bt.load(lan.database.backup_the);
-        bt.send('ToBackup', 'database/ToBackup', { id: id }, function(rdata) {
-            loadT.close();
-            bt.msg(rdata);
-            if (callback) callback(rdata);
-        });
-
+    backup_data: function(id, callback) {
+			var loadT = bt.load(lan.database.backup_the);
+			var type = bt.data.database.getType();
+			var params = { url: 'database?action=ToBackup', data: { id: id } }
+			if (type != 'mysql') {
+				params.url = 'database/' + type + '/ToBackup';
+				params.data = { data: JSON.stringify({ id: id }) };
+			}
+			bt_tools.send(params, function(rdata) {
+				loadT.close();
+				bt.msg(rdata);
+				if (callback) callback(rdata);
+			});
     },
-    del_backup: function(id, dataid, dataname) {
-        bt.confirm({ msg: lan.database.backup_del_confirm, title: lan.database.backup_del_title }, function(index) {
-            var loadT = bt.load();
-            bt.send('DelBackup', 'database/DelBackup', { id: id }, function(frdata) {
-                loadT.close();
-                if (frdata.status) {
-                    if (database) database.database_detail(dataid, dataname);
-                }
-                bt.msg(frdata);
-            });
-        });
+    del_backup: function(id, success, error) {
+			bt.confirm({ msg: lan.database.backup_del_confirm, title: lan.database.backup_del_title }, function(index) {
+				var loadT = bt.load();
+				bt.send('DelBackup', 'database/DelBackup', { id: id }, function(frdata) {
+					loadT.close();
+					bt.msg(frdata);
+					if (frdata.status) {
+						success && success(frdata);
+					} else {
+						error && error(frdata);
+					}
+				});
+			});
     }
 }
 
@@ -6433,6 +6571,9 @@ bt.form = {
 
 bt.data = {
     database: {
+				getType: function () {
+					return bt.get_cookie('db_page_model') || 'mysql';
+				},
         root: {
             title: lan.database.edit_pass_title,
             area: '530px',
@@ -6447,14 +6588,59 @@ bt.data = {
                 bt.form.btn.close(),
                 bt.form.btn.submit(lan.public_backup.submit, function(rdata, load) {
                     var loading = bt.load();
-                    bt.send('SetupPassword', 'database/SetupPassword', rdata, function(rRet) {
-                        loading.close();
-                        layer.msg(rRet.msg, { icon: rRet.status ? 1 : 2, shade: .3 })
-                        if (rRet.status) load.close();
-                    })
+										var type = bt.data.database.getType();
+										var params = { url: 'database?action=SetupPassword', data: rdata }
+										if (type != 'mysql') {
+											params.url = 'database/' + type + '/SetupPassword';
+											params.data = { data: JSON.stringify(rdata) };
+										}
+                    bt_tools.send(params, function(rRet) {
+											loading.close();
+											bt.msg(rRet);
+											if (rRet.status) load.close();
+                    });
                 })
             ]
         },
+				mongo: {
+					title: lan.database.edit_pass_title,
+					area: '530px',
+					list: [
+						{
+							title: lan.public_backup.rootpass,
+							name: 'password',
+							items: [
+								{
+									type: 'text',
+									width: '311px',
+									event: {
+										css: 'glyphicon-repeat',
+										callback: function (obj) {
+											bt.refresh_pwd(16, obj);
+										},
+									},
+								},
+							],
+						},
+					],
+					btns: [
+						bt.form.btn.close(),
+						bt.form.btn.submit(lan.public_backup.submit, function (rdata, load) {
+							var loading = bt.load();
+							var type = bt.data.database.getType();
+							var url = 'database/' + type + '/set_auth_status';
+							if (type == 'pgsql') url = 'database/' + type + '/set_root_pwd';
+							bt_tools.send({ 
+								url: url, 
+								data: { data: JSON.stringify($.extend(rdata, { status: 1 })) }
+							}, function (rRet) {
+								loading.close();
+								bt.msg(rRet);
+								load.close();
+							});
+						}),
+					],
+				},
         data_add: {
             title: lan.database.add_title,
             area: '530px',
@@ -6491,22 +6677,6 @@ bt.data = {
                     width: '65%'
                 },
                 bt.form.item.password,
-                {
-                    title: lan.public_backup.type,
-                    name: 'dtype',
-                    type: 'select',
-                    disabled: (bt.contains(bt.get_cookie('serverType'), 'nginx') || bt.contains(bt.get_cookie('serverType'), 'apache') ? true : false),
-                    items: [
-                        {
-                            title: 'MySQL',
-                            value: 'MySQL'
-                        },
-                        {
-                            title: 'SQLServer',
-                            value: 'SQLServer'
-                        }
-                    ]
-                },
                 bt.form.item.data_access,
                 {
                     title: lan.public_backup.add_to,
@@ -6538,17 +6708,48 @@ bt.data = {
                     if (!rdata.ps) rdata.ps = rdata.name;
                     if (!rdata.ssl) rdata.ssl = $('#check_ssl').prop('checked')?'REQUIRE SSL':'';
                     var loading = bt.load();
-                    bt.send('AddDatabase', 'database/AddDatabase', rdata, function(rRet) {
-                        loading.close();
-                        if (rRet.status) load.close();
-                        if (callback) callback(rRet);
-                        bt.msg(rRet);
+										var type = bt.data.database.getType();
+										var param = {
+											url: 'database/' + type + '/AddDatabase',
+											data: { data: JSON.stringify(rdata) }
+										};
+										if (type == 'mysql') {
+											rdata['dtype'] = 'MySQL'
+											param = { url: 'database?action=AddDatabase', data: rdata }
+										}
+                    bt_tools.send(param, function(rRet) {
+											loading.close();
+											if (rRet.status) load.close();
+											if (callback) callback(rRet);
+											bt.msg(rRet);
                     })
                 })
             ],
             success: function () {
-                $('[name=sid]').after('<a class="btlink" onclick="layer.closeAll();database.open_cloud_server()" style="margin-left: 10px;">' + lan.public.manage_cloud_server +  '</a>');
-            }
+							$('[name=sid]').after('<a class="btlink" onclick="layer.closeAll();database.open_cloud_server()" style="margin-left: 10px;">' + lan.public.manage_cloud_server +  '</a>');
+							var type = bt.data.database.getType();
+							// 当前类型为mongodb
+							if (type == 'mongodb') {
+								// 是否开启安全认证，没开启隐藏用户名跟密码
+								if (!mongodb.mongoDBAccessStatus) {
+									$('.layui-layer.layui-layer-page .line').eq(1).hide();
+									$('.layui-layer.layui-layer-page .line').eq(2).hide();
+								}
+								// 远程服务器类型判断
+								$('[name=sid]').change(function () {
+									// 为远程服务器时，默认开启安全认证
+									if ($(this).val() != 0) {
+										$('.layui-layer.layui-layer-page .line').eq(1).show();
+										$('.layui-layer.layui-layer-page .line').eq(2).show();
+									} else {
+										if (!mongodb.mongoDBAccessStatuss) {
+											$('.layui-layer.layui-layer-page .line').eq(1).hide();
+											$('.layui-layer.layui-layer-page .line').eq(2).hide();
+										}
+									}
+								})
+							}
+						}
         },
         data_access: {
             title: lan.public_backup.set_db_permissions,
@@ -6602,18 +6803,24 @@ bt.data = {
             btns: [
                 { title: lan.public_backup.turn_off, name: 'close' },
                 {
-                    title: lan.public_backup.submit,
-                    name: 'submit',
-                    css: 'btn-success',
-                    callback: function(rdata, load, callback) {
-                        var loading = bt.load();
-                        bt.send('ResDatabasePassword', 'database/ResDatabasePassword', rdata, function(rRet) {
-                            loading.close();
-                            bt.msg(rRet);
-                            if (rRet.status) load.close();
-                            if (callback) callback(rRet);
-                        })
-                    }
+									title: lan.public_backup.submit,
+									name: 'submit',
+									css: 'btn-success',
+									callback: function(rdata, load, callback) {
+										var loading = bt.load();
+										var type = bt.data.database.getType();
+										var params = { url: 'database?action=ResDatabasePassword', data: rdata }
+										if (type != 'mysql') {
+											params.url = 'database/' + type + '/ResDatabasePassword';
+											params.data = { data: JSON.stringify(rdata) };
+										}
+										bt_tools.send(params, function(rRet) {
+												loading.close();
+												bt.msg(rRet);
+												if (rRet.status) load.close();
+												if (callback) callback(rRet);
+										})
+									}
                 }
             ]
         }

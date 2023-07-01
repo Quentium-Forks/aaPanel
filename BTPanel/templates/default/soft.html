@@ -16,10 +16,10 @@
         <div class="col-md-12">
           <span class="filter-title f14 c4">{{data['lan']['SEARCH_APP']}}</span>
           <div class="soft-search">
-            <form target="hid" onsubmit='soft.get_list(1,0,$("#SearchValue").val())'>
+            <!-- <form target="hid" onsubmit='soft.get_list(1,0,$("#SearchValue").val())'> -->
               <input type="text" id="SearchValue" class="ser-text pull-left" placeholder="search" style="width:232px" />
               <button type="button" class="ser-sub pull-left" onclick='soft.get_list(1,0,$("#SearchValue").val())'></button>
-            </form>
+            <!-- </form> -->
             <iframe name='hid' id="hid" style="display:none"></iframe>
           </div>
         </div>
@@ -54,6 +54,11 @@
     $(document).ready(function () {
         soft.get_list();
         soft.render_soft_recommend()
+		$('#SearchValue').keyup(function (e) {
+			if (e.keyCode == 13) {
+				soft.get_list(1, 0, $("#SearchValue").val());
+			}
+		});
         setTimeout(function () {
             soft_td_width_auto();
         }, 500);

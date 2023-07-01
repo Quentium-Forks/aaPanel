@@ -25,5 +25,3 @@
         });
     };
 });
-
-//# sourceMappingURL=winptyCompat.js.map

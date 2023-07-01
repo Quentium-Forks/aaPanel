@@ -4144,7 +4144,6 @@ var score = {
                     </div>\
                     <div class="comment_box_content">' + (getLength(_data[j].ps) > 65 ? reBytesStr(_data[j].ps, 65) + '...&nbsp;<a href="javascript:;" class="btlink">Details</a>' : _data[j].ps) + '</div>\
                 </div>'
-                    // console.log(getLength(_data[j].ps)>70?reBytesStr(_data[j].ps,70)+'&nbsp;<a href="javascript:;" class="btlink">详情</a>':_data[j].ps);
             }
             _this.data = _this.data.concat(_data);
             if (res.total > 10 && _data.length === 10) {

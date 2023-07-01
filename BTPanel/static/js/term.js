@@ -91,8 +91,6 @@ Terms.prototype = {
             // if(Term.state === 3) return
             // Term.term.write(msg)
             // Term.state = 3;
-        }else{
-            console.log(ws_event)
         }
     },
     //发送数据
@@ -1188,7 +1186,6 @@ var host_trem = {
         var loadT = bt.load('Deleting specified common commands, please wait...');
         this.post('remove_command',{title:title},function(rdata){
             loadT.close();
-            // console.log(rdata)
             if(callback) callback(rdata);
         });
     },

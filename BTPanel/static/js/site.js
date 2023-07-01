@@ -12,7 +12,7 @@ $('#cutMode .tabs-item').on('click', function () {
                 $('.site_table_view .mask_layer').addClass('hide');
             }
             site.php_table_view();
-            site.get_types();
+            // site.get_types();
             break;
         case 'nodejs':
             $('#bt_node_table').empty();
@@ -1138,9 +1138,6 @@ var site = {
                 //         [{"启动命令":rdata.user}],
                 //     ])
                 //
-                // console.log(tabelCon)
-                //
-                //
                 //     function reand_table_config(conifg){
                 //         var html = '';
                 //         for (var i = 0; i < conifg.length; i++) {
@@ -1148,10 +1145,8 @@ var site = {
                 //             html += '<tr>';
                 //             for (var j = 0; j < item; j++) {
                 //                 var items = config[j],name = Object.keys(items)[0];
-                //                 console.log(items,name)
                 //                 html += '<td>'+  name +'</td><td>'+ items[name] +'</td>'
                 //             }
-                //             console.log(html)
                 //             html += '</tr>'
                 //         }
                 //         return '<div class="divtable"><table class="table"><tbody>'+ html  +'</tbody></tbody></table></div>';
@@ -1681,7 +1676,7 @@ var site = {
                             return lan.site.web_end_time;
                         } else {
                             if (new Date(_endtime).getTime() < new Date().getTime()) {
-                                return '<a href="javscript:;" class="bt_danger">' + _endtime + '</a>';
+                                return '<a href="javascript:;" class="bt_danger">' + _endtime + '</a>';
                             } else {
                                 return _endtime;
                             }
@@ -1743,7 +1738,6 @@ var site = {
                         return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
                     },
                     event: function (row, index, ev, key, that) {
-                        //   console.log(row, '111');
                         site.web_edit(row);
                         setTimeout(function () {
                             $('.site-menu p:eq(8)').click();
@@ -2082,21 +2076,43 @@ var site = {
                 jump: true, //是否支持跳转分页,默认禁用
             }]
         });
-        $('.tootls_group.tootls_top .pull-left').append('<div class="bt_select_updown site_class_type" style="width: 150px; vertical-align: bottom;"><div class="bt_select_value" style="padding-right: 15px;"><span class="bt_select_content" style="margin-right: 0">Classification:</span><span class="glyphicon glyphicon-triangle-bottom ml5"></span></span></div><ul class="bt_select_list"></ul></div>');
-        bt.site.get_type(function (res) {
-            site.reader_site_type(res, site_table);
-        });
+       
+				this.init_site_type();
     },
+
+		/**
+	 * @description 初始化php分类
+	 */
+		init_site_type: function () {
+			$('#php_cate_select').remove();
+			$('.tootls_group.tootls_top .pull-left').append('\
+			<div id="php_cate_select" class="bt_select_updown site_class_type" style="vertical-align: bottom;">\
+					<div class="bt_select_value">\
+						<span class="bt_select_content">Classification: </span><span class="glyphicon glyphicon-triangle-bottom ml5"></span>\
+					</span>\
+				</div>\
+				<ul class="bt_select_list"></ul>\
+			</div>');
+			bt.site.get_type(function (res) {
+				site.reader_site_type(res);
+			});
+		},
     reader_site_type: function (res, config) {
         var html = '',
             active = bt.get_cookie('site_type') || -1,
-            select = $('.site_class_type');
+            select = $('#php_cate_select'),
+						config = site_table;
+
         if (select.find('.bt_select_list li').length > 1) return false
+
         res.unshift({id: -1, name: "Category manager"});
+
         $.each(res, function (index, item) {
             html += '<li class="item ' + (parseInt(active) == item.id ? 'active' : '') + '" data-id="' + item.id + '">' + item.name + '</li>';
         });
+
         html += '<li role="separator" class="divider"></li><li class="item" data-id="type_sets">Category set</li>';
+
         select.find('.bt_select_value').on('click', function (ev) {
             var $this = this;
             $(this).next().show();
@@ -2112,6 +2128,7 @@ var site = {
                 site.set_class_type();
             } else {
                 bt.set_cookie('site_type', id);
+								config.config.page.page = 1;
                 config.$refresh_table_list(true);
                 $(this).addClass('active').siblings().removeClass('active');
                 // select.find('.bt_select_value .bt_select_content').text('Classification: ' + $(this).text());
@@ -2119,11 +2136,13 @@ var site = {
             }
 
         }).empty().html(html);
-        select = $(select[0])
-        if (!select.find('.bt_select_list li.active').length) {
+
+        select = $(select[0]);
+        
+				if (!select.find('.bt_select_list li.active').length) {
             select.find('.bt_select_list li:eq(0)').addClass('active');
             // select.find('.bt_select_value .bt_select_content').text('Classification: 默认分类');
-            select.find('.bt_select_value .bt_select_content').text('Classification: 默认分类');
+            select.find('.bt_select_value .bt_select_content').text('Default category');
         } else {
             // select.find('.bt_select_value .bt_select_content').text('Classification: ' + select.find('.bt_select_list li.active').text());
             select.find('.bt_select_value .bt_select_content').text(select.find('.bt_select_list li.active').text());
@@ -2440,7 +2459,6 @@ var site = {
                     var data = {};
                     data.file_name = $(this).attr('backup-name');
                     data.site_id = $(this).attr('site-id');
-                    // console.log(data);
                     layer.confirm('Are you sure to restore backup file?', {
                         icon: 0,
                         closeBtn: 2,
@@ -2499,7 +2517,6 @@ var site = {
                                     var data = {};
                                     data.file_name = row.name;
                                     data.site_id = config.id;
-                                    // console.log(data);
                                     layer.confirm('Are you sure to restore backup file?', {
                                         icon: 0,
                                         closeBtn: 2,
@@ -2646,6 +2663,7 @@ var site = {
             class: '',
             form: [{
                 label: lan.site.add_site.domain,
+								must: '*',
                 group: [{
                     type: 'textarea', //当前表单的类型 支持所有常规表单元素、和复合型的组合表单元素
                     name: 'webname', //当前表单的name
@@ -2734,6 +2752,7 @@ var site = {
                 }
             }, {
                 label: lan.site.add_site.root,
+								must: '*',
                 group: {
                     type: 'text',
                     width: '400px',
@@ -2930,7 +2949,7 @@ var site = {
                 label: 'SSL',
                 class: 'ssl_checkbox',
                 help: {
-                    style: 'color: red;line-height: 17px;',
+                    style: 'color: red;line-height: 17px;margin-top: 8px;',
                     list: ['If you need to apply for SSL, please make sure that the domain name has added A record resolution for the domain name'],
                 },
                 group: [{
@@ -2938,7 +2957,7 @@ var site = {
                     name: 'set_ssl',
                     title: 'Apply for SSL',
                     class: 'site_ssl_check',
-                    style: {'margin-right': '10px'}
+                    style: {'margin-right': '10px', 'margin-left': '0'}
                 }, {
                     type: 'checkbox',
                     name: 'force_ssl',
@@ -3743,6 +3762,7 @@ var site = {
                             if (ldata.status) {
                                 $('[name="type_name"]').val('');
                                 site.get_class_type();
+																site.init_site_type();
                             }
                             bt.msg(ldata);
                         })
@@ -3775,6 +3795,7 @@ var site = {
                             bt.site.del_type(item.id, function (ret) {
                                 if (ret.status) {
                                     site.get_class_type();
+																		site.init_site_type();
                                     bt.set_cookie('site_type', '-1');
                                 }
                                 bt.msg(ret);
@@ -3807,6 +3828,7 @@ var site = {
                                             if (edata.status) {
                                                 load.close();
                                                 site.get_class_type();
+																								site.init_site_type();
                                             }
                                             bt.msg(edata);
                                         })
@@ -4578,7 +4600,6 @@ var site = {
                                                             text: 'Save',
                                                             type: 'button',
                                                             callback: function (ldata) {
-                                                                console.log(ret)
                                                                 bt.files.set_file_body(ret.filename, ldata.dir_config, 'utf-8', function (sdata) {
                                                                     if (sdata.status) load_form.close();
                                                                     bt.msg(sdata);
@@ -5247,36 +5268,52 @@ var site = {
                                 text: lan.site.save_as_template,
                                 type: 'button',
                                 callback: function (ldata) {
-                                    var temps = {
-                                        title: lan.site.save_rewrite_temp,
-                                        area: '330px',
-                                        list: [
-                                            {
-                                                title: lan.site.template_name,
-                                                placeholder: lan.site.template_name,
-                                                width: '160px',
-                                                name: 'tempname'
-                                            }
-                                        ],
-                                        btns: [
-                                            {title: lan.site.turn_off, name: 'close'},
-                                            {
-                                                title: lan.site.submit,
-                                                name: 'submit',
-                                                css: 'btn-success',
-                                                callback: function (rdata, load, callback) {
-                                                    bt.site.set_rewrite_tel(rdata.tempname, aceEditor.ACE.getValue(), function (rRet) {
-                                                        if (rRet.status) {
-                                                            load.close();
-                                                            site.reload(4)
-                                                        }
-                                                        bt.msg(rRet);
-                                                    })
-                                                }
-                                            }
-                                        ]
-                                    }
-                                    bt.render_form(temps);
+																	var temps = {
+																		title: lan.site.save_rewrite_temp,
+																		area: '330px',
+																		list: [
+																			{
+																				title: lan.site.template_name,
+																				placeholder: lan.site.template_name,
+																				width: '160px',
+																				name: 'tempname'
+																			}
+																		],
+																		btns: [
+																			{ title: lan.site.turn_off, name: 'close' },
+																			{
+																				title: lan.site.submit,
+																				name: 'submit',
+																				css: 'btn-success',
+																				callback: function (rdata, load, callback) {
+																					var name = rdata.tempname;
+																					if (name === '') return layer.msg('The template name cannot be empty!', { icon: 2 });
+																					var isSameName = false;
+																					for (var i = 0; i < arrs.length; i++) {
+																						if (arrs[i].value == name) {
+																							isSameName = true;
+																							break;
+																						}
+																					}
+																					var save_to = function () {
+																						bt.site.set_rewrite_tel(name, aceEditor.ACE.getValue(), function (rRet) {
+																							if (rRet.status) {
+																								load.close();
+																								site.reload(4)
+																							}
+																							bt.msg(rRet);
+																						});
+																					};
+																					if (isSameName) {
+																						return layer.msg('The template name already exists, please re-enter the template name!', { icon: 2 });
+																					} else {
+																						save_to();
+																					}
+																				}
+																			}
+																		]
+																	}
+																	bt.render_form(temps);
                                 }
                             }
                         ]
@@ -5485,8 +5522,17 @@ var site = {
                     $('#webedit-con').append(_html);
                     bt.render_clicks(_form_data.clicks);
                     if (sdata.phpversion != 'other') {
-                        $('#webedit-con').append('<div class="user_pw_tit" style="margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;"><span class="tit">' + lan.site.session_off + '</span><span class="btswitch-p"style="display: inline-flex;"><input class="btswitch btswitch-ios" id="session_switch" type="checkbox"><label class="btswitch-btn session-btn" for="session_switch" ></label></span></div><div class="user_pw" style="margin-top: 10px; display: block;"></div>' +
-                            bt.render_help(['When enabled, session files will be stored in a separate folder, not in a common storage location with other sites', 'Do not enable this option if you are saving sessions to caches such as memcache/redis in your PHP configuration']));
+												var tips = bt.render_help(['When enabled, session files will be stored in a separate folder, not in a common storage location with other sites', 'Do not enable this option if you are saving sessions to caches such as memcache/redis in your PHP configuration']);
+
+                        $('#webedit-con').append('\
+												<div class="user_pw_tit" style="display: flex; items-align: center; margin-top: 2px;padding-top: 11px;border-top: #ccc 1px dashed;">\
+													<span class="tit mr10" style="padding-top: 1px;">' + lan.site.session_off + '</span>\
+													<span class="btswitch-p"style="display: inline-flex;">\
+														<input class="btswitch btswitch-ios" id="session_switch" type="checkbox">\
+														<label class="btswitch-btn session-btn" for="session_switch" ></label>\
+													</span>\
+												</div>\
+												<div class="user_pw" style="margin-top: 10px; display: block;"></div>' + tips);
                     }
                     if (sdata.phpversion != 'other') {
                         $('.other-version').hide();
@@ -5494,7 +5540,6 @@ var site = {
                     setTimeout(function () {
                         $('select[name="versions"]').change(function () {
                             var phpversion = $(this).val();
-                            // console.log(phpversion);
                             if (phpversion == 'other') {
                                 $('.other-version').show();
                             } else {
@@ -6796,7 +6841,7 @@ var site = {
                         var loadTGD = bt.load('Getting log details data, please wait...');
                         $.post('/ajax?action=get_detailed&path=/www/wwwlogs/' + pathFile+'&type='+name+'', function (logs) {
                           loadTGD.close();
-                          $('#analysis_pre').text((name == 'ip' || name == 'url'?' [Access Times] ['+name+'] \n':'')+logs)
+                          $('#analysis_pre').text((name == 'ip' || name == 'url' ? ' [Access Times] [' + name + '] \n' : '') + logs);
                         })
                       }
                     })
@@ -7045,7 +7090,6 @@ var site = {
                     title: "Let's Encrypt",
                     callback: function (robj) {
                         robj = $('#webedit-con .tab-con')
-                        // console.log(robj,'obj');
                         acme.get_account_info(function (let_user) {
                         });
                         acme.id = web.id;
@@ -7323,7 +7367,6 @@ var site = {
                                     $('#ymlist li:visible input[type="checkbox"]:checked').each(function () {
                                         ldata['domains'].push($(this).val());
                                     });
-																		console.log(ldata)
                                     var auth_type = 'http'
                                     var auth_to = web.id
                                     var auto_wildcard = '0'

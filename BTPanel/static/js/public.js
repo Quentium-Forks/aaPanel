@@ -2,7 +2,6 @@ $(function(){
     $.fn.extend({
         fixedThead:function(options){
             var _that = $(this);
-            console.log(_that);
             var option = {
                 height:400,
                 shadow:true,
@@ -169,145 +168,150 @@ var aceEditor = {
     isAceView: true,
     ace_active: '',
     is_resizing: false,
-    menu_path:'', //当前文件目录根地址
-    refresh_config:{
-		el:{}, // 需要重新获取的元素,为DOM对象
-		path:'',// 需要获取的路径文件信息
-		group:1,// 当前列表层级，用来css固定结构
-		is_empty:true
-	}, //刷新配置参数
+    menu_path: '', 			// 当前文件目录根地址
+    refresh_config: {		// 刷新配置参数
+			el: {},						// 需要重新获取的元素,为DOM对象
+			path: '',					// 需要获取的路径文件信息
+			group: 1,					// 当前列表层级，用来css固定结构
+			is_empty: true
+		}, 
+		editorStatus: 0,  	// 编辑器状态 还原: 0, 最大化: 1, 最小化:  -1
     // 事件编辑器-方法，事件绑定
     eventEditor: function() {
-        var _this = this,_icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
-        $(window).resize(function(){
-			if(_this.ace_active != undefined) _this.setEditorView()
-			if( $('.aceEditors .layui-layer-maxmin').length >0){
-            	$('.aceEditors').css({
-                	'top':0,
-                	'left':0,
-                	'width':$(this)[0].innerWidth,
-                	'height':$(this)[0].innerHeight
-                });
-            }
-		})
-        $(document).click(function(e){
-			$('.ace_toolbar_menu').hide();
-			$('.ace_conter_editor .ace_editors').css('fontSize', _this.aceConfig.aceEditor.fontSize + 'px');
-			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
-		});
-		$('.ace_editor_main').on('click',function(){
-            $('.ace_toolbar_menu').hide();
-        });
-		$('.ace_toolbar_menu').click(function(e){
-			e.stopPropagation();
-			e.preventDefault();
-		});
-        // 显示工具条
-        $('.ace_header .pull-down').click(function(){
-			if($(this).find('i').hasClass('glyphicon-menu-down')){
-                $('.ace_header').css({'top':'-35px'});
-                $('.ace_overall').css({'top':'0'});
-                $(this).css({'top':'35px','height':'40px','line-height':'40px'});
-				$(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
-			}else{
-				$('.ace_header').css({'top':'0'});
-                $('.ace_overall').css({'top':'35px'});
-                $(this).removeAttr('style');
-				$(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
-			}
-			_this.setEditorView();
-		});
-        // 切换TAB视图
-		$('.ace_conter_menu').on('click', '.item', function (e) {
-			var _id = $(this).attr('data-id'),_item = _this.editor['ace_editor_' + _id];
-			$('.item_tab_'+ _id).addClass('active').siblings().removeClass('active');
-			$('#ace_editor_'+ _id).addClass('active').siblings().removeClass('active');
-			_this.ace_active = _id;
-			_this.currentStatusBar(_id);
-			_this.is_file_history(_item);
-		});
-		// 移上TAB按钮变化，仅文件被修改后
-		$('.ace_conter_menu').on('mouseover', '.item .icon-tool', function () {
-			var type = $(this).attr('data-file-state');
-			if (type != '0') {
-				$(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
-			}
-		});
-		// 移出tab按钮变化，仅文件被修改后
-		$('.ace_conter_menu').on('mouseout', '.item .icon-tool', function () {
-			var type = $(this).attr('data-file-state');
-			if (type != '0') {
-				$(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
-			}
-		});
-        // 关闭编辑视图
-        $('.ace_conter_menu').on('click', '.item .icon-tool', function(e) {
-            var file_type = $(this).attr('data-file-state');
-            var file_title = $(this).attr('data-title');
-            var _path = $(this).parent().parent().attr('title');
-            var _id = $(this).parent().parent().attr('data-id');
-            switch (file_type) {
-                // 直接关闭
-                case '0':
-                    _this.removeEditor(_id);
-                    break;
-                    // 未保存
-                case '1':
-                    var loadT = layer.open({
-                        type: 1,
-                        area: ['400px', '180px'],
-                        title: 'Tips',
-                        content: '<div class="ace-clear-form">\
-							<div class="clear-icon"></div>\
-							<div class="clear-title">Do you want to save changes to &nbsp<span class="size_ellipsis" style="max-width:150px;vertical-align: top;" title="' + file_title + '">' + file_title + '</span>&nbsp?</div>\
-							<div class="clear-tips">If you don\'t save, the changes will be lost!</div>\
-							<div class="ace-clear-btn" style="">\
-								<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">Dont save</button>\
-								<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">Cancel</button>\
-								<button type="button" class="btn btn-sm btn-success" data-type="0">Save</button>\
-							</div>\
-						</div>',
-                        success: function(layers, index) {
-                            $('.ace-clear-btn .btn').click(function() {
-                                var _type = $(this).attr('data-type'),
-                                    editor_item = _this.editor['ace_editor_' + _id];
-                                switch (_type) {
-                                    case '0': //保存文件
-                                        _this.saveFileBody({
-                                            path: _path,
-                                            data: editor_item.ace.getValue(),
-                                            encoding: editor_item.encoding
-                                        }, function(res) {
-                                            layer.close(index);
-                                            _this.removeEditor(editor_item.id);
-                                            layer.msg(res.msg, { icon: 1 });
-                                            editor_item.fileType = 0;
-                                            $('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
-                                        });
-                                        break;
-                                    case '1': //关闭视图
-                                        layer.close(index);
-                                        break;
-                                    case '2': //取消保存
-                                        _this.removeEditor(_id);
-                                        layer.close(index);
-                                        break;
-                                }
-                            });
-                        }
-                    });
-                    break;
-            }
-            $('.ace_toolbar_menu').hide();
-			$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
-			e.stopPropagation();
-			e.preventDefault();
-        });
+      var _this = this,_icon = '<span class="icon"><i class="glyphicon glyphicon-ok" aria-hidden="true"></i></span>';
+      $(window).resize(function(){
+				if (_this.ace_active != undefined) _this.setEditorView();
+				if (aceEditor.editorStatus === 0 || aceEditor.editorStatus === 1) {
+					var winW = $(this)[0].innerWidth,
+							winH = $(this)[0].innerHeight
+					$('.aceEditors').css({
+						'top': aceEditor.editorStatus ? 0 : winH/8,
+						'left': aceEditor.editorStatus ? 0 : winW/8,
+						'width': aceEditor.editorStatus ? winW : winW/4*3,
+						'height': aceEditor.editorStatus ? winH : winH/4*3
+					});
+					$('.aceEditors .layui-layer-content').css({'height' : $('.aceEditors').height() - 42})
+				}
+			});
+      $(document).click(function (e) {
+				$('.ace_toolbar_menu').hide();
+				$('.ace_conter_editor .ace_editors').css('fontSize', _this.aceConfig.aceEditor.fontSize + 'px');
+				$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+			});
+			$('.ace_editor_main').on('click',function(){
+        $('.ace_toolbar_menu').hide();
+      });
+			$('.ace_toolbar_menu').click(function(e){
+				e.stopPropagation();
+				e.preventDefault();
+			});
+      // 显示工具条
+      $('.ace_header .pull-down').click(function(){
+				if ($(this).find('i').hasClass('glyphicon-menu-down')) {
+					$('.ace_header').css({'top':'-35px'});
+					$('.ace_overall').css({'top':'0'});
+					$(this).css({'top':'35px','height':'40px','line-height':'40px'});
+					$(this).find('i').addClass('glyphicon-menu-up').removeClass('glyphicon-menu-down');
+				} else {
+					$('.ace_header').css({'top':'0'});
+					$('.ace_overall').css({'top':'35px'});
+					$(this).removeAttr('style');
+					$(this).find('i').addClass('glyphicon-menu-down').removeClass('glyphicon-menu-up');
+				}
+				_this.setEditorView();
+			});
+			// 切换TAB视图
+			$('.ace_conter_menu').on('click', '.item', function (e) {
+				var _id = $(this).attr('data-id'),_item = _this.editor['ace_editor_' + _id];
+				$('.item_tab_'+ _id).addClass('active').siblings().removeClass('active');
+				$('#ace_editor_'+ _id).addClass('active').siblings().removeClass('active');
+				_this.ace_active = _id;
+				_this.currentStatusBar(_id);
+				_this.is_file_history(_item);
+			});
+			// 移上TAB按钮变化，仅文件被修改后
+			$('.ace_conter_menu').on('mouseover', '.item .icon-tool', function () {
+				var type = $(this).attr('data-file-state');
+				if (type != '0') {
+					$(this).removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+				}
+			});
+			// 移出tab按钮变化，仅文件被修改后
+			$('.ace_conter_menu').on('mouseout', '.item .icon-tool', function () {
+				var type = $(this).attr('data-file-state');
+				if (type != '0') {
+					$(this).removeClass('glyphicon-remove').addClass('glyphicon-exclamation-sign');
+				}
+			});
+			// 关闭编辑视图
+			$('.ace_conter_menu').on('click', '.item .icon-tool', function(e) {
+					var file_type = $(this).attr('data-file-state');
+					var file_title = $(this).attr('data-title');
+					var _path = $(this).parent().parent().attr('title');
+					var _id = $(this).parent().parent().attr('data-id');
+					switch (file_type) {
+						// 直接关闭
+						case '0':
+							_this.removeEditor(_id);
+							break;
+						// 未保存
+						case '1':
+							var loadT = layer.open({
+								type: 1,
+								area: ['400px', '180px'],
+								title: 'Tips',
+								content: '\
+								<div class="ace-clear-form">\
+									<div class="clear-icon"></div>\
+									<div class="clear-title">Do you want to save changes to &nbsp<span class="size_ellipsis" style="max-width:150px;vertical-align: top;" title="' + file_title + '">' + file_title + '</span>&nbsp?</div>\
+									<div class="clear-tips">If you don\'t save, the changes will be lost!</div>\
+									<div class="ace-clear-btn" style="">\
+										<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">Dont save</button>\
+										<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">Cancel</button>\
+										<button type="button" class="btn btn-sm btn-success" data-type="0">Save</button>\
+									</div>\
+								</div>',
+								success: function(layers, index) {
+									$('.ace-clear-btn .btn').click(function() {
+										var _type = $(this).attr('data-type'),
+												editor_item = _this.editor['ace_editor_' + _id];
+										switch (_type) {
+											case '0': //保存文件
+												_this.saveFileBody({
+													path: _path,
+													data: editor_item.ace.getValue(),
+													encoding: editor_item.encoding
+												}, function(res) {
+													layer.close(index);
+													_this.removeEditor(editor_item.id);
+													layer.msg(res.msg, { icon: 1 });
+													editor_item.fileType = 0;
+													$('.item_tab_' + editor_item.id + ' .icon-tool').attr('data-file-state', '0').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove');
+												});
+													break;
+											case '1': //关闭视图
+												layer.close(index);
+												break;
+											case '2': //取消保存
+												_this.removeEditor(_id);
+												layer.close(index);
+												break;
+										}
+									});
+								}
+							});
+							break;
+					}
+					$('.ace_toolbar_menu').hide();
+					$('.ace_toolbar_menu .menu-tabs,.ace_toolbar_menu .menu-encoding,.ace_toolbar_menu .menu-files').hide();
+					e.stopPropagation();
+					e.preventDefault();
+				});
         $(window).keyup(function(e){
-			if(e.keyCode === 116 && $('#ace_conter').length == 1){
-				layer.msg('Unable to refresh in editor mode. Please close and try again');
-			}
-		});
+					if (e.keyCode === 116 && $('#ace_conter').length == 1) {
+						layer.msg('Unable to refresh in editor mode. Please close and try again');
+					}
+				});
         // 新建编辑器视图
         $('.ace_editor_add').click(function() {
             _this.addEditorView();
@@ -1857,34 +1861,36 @@ var aceEditor = {
     //     $('.ace_toolbar_menu').hide();
     // },
     openEditorView: function (path,callback) {
-		if(path == undefined) return false;
-		// 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
-	    var _this = this,paths = path.split('/'),_fileName = paths[paths.length - 1],_fileType = this.getFileType(_fileName),_type = _fileType.name,_mode = _fileType.mode,_id = bt.get_random(8),_index = this.editorLength;
-		_this.is_file_open(path,function(is_state){
-			if(is_state){
-				$('.ace_conter_menu').find('[title="'+ path +'"]').click();
-			}else{
-				_this.getFileBody({path: path}, function (res) {
-				    _this.pathAarry.push(path);
-				    $('.ace_conter_menu .item').removeClass('active');
-		    		$('.ace_conter_editor .ace_editors').removeClass('active');
-		    		$('.ace_conter_menu').append('<li class="item active item_tab_' + _id +'" title="'+ path +'" data-type="'+ _type +'" data-mode="'+ _mode +'" data-id="'+ _id +'" data-fileName="'+ _fileName +'">'+
-		    			'<div class="ace_item_box">'+
-			    			'<span class="icon_file"><i class="'+ _mode +'-icon"></i></span><span title="'+ path +'">' + _fileName + '</span>'+
-			    			'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>'+
-			    		'</div>'+
-		    		'</li>');
-		    		$('.ace_conter_editor').append('<div id="ace_editor_'+_id +'" class="ace_editors active" style="font-size:'+ aceEditor.aceConfig.aceEditor.fontSize +'px"></div>');
-					$('[data-menu-path="'+ path +'"]').find('.file_fold').addClass('active bg');
-					_this.ace_active = _id;
-				    _this.editorLength = _this.editorLength + 1;
-					_this.creationEditor({id: _id,fileName: _fileName,path: path,mode:_mode,encoding: res.encoding,data: res.data,type:_type,historys:res.historys});
-					if(callback) callback(res);
-				});
-			}
-		});
-		$('.ace_toolbar_menu').hide();
-	},
+			// 最小化后，再点文件编辑，还原编辑器窗口
+			if (aceEditor.editorStatus === -1) $('.layui-layer-maxmin').click();
+			if (path == undefined) return false;
+			// 文件类型（type，列如：JavaScript） 、文件模型（mode，列如：text）、文件标识（id,列如：x8AmsnYn）、文件编号（index,列如：0）、文件路径 (path，列如：/www/root/)
+				var _this = this,paths = path.split('/'),_fileName = paths[paths.length - 1],_fileType = this.getFileType(_fileName),_type = _fileType.name,_mode = _fileType.mode,_id = bt.get_random(8),_index = this.editorLength;
+			_this.is_file_open(path,function(is_state){
+				if(is_state){
+					$('.ace_conter_menu').find('[title="'+ path +'"]').click();
+				}else{
+					_this.getFileBody({path: path}, function (res) {
+							_this.pathAarry.push(path);
+							$('.ace_conter_menu .item').removeClass('active');
+							$('.ace_conter_editor .ace_editors').removeClass('active');
+							$('.ace_conter_menu').append('<li class="item active item_tab_' + _id +'" title="'+ path +'" data-type="'+ _type +'" data-mode="'+ _mode +'" data-id="'+ _id +'" data-fileName="'+ _fileName +'">'+
+								'<div class="ace_item_box">'+
+									'<span class="icon_file"><i class="'+ _mode +'-icon"></i></span><span title="'+ path +'">' + _fileName + '</span>'+
+									'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' + _fileName + '"></i>'+
+								'</div>'+
+							'</li>');
+							$('.ace_conter_editor').append('<div id="ace_editor_'+_id +'" class="ace_editors active" style="font-size:'+ aceEditor.aceConfig.aceEditor.fontSize +'px"></div>');
+						$('[data-menu-path="'+ path +'"]').find('.file_fold').addClass('active bg');
+						_this.ace_active = _id;
+							_this.editorLength = _this.editorLength + 1;
+						_this.creationEditor({id: _id,fileName: _fileName,path: path,mode:_mode,encoding: res.encoding,data: res.data,type:_type,historys:res.historys});
+						if(callback) callback(res);
+					});
+				}
+			});
+			$('.ace_toolbar_menu').hide();
+		},
     // 获取收藏夹列表-方法
     getFavoriteList: function() {},
     // 获取文件列表-请求
@@ -2013,126 +2019,138 @@ function openEditorView(type, path) {
         return false;
     }
     var r = layer.open({
-        type: 1,
-        maxmin: true,
-        shade: false,
-        area: ['80%', '80%'],
-        title: lan.public.online_text_editor,
-        skin: 'aceEditors',
-        zIndex: 19999,
-        content: _aceTmplate,
-        success: function(layero, index) {
-            function set_edit_file() {
-                // aceEditor.layer_view = index;
-                aceEditor.ace_active = '';
-                aceEditor.eventEditor();
-                $('#ace_conter').addClass(aceEditor.editorTheme);
-                ace.require("/ace/ext/language_tools");
-                ace.config.set("modePath", "/static/ace");
-                ace.config.set("workerPath", "/static/ace");
-                ace.config.set("themePath", "/static/ace");
-                aceEditor.openEditorView(path);
-                var _left = parseInt( $(layero).css('left')),_top =  parseInt( $(layero).css('top'));
-                _left<0?$(layero).css('left',Math.abs(_left)):$(layero).css('left',_left)
-                _top<0?$(layero).css('top',Math.abs(_top)):$(layero).css('top',_top)
-                // $('.aceEditors .layui-layer-min').click(function(e) {
-                //     aceEditor.isAceView = false;
-                //     setTimeout(function() {
-                //         var _id = $('.ace_conter_menu .active').attr('data-id');
-                //         aceEditor.editor['ace_editor_' + _id].ace.resize();
-                //     }, 105);
-                // });
-                // $('.aceEditors .layui-layer-max').click(function(e) {
-                //     setTimeout(function() {
-                //         aceEditor.setEditorView();
-                //         var _id = $('.ace_conter_menu .active').attr('data-id');
-                //         aceEditor.editor['ace_editor_' + _id].ace.resize();
-                //     }, 105);
-                // });
-                $('.aceEditors .layui-layer-min').click(function (e){
-					
-					aceEditor.setEditorView();
-				});
-				$('.aceEditors .layui-layer-max').click(function (e){
-					aceEditor.setEditorView();
-				});
-            }
-            var aceConfig = aceEditor.getStorage('aceConfig');
-			if(aceConfig == null){
-				// 获取编辑器配置
-				aceEditor.getAceConfig(function(res){
-					aceEditor.aceConfig = res; // 赋值配置参数
-					set_edit_file();
-				});
-            }else{
-            	aceEditor.aceConfig = JSON.parse(aceConfig);
-            	typeof aceEditor.aceConfig == 'string'?aceEditor.aceConfig = JSON.parse(aceEditor.aceConfig):''
-                set_edit_file();
-			}
-        },
-        cancel: function() {
-            for (var item in aceEditor.editor) {
-                if (aceEditor.editor[item].fileType == 1) {
-                    layer.open({
-                        type: 1,
-                        area: ['400px', '180px'],
-                        title: lan.public.save_tips,
-                        content: '<div class="ace-clear-form">\
-							<div class="clear-icon"></div>\
-							<div class="clear-title">' + lan.public.save_tips1 + '</div>\
-							<div class="clear-tips">' + lan.public.save_tips2 + '</div>\
-							<div class="ace-clear-btn" style="">\
-								<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">' + lan.public.dont_save + '</button>\
-								<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">' + lan.public.cancel + '</button>\
-								<button type="button" class="btn btn-sm btn-success" data-type="0">' + lan.public.save + '</button>\
-							</div>\
-						</div>',
-                        success: function(layers, indexs) {
-                            $('.ace-clear-btn button').click(function() {
-                                var _type = $(this).attr('data-type');
-                                switch (_type) {
-                                    case '2':
-                                        aceEditor.editor = null;
-                                        layer.closeAll();
-                                        break;
-                                    case '1':
-                                        layer.close(indexs);
-                                        break;
-                                    case '0':
-                                        var _arry = [],
-                                            editor = aceEditor['editor'];
-                                        for (var item in editor) {
-                                            _arry.push({
-                                                path: editor[item]['path'],
-                                                data: editor[item]['ace'].getValue(),
-                                                encoding: editor[item]['encoding'],
-                                            })
-                                        }
-                                        aceEditor.saveAllFileBody(_arry, function() {
-                                            $('.ace_conter_menu>.item').each(function(el, indexx) {
-                                                var _id = $(this).attr('data-id');
-                                                $(this).find('i').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove').attr('data-file-state', '0')
-                                                aceEditor.editor['ace_editor_' + _id].fileType = 0;
-                                            });
-                                            aceEditor.editor = null;
-                                            aceEditor.pathAarry = [];
-                                            layer.closeAll();
-                                        });
-                                        break;
-                                }
-                            });
-                        }
-                    });
-                    return false;
-                }
-            }
-        },
-        end:function(){
-            aceEditor.ace_active = '';
-            aceEditor.editor = null;
-            aceEditor.pathAarry = [];
-            aceEditor.menu_path = '';
+			type: 1,
+			maxmin: true,
+			shade: false,
+			area: ['80%', '80%'],
+			title: lan.public.online_text_editor,
+			skin: 'aceEditors',
+			zIndex: 19999,
+			content: _aceTmplate,
+			success: function(layero, index) {
+				function set_edit_file() {
+					// aceEditor.layer_view = index;
+					aceEditor.ace_active = '';
+					aceEditor.eventEditor();
+					$('#ace_conter').addClass(aceEditor.editorTheme);
+					ace.require("/ace/ext/language_tools");
+					ace.config.set("modePath", "/static/ace");
+					ace.config.set("workerPath", "/static/ace");
+					ace.config.set("themePath", "/static/ace");
+					aceEditor.openEditorView(path);
+					var _left = parseInt( $(layero).css('left')),_top =  parseInt( $(layero).css('top'));
+					_left<0?$(layero).css('left',Math.abs(_left)):$(layero).css('left',_left)
+					_top<0?$(layero).css('top',Math.abs(_top)):$(layero).css('top',_top)
+					// $('.aceEditors .layui-layer-min').click(function(e) {
+					//     aceEditor.isAceView = false;
+					//     setTimeout(function() {
+					//         var _id = $('.ace_conter_menu .active').attr('data-id');
+					//         aceEditor.editor['ace_editor_' + _id].ace.resize();
+					//     }, 105);
+					// });
+					// $('.aceEditors .layui-layer-max').click(function(e) {
+					//     setTimeout(function() {
+					//         aceEditor.setEditorView();
+					//         var _id = $('.ace_conter_menu .active').attr('data-id');
+					//         aceEditor.editor['ace_editor_' + _id].ace.resize();
+					//     }, 105);
+					// });
+					$('.aceEditors .layui-layer-min').click(function (e) {
+						aceEditor.setEditorView();
+					});
+					$('.aceEditors .layui-layer-max').click(function (e){
+						aceEditor.setEditorView();
+					});
         }
+        var aceConfig = aceEditor.getStorage('aceConfig');
+				if (aceConfig == null) {
+					// 获取编辑器配置
+					aceEditor.getAceConfig(function(res){
+						aceEditor.aceConfig = res; // 赋值配置参数
+						set_edit_file();
+					});
+				} else {
+					aceEditor.aceConfig = JSON.parse(aceConfig);
+					typeof aceEditor.aceConfig == 'string' ? aceEditor.aceConfig = JSON.parse(aceEditor.aceConfig) : ''
+					set_edit_file();
+				}
+      },
+			cancel: function () {
+				for (var item in aceEditor.editor) {
+					if (aceEditor.editor[item].fileType == 1) {
+						layer.open({
+							type: 1,
+							area: ['400px', '180px'],
+							title: lan.public.save_tips,
+							content: '\
+							<div class="ace-clear-form">\
+								<div class="clear-icon"></div>\
+								<div class="clear-title">' + lan.public.save_tips1 + '</div>\
+								<div class="clear-tips">' + lan.public.save_tips2 + '</div>\
+								<div class="ace-clear-btn" style="">\
+									<button type="button" class="btn btn-sm btn-default" style="float:left" data-type="2">' + lan.public.dont_save + '</button>\
+									<button type="button" class="btn btn-sm btn-default" style="margin-right:10px;" data-type="1">' + lan.public.cancel + '</button>\
+									<button type="button" class="btn btn-sm btn-success" data-type="0">' + lan.public.save + '</button>\
+								</div>\
+							</div>',
+							success: function(layers, indexs) {
+								$('.ace-clear-btn button').click(function() {
+									var _type = $(this).attr('data-type');
+									switch (_type) {
+										case '2':
+											aceEditor.editor = null;
+											layer.closeAll();
+											break;
+										case '1':
+											layer.close(indexs);
+											break;
+										case '0':
+											var _arry = [],
+												editor = aceEditor['editor'];
+											for (var item in editor) {
+												_arry.push({
+													path: editor[item]['path'],
+													data: editor[item]['ace'].getValue(),
+													encoding: editor[item]['encoding'],
+												})
+											}
+											aceEditor.saveAllFileBody(_arry, function() {
+												$('.ace_conter_menu>.item').each(function(el, indexx) {
+													var _id = $(this).attr('data-id');
+													$(this).find('i').removeClass('glyphicon-exclamation-sign').addClass('glyphicon-remove').attr('data-file-state', '0')
+													aceEditor.editor['ace_editor_' + _id].fileType = 0;
+												});
+												aceEditor.editor = null;
+												aceEditor.pathAarry = [];
+												layer.closeAll();
+											});
+											break;
+									}
+								});
+							}
+						});
+						return false;
+					}
+				}
+			},
+			full: function (layero, index) {
+				//最大化
+				aceEditor.editorStatus = 1
+			},
+			min: function (layero, index) {
+				//最小化
+				aceEditor.editorStatus = -1
+			},
+			restore: function (layero, index) {
+				//还原
+				aceEditor.editorStatus = 0
+			},
+			end: function () {
+				aceEditor.ace_active = '';
+				aceEditor.editor = null;
+				aceEditor.pathAarry = [];
+				aceEditor.menu_path = '';
+			}
     });
 }
 
@@ -2978,7 +2996,6 @@ function loadScript(arry, param, callback) {
             if (script.readyState) {
                 (function(i) {
                     script.onreadystatechange = function() {
-                        console.log(arry[i]);
                         if (script.readyState == "loaded" || script.readyState == "complete") {
                             script.onreadystatechange = null;
                             bt['loadScript'].push(arry[i]);
@@ -3145,7 +3162,13 @@ function setPassword(a) {
             });
             return
         }
-        $.post("/config?action=setPassword", "password1=" + encodeURIComponent(p1) + "&password2=" + encodeURIComponent(p2), function(b) {
+
+				var pdata = {
+					password1: rsa.encrypt_public(p1),
+					password2: rsa.encrypt_public(p2)
+				}
+
+        $.post("/config?action=setPassword", pdata, function(b) {
             if (b.status) {
                 layer.closeAll();
                 layer.msg(b.msg, {
@@ -3203,11 +3226,19 @@ function setUserName(a) {
             return;
         }
 
-        $.post("/config?action=setUsername", "username1=" + encodeURIComponent(p1) + "&username2=" + encodeURIComponent(p2), function(b) {
+				var pdata = {
+					username1: rsa.encrypt_public(p1),
+					username2: rsa.encrypt_public(p2)
+				}
+
+        $.post("/config?action=setUsername", pdata, function(b) {
             if (b.status) {
                 layer.closeAll();
                 layer.msg(b.msg, {
-                    icon: 1
+          icon: 1,
+          time: 1000
+        }, function () {
+          window.location.href = '/login?dologin=True';
                 });
                 $("input[name='username_']").val(p1)
             } else {
@@ -3804,7 +3835,6 @@ function messagebox(){
 						bt.send('GetExecLog','files/GetExecLog',{},function(res){
 							loadT.close();
 							var exec_log = $('#execLog');
-							// console.log(exec_log)
 							exec_log.html(res)
 							exec_log[0].scrollTop = exec_log[0].scrollHeight
 						})
@@ -4293,17 +4323,13 @@ var Term = {
 	// 		if(Term.state === 3) return
 	// 		Term.term.write(msg)
 	// 		Term.state = 3;
-	// 	}else{
-	// 		console.log(ws_event)
-	// 	}
+	// 	   }
     // },
     on_error: function (ws_event) {
 		if(ws_event.target.readyState === 3){
 			if(Term.state === 3) return
 			Term.term.write(msg)
 			Term.state = 3;
-		}else{
-			console.log(ws_event)
 		}
     },
 
@@ -5309,7 +5335,6 @@ var product_recommend = {
     recommend_product_view: function (config) {
         var name = config.name.split('_')[0];
         var status = this.get_pay_status();
-        console.log(status);
         bt.open({
             title:false,
             area:'650px',
@@ -5344,4 +5369,335 @@ var product_recommend = {
             }
         })
     }
+}
+
+var rsa = {
+	publicKey: null,
+	/**
+	 * @name 使用公钥加密
+	 * @param {string} text
+	 * @returns string
+	 */
+	encrypt_public:function(text){
+			this.publicKey = document.querySelector(".public_key").attributes.data.value;
+			if(this.publicKey.length < 10) return text;
+			var encrypt = new JSEncrypt();
+			encrypt.setPublicKey(this.publicKey);
+			return encrypt.encrypt(text);
+	},
+	/**
+	 * @name 使用公钥解密
+	 * @param {string} text
+	 * @returns string
+	 */
+	decrypt_public:function(text){
+			this.publicKey = document.querySelector(".public_key").attributes.data.value;
+			if(this.publicKey.length < 10) return null;
+			var decrypt = new JSEncrypt();
+			decrypt.setPublicKey(this.publicKey);
+			return decrypt.decryptp(text);
+	}
+}
+
+/**
+ * @description 渲染邮箱配置视图
+ */
+function renderMailConfigView(data) {
+	layer.open({
+		type: 1,
+		title: 'Set sender email information',
+		area: ['470px', '376px'],
+		btn: [lan.public.save, lan.public.cancel],
+		skin: 'alert-send-view',
+		content:
+			'<div class="bt-form pd15">\
+				<div class="line">\
+						<span class="tname">Sender email</span>\
+						<div class="info-r">\
+								<input name="sender_mail_value" class="bt-input-text mr5" type="text" style="width: 300px">\
+						</div>\
+				</div>\
+				<div class="line">\
+						<span class="tname">SMTP password</span>\
+						<div class="info-r">\
+								<input name="sender_mail_password" class="bt-input-text mr5" type="password" style="width: 300px">\
+						</div>\
+				</div>\
+				<div class="line">\
+						<span class="tname">SMTP server</span>\
+						<div class="info-r">\
+								<input name="sender_mail_server" class="bt-input-text mr5" type="text" style="width: 300px">\
+						</div>\
+				</div>\
+				<div class="line">\
+						<span class="tname">SMTP port</span>\
+						<div class="info-r">\
+								<input name="sender_mail_port" class="bt-input-text mr5" type="text" style="width: 300px">\
+						</div>\
+				</div>\
+				<ul class="help-info-text c7">\
+						<li>465 port is recommended, the protocol is SSL/TLS</li>\
+						<li>Port 25 is SMTP protocol, port 587 is STARTTLS protocol</li>\
+				</ul>\
+		</div>',
+		success: function () {
+			if (!$.isEmptyObject(data) && !$.isEmptyObject(data.data.send)) {
+				var send = data.data.send,
+					mail_ = send.qq_mail || '',
+					stmp_pwd_ = send.qq_stmp_pwd || '',
+					hosts_ = send.hosts || '',
+					port_ = send.port || '';
+
+				$('input[name=sender_mail_value]').val(mail_);
+				$('input[name=sender_mail_password]').val(stmp_pwd_);
+				$('input[name=sender_mail_server]').val(hosts_);
+				$('input[name=sender_mail_port]').val(port_);
+			} else {
+				$('input[name=sender_mail_port]').val('465');
+			}
+		},
+		yes: function (indexs) {
+			var _email = $('input[name=sender_mail_value]').val(),
+				_passW = $('input[name=sender_mail_password]').val(),
+				_server = $('input[name=sender_mail_server]').val(),
+				_port = $('input[name=sender_mail_port]').val();
+
+			if (_email == '') return layer.msg('Email address cannot be empty!', { icon: 2 });
+			if (_passW == '') return layer.msg('STMP password cannot be empty!', { icon: 2 });
+			if (_server == '') return layer.msg('STMP server address cannot be empty!', { icon: 2 });
+			if (_port == '') return layer.msg('STMP server port cannot be empty!', { icon: 2 });
+
+			if (!data.setup) {
+				bt_tools.send(
+					{ url: '/config?action=install_msg_module&name=' + data.name, data: {} },
+					function (res) {
+						if (res.status) {
+							bt_tools.send(
+								{ url: '/config?action=set_msg_config&name=mail', data: { send: 1, qq_mail: _email, qq_stmp_pwd: _passW, hosts: _server, port: _port } },
+								function (configM) {
+									if (configM.status) {
+										layer.close(indexs);
+										layer.msg(configM.msg, {
+											icon: configM.status ? 1 : 2,
+										});
+										if ($('.alert-view-box').length >= 0) $('.alert-view-box .tab-nav-border span:eq(1)').click();
+									}
+								},
+								'Setting email Settings'
+							);
+						} else {
+							layer.msg(res.msg, { icon: 2 });
+						}
+					},
+					'Creating ' + data.title + ' module'
+				);
+			} else {
+				bt_tools.send(
+					{
+						url: '/config?action=set_msg_config&name=mail',
+						data: {
+							send: 1,
+							qq_mail: _email,
+							qq_stmp_pwd: _passW,
+							hosts: _server,
+							port: _port,
+						},
+					},
+					function (configM) {
+						if (configM.status) {
+							layer.close(indexs);
+							layer.msg(configM.msg, {
+								icon: configM.status ? 1 : 2,
+							});
+						}
+					},
+					'Setting email Settings'
+				);
+			}
+		},
+	});
+}
+
+/**
+ * @description 渲染url通道方式视图
+ */
+function renderAlertUrlTypeChannelView(data) {
+	var isEmpty = $.isEmptyObject(data.data);
+	layer.open({
+		type: 1,
+		title: data['title'] + ' robot configuration',
+		area: ['480px', '345px'],
+		btn: [lan.public.save, lan.public.cancel],
+		skin: 'alert-send-view',
+		content:
+			'<div class="pd15 bt-form">\
+				<div class="line">\
+					<span class="tname" style="width: 100px;">Name</span>\
+					<div class="info-r" style="margin-left: 100px;">\
+						<input type="text" name="chatName" value="' +
+			(isEmpty ? '' : data.data.list.default.title) +
+			'" class="bt-input-text mr10 " style="width:320px;" placeholder="Robot name or remarks" />\
+					</div>\
+				</div>\
+				<div class="line">\
+					<span class="tname" style="width: 100px;">URL</span>\
+					<div class="info-r" style="margin-left: 100px;">\
+						<textarea name="channel_url_value" class="bt-input-text mr5" type="text" placeholder="Please enter robot url" style="width: 320px; height:120px; line-height:20px; resize: none;"></textarea>\
+					</div>\
+					<ul class="help-info-text c7">\
+						<li><a class="btlink" href="' +
+			data.help +
+			'" target="_blank">How to create the ' +
+			data.title +
+			' robot</a></li>\
+					</ul>\
+				</div>\
+			</div>',
+		success: function () {
+			if (!$.isEmptyObject(data.data)) {
+				var url = data['data'][data.name + '_url'] || '';
+				$('textarea[name=channel_url_value]').val(url);
+			}
+		},
+		yes: function (indexs) {
+			var _index = $('.alert-view-box span.on').index();
+			var _url = $('textarea[name=channel_url_value]').val(),
+				_name = $('input[name=chatName]').val();
+			if (_name == '') return layer.msg('Please enter the robot name or remarks', { icon: 2 });
+			if (_url == '') return layer.msg('Please enter the robot url', { icon: 2 });
+			if (!data.setup) {
+				bt_tools.send(
+					{ url: '/config?action=install_msg_module&name=' + data.name, data: {} },
+					function (res) {
+						if (res.status) {
+							setTimeout(function () {
+								bt_tools.send(
+									{
+										url: '/config?action=set_msg_config&name=' + data.name,
+										data: {
+											url: _url,
+											title: _name,
+											atall: 'True',
+										},
+									},
+									function (rdata) {
+										layer.close(indexs);
+										layer.msg(rdata.msg, {
+											icon: rdata.status ? 1 : 2,
+										});
+										if ($('.alert-view-box').length >= 0) {
+											$('.alert-view-box .tab-nav-border span:eq(' + _index + ')').click();
+										}
+									},
+									'Setting ' + data.title + ' configuration'
+								);
+							}, 100);
+						} else {
+							layer.msg(res.msg, { icon: 2 });
+						}
+					},
+					'Creating ' + data.title + ' module'
+				);
+			} else {
+				bt_tools.send(
+					{
+						url: '/config?action=set_msg_config&name=' + data.name,
+						data: {
+							url: _url,
+							title: _name,
+							atall: 'True',
+						},
+					},
+					function (rdata) {
+						layer.close(indexs);
+						layer.msg(rdata.msg, {
+							icon: rdata.status ? 1 : 2,
+						});
+						if ($('.alert-view-box').length >= 0) {
+							$('.alert-view-box .tab-nav-border span:eq(' + _index + ')').click();
+						}
+					},
+					'Setting ' + data.title + ' module'
+				);
+			}
+		},
+	});
+}
+
+function renderTelegramConfigView(data) {
+	layer.open({
+		type: 1,
+		title: 'Telegram configuration',
+		area: ['460px', '320px'],
+		btn: [lan.public.save, lan.public.cancel],
+		skin: 'alert-send-view',
+		content:
+			'<div class="pd15 bt-form">\
+				<div class="line">\
+					<span class="tname" style="width: 100px;">ID</span>\
+					<div class="info-r" style="margin-left: 100px;">\
+						<input type="text" name="telegram_id" class="bt-input-text " style="width: 280px;" placeholder="Telegram ID" />\
+					</div>\
+				</div>\
+				<div class="line">\
+					<span class="tname" style="width: 100px;">TOKEN</span>\
+					<div class="info-r" style="margin-left: 100px;">\
+						<input type="text" name="telegram_token" class="bt-input-text" type="text" style="width: 280px;" placeholder="Telegram TOKEN" />\
+					</div>\
+					<ul class="help-info-text c7" style="position: absolute; left: 40px; bottom: 20px;">\
+						<li>ID: Your telegram user ID</li>\
+						<li>Token: Your telegram bot token</li>\
+						<li>e.g: [ 12345677:AAAAAAAAA_a0VUo2jjr__CCCCDDD ] <a class="btlink" href="https://forum.aapanel.com/d/5115-how-to-add-telegram-to-panel-notifications" target="_blank" rel="noopener">Help</a></li>\
+					</ul>\
+				</div>\
+			</div>',
+		success: function () {
+			var res = data.data;
+			if (res) {
+				$('[name="telegram_id"]').val(res.my_id);
+				$('[name="telegram_token"]').val(res.bot_token);
+			}
+		},
+		yes: function (indexs) {
+			var id = $('input[name=telegram_id]').val();
+			var token = $('input[name=telegram_token]').val();
+			var _index = $('.alert-view-box span.on').index();
+
+			if (id == '') return layer.msg('Please enter Telegram ID!', { icon: 2 });
+			if (token == '') return layer.msg('Please enter Telegram token', { icon: 2 });
+
+			function saveConfig () {
+				bt_tools.send({
+					url: '/config?action=set_msg_config&name=' + data.name,
+					data: {
+						my_id: id,
+						bot_token: token
+					},
+				}, function (rdata) {
+					layer.close(indexs);
+					layer.msg(rdata.msg, {
+						icon: rdata.status ? 1 : 2,
+					});
+					if ($('.alert-view-box').length >= 0) {
+						$('.alert-view-box .tab-nav-border span:eq(' + _index + ')').click();
+					}
+				}, 'Setting ' + data.title + ' module');
+			}
+
+			if (!data.setup) {
+				bt_tools.send({
+					url: '/config?action=install_msg_module&name=' + data.name,
+					data: {}
+				}, function (res) {
+					if (res.status) {
+						saveConfig();
+					} else {
+						layer.msg(res.msg, { icon: 2 });
+					}
+				}, 'Creating ' + data.title + ' module');
+			} else {
+				saveConfig();
+			}
+		},
+	});
 }

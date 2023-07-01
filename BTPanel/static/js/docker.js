@@ -2436,7 +2436,7 @@ var docker = {
         var that = this,_aceEditor = null;
         layer.open({
             type: 1,
-            title: '编辑模板',
+            title: 'Edit template',
             btn: [lan.public.save, lan.site.no],
             area:'650px',
             shadeClose: false,
@@ -2862,7 +2862,6 @@ var docker = {
             that.cont_chart.disk_list['write'].push([_time, bt.format_size(_data.write_total,false,null,'MB')])
             that.cont_chart.network_list['tx'].push([_time, bt.format_size(_data.tx,false,null,'KB')])
             that.cont_chart.network_list['rx'].push([_time, bt.format_size(_data.rx,false,null,'KB')])
-            // console.log(that.cont_chart_id.cpu.getOption());
             //实时更新图表数据
             that.cont_chart_id.cpu.setOption({
                 series:[

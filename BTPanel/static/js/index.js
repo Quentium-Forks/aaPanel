@@ -292,27 +292,686 @@ var index = {
           })
 
           // 磁盘悬浮事件
-          for(var i = 0; i < rdata.disk.length; i++){
-              var disk = rdata.disk[i],texts = "<strong>"+lan.index.base_info+"</strong></br>"
-              texts += "Partition: " + disk.filesystem + "</br>"
-              texts += "Type: " + disk.type + "</br>"
-              texts += "Mount point: " + disk.path + "</br></br>"
-              texts += "<strong>"+ lan.index.inode_info +":</strong></br>"
-              texts += lan.index.total+": " + disk.inodes[0] + "</br>"
-              texts += lan.index.already_use+": " + disk.inodes[1] + "</br>"
-              texts += lan.index.available+": " + disk.inodes[2] + "</br>"
-              texts += lan.index.inode_percent+": " + disk.inodes[3] + "</br></br>"
-              texts += "<strong>"+lan.index.capacity_info+"</strong></br>"
-              texts += lan.index.capacity+": " + disk.size[0] + "</br>"
-              texts += lan.index.already_use+": " + disk.size[1] + "</br>"
-              texts += lan.index.available+": " + disk.size[2] + "</br>"
-              texts += lan.index.usage_rate+": " + disk.size[3] + "</br>"
-              $("#diskChart" + i).data('title',texts).hover(function () {
-                  layer.tips($(this).data('title'), this, { time: 0, tips: [1, '#999'] });
-              }, function(){
-                  layer.closeAll('tips');
-              })
-          }
+          // for(var i = 0; i < rdata.disk.length; i++){
+          //     var disk = rdata.disk[i],texts = "<strong>"+lan.index.base_info+"</strong></br>"
+          //     texts += "Partition: " + disk.filesystem + "</br>"
+          //     texts += "Type: " + disk.type + "</br>"
+          //     texts += "Mount point: " + disk.path + "</br></br>"
+          //     texts += "<strong>"+ lan.index.inode_info +":</strong></br>"
+          //     texts += lan.index.total+": " + disk.inodes[0] + "</br>"
+          //     texts += lan.index.already_use+": " + disk.inodes[1] + "</br>"
+          //     texts += lan.index.available+": " + disk.inodes[2] + "</br>"
+          //     texts += lan.index.inode_percent+": " + disk.inodes[3] + "</br></br>"
+          //     texts += "<strong>"+lan.index.capacity_info+"</strong></br>"
+          //     texts += lan.index.capacity+": " + disk.size[0] + "</br>"
+          //     texts += lan.index.already_use+": " + disk.size[1] + "</br>"
+          //     texts += lan.index.available+": " + disk.size[2] + "</br>"
+          //     texts += lan.index.usage_rate+": " + disk.size[3] + "</br>"
+          //     $("#diskChart" + i).data('title',texts).hover(function () {
+          //         layer.tips($(this).data('title'), this, { time: 0, tips: [1, '#999'] });
+          //     }, function(){
+          //         layer.closeAll('tips');
+          //     })
+          // }
+					var is_remove_disk = [],idx = 0,taskStatus = []//扫描状态
+					for (var i = 0; i < rdata.disk.length; i++) {
+						is_remove_disk.push(true)
+						taskStatus.push(false)
+						var mouseX = 0, mouseY = 0;
+						$(document).mousemove(function (e) {
+							mouseY = e.pageY
+							mouseX = e.pageX
+						})
+						var diskInterval = null
+						$('#diskChart' + i).data('disk',rdata.disk[i]).hover(function () {
+							var disk = $(this).data('disk')
+							clearInterval(diskInterval)
+							var top = $(this).offset().top,
+							left = $(this).offset().left,
+							used_size = parseFloat(disk.size[3].substring(0, disk.size[3].lastIndexOf("%")));
+							idx = $(this).prop('id').replace('diskChart', '')
+							for(var i = 0;i < is_remove_disk.length;i++){
+								if(i !== parseInt(idx) && is_remove_disk[i]) {
+									$('.disk_scanning_tips'+ i).remove()
+								}
+							}
+							if(!$('.disk_scanning_tips'+ idx).length) {
+								layer.open({
+									type: 1,
+									closeBtn: 1,
+									shade: 0,
+									area: '320px',
+									title: false,
+									skin: 'disk_scanning_tips disk_scanning_tips'+ idx,
+									content: '<div class="pd20 disk_scanning" data-index="'+ idx +'">\
+															<div class="disk_cont">\
+																<div class="disk-title">\
+																	Disk space: <div class="'+ ( used_size >= 80 ? used_size >= 90 ? 'bg-red' : 'bg-org' : 'bg-green' ) +'">'+ ( used_size >= 80 ? 'Lack' : 'Plenty' )  +'</div>\
+																	<button type="button" data-path="'+ disk.path +'" title="Clean up now" class="btn btn-success disk_scanning_btn">Clean up now</button></div>\
+																<div class="disk-item-list active">\
+																	<div class="disk-item-header">\
+																		<div class="disk-header-title">Basic information</div>\
+																	</div>\
+																	<div class="disk-item-body">\
+																		<div class="disk-body-list">Type：'+disk.type+'</div>\
+																		<div class="disk-body-list more_wrap"><div>Mount point：</div><div>'+disk.path+'</div></div>\
+																		<div class="disk-body-list"><div class="progressBar"><span style="left: '+ (used_size < 12 ? (used_size + 2) : (used_size-11)) +'%;'+ (used_size < 12 ? 'color:#666;':'') +'">'+ disk.size[3] +'</span><div style="width: '+ disk.size[3] +'; '+ (used_size === 100 ? 'border-radius: 2px;' : '') +'" class="progress '+ (used_size >= 80 ? used_size >= 90 ? 'bg-red' : 'bg-org' : 'bg-green') +'"></div></div></div>\
+																		<div class="disk-body-list use_disk" style="margin-top: 6px;white-space: pre-line;">Available：'+ parseFloat(disk.size[2])+' ' + disk.size[2].replace(parseFloat(disk.size[2]),'') +'，Total：'+ parseFloat(disk.size[0]) + ' ' + disk.size[0].replace(parseFloat(disk.size[0]),'')+'\n Used：'+ parseFloat(disk.size[1]) + ' ' +disk.size[1].replace(parseFloat(disk.size[1]),'') +'，System：'+disk.size[4]  +'</div>\
+																		</div>\
+																</div>\
+																<hr />\
+																<div class="disk-item-list active">\
+																	<div class="disk-item-header">\
+																		<div class="disk-header-title">Other information</div>\
+																	</div>\
+																	<div class="disk-item-body">\
+																		<div class="disk-body-list more_wrap"><div>File system：</div><div>'+ disk.filesystem + '</div></div>\
+																		<div class="disk-body-list inodes0">Total Inodes：'+ disk.inodes[0] +'</div>\
+																		<div class="disk-body-list inodes1">Used Inode：'+ disk.inodes[1] +'</div>\
+																		<div class="disk-body-list inodes2">Available Inode：'+ disk.inodes[2] +'</div>\
+																		<div class="disk-body-list inodes3">Usage Inode：'+ disk.inodes[3] +'</div>\
+																	</div>\
+																</div>\
+															</div>\
+															<div class="disk_scan_cont hide">\
+																<div class="disk-scan-header">\
+																	<button type="button" title="后退" class="btn btn-default disk_back_btn" data-index="'+ idx +'" ><span class="disk_back_icon"></span><span>后退</span></button>\
+																	<div>磁盘扫描</div>\
+																</div>\
+																<div class="disk-scan-view hide">\
+																	<pre id="scanProgress">正在获取扫描日志</pre>\
+																</div>\
+																<div class="disk-file-view hide">\
+																<div class="disk-file-load" style="position:absolute;width: 100%;height: 100%;top: 0;left:0;display: none;z-index: 99999999;background:rgba(0,0,0,0.3);align-items:center;justify-content: center;">\
+																		<div class="pd15" style="background: #fff;">\
+																			<img src="/static/img/loading.gif" class="mr10">\
+																			<span>正在获取文件信息，请稍后...</span>\
+																		</div>\
+																	</div>\
+																	<div class="filescan-nav" id="fileScanPath"></div>\
+																	<div class="filescan-list" id="fileScanTable">\
+																		<div class="filescan-list-title">\
+																			<div class="filescan-list-title-item text-left">文件名</div>\
+																			<div class="filescan-list-title-item">大小</div>\
+																			<div class="filescan-list-title-item text-right">操作</div>\
+																		</div>\
+																		<div class="filescan-list-body"></div>\
+																	</div>\
+																</div>\
+															</div>\
+														</div>',
+									success: function (layero, index) {
+										is_remove_disk[idx] = true
+										// $(layero).find('.layui-layer-close2').addClass('layui-layer-close1').removeClass('layui-layer-close2');
+										$(layero).find('.layui-layer-close2').remove()
+										$(layero).css({
+											'top': (top+140 - $(window).scrollTop()) +'px',
+											'left': left - 160,
+										})
+										$(window).resize(function () {
+											for(var i = 0;i < is_remove_disk.length;i++){
+												if($('.disk_scanning_tips'+ i).length){
+														$('.disk_scanning_tips'+ i).css({
+														'top': ($("#diskChart" + i).offset().top+140 - $(window).scrollTop()) +'px',
+														'left': $("#diskChart" + i).offset().left - 160,
+													})
+												}
+											}
+										})
+										$(window).scroll(function () {
+											$(layero).css({
+												'top': ($("#diskChart" + idx).offset().top+140 - $(window).scrollTop()) +'px',
+												'left': $("#diskChart" + idx).offset().left - 160,
+											})
+										})
+										var id = null, // 扫描id
+												taskPath = '', // 扫描目录
+												taskList = {}; // 扫描缓存列表
+										//展示收起
+										// $(layero).find('.disk-item-header').on('click', function () {
+										//   if ($(this).parent().hasClass('active')) {
+										//     $(this).parent().removeClass('active');
+										//     $(this).find('span').text('展示');
+										//     $(this).find('img').removeAttr('style');
+										//   } else {
+										//     $(this).parent().addClass('active');
+										//     $(this).find('span').text('收起');
+										//     $(this).find('img').css('transform', 'rotate(180deg)');
+										//   }
+										// })
+
+										// 后退
+										$(layero).find('.disk_back_btn').on('click', function () {
+											var path = $(this).data('path'),
+													index = $(this).data('index')
+											if(path !== undefined && path !== 'undefined'){
+												if(path === '') {
+													$(layero).find('.filescan-nav-item.present').click()
+													$(this).data('path', 'undefined');
+												}else{
+													var rdata = taskList[path.replace('//','/')];
+													renderFilesTable(rdata, path); // 渲染文件表格
+													renderFilesPath(path); // 渲染文件路径
+												}
+											}else{
+												if(taskStatus[index]) {
+													layer.confirm(
+														'取消扫描，将会中断当前扫描目录进程，是否继续？',
+														{
+															title: '取消扫描',
+															closeBtn: 2,
+															icon: 3,
+														},
+														function (indexs) {
+															taskStatus[index] = false;
+															layer.close(indexs);
+															cancelScanTaskRequest(id, function (rdata) {
+																if (!rdata.status) return bt_tools.msg(rdata);
+																renderInitView();
+															});
+														}
+													);
+												}else{
+													renderInitView();
+												}
+											}
+										})
+										/**
+										 * @description 渲染扫描初始化页面
+										 */
+										function renderInitView() {
+											id = null
+											taskStatus[idx] = false
+											taskPath = ''
+											taskList = {}
+											$(layero).find('.disk_cont').removeClass('hide').siblings('.disk_scan_cont').addClass('hide');
+											$(layero).find('.layui-layer-close1').show()
+											$(layero).find('.disk-file-view,.disk-scan-view').addClass('hide');
+											$(layero).find('.disk-file-load').css('display','none')
+										}
+
+										// 扫描
+										$(layero).find('.disk_scanning_btn').unbind('click').on('click', function () {
+											// if(taskStatus.some(function (item){ return item === true })) {
+												// if(bt.get_cookie('taskStatus') === 'true') {
+												//   return layer.tips('有任务在执行，请稍后再操作！', $(this), {tips: [3, '#f00']});
+												// }
+												is_remove_disk[idx] = false;
+												var $path = $(this).data('path');
+												//判断是否安装插件
+												bt.soft.get_soft_find('disk_analysis',function(dataRes){
+													if(dataRes.setup && dataRes.endtime > 0) {
+														layer.closeAll()
+														bt.set_cookie('diskPath', $path)
+														bt.set_cookie('taskStatus', true)
+														bt.soft.set_lib_config(dataRes.name,dataRes.title,dataRes.version)
+												}else{
+													var item = {
+														name: 'disk_analysis',
+														pluginName: 'Disk_analysis',
+														ps: 'Quickly analyze disk/Hard disk usage',
+														preview: false,
+														limit: 'ltd',
+														description:['Check hard disk space','Occupancy percentage display'],
+														imgSrc:'https://www.bt.cn/Public/new/plugin/disk_analysis/1.png'
+													}
+													product_recommend.recommend_product_view(item, {
+														imgArea: ['783px', '718px']
+													},'ltd',120,item.name)
+													var is_buy = dataRes.endtime < 0 && dataRes.pid > 0
+													$('.buyNow').text(is_buy ? 'Buy now' : 'Install now').unbind('click').click(function () {
+														if(is_buy) {
+															bt.soft.product_pay_view({
+																name:dataRes.title,
+																pid:dataRes.pid,
+																type:dataRes.type,
+																plugin:true,
+																renew:-1,
+																ps:dataRes.ps,
+																ex1:dataRes.ex1,
+																totalNum:120
+															})
+														}else{
+															bt.soft.install('disk_analysis')
+														}
+													})
+												}
+											})
+											return
+											var ltd = bt.get_cookie('ltd_end')
+											if(ltd < 0) {
+											var item = {
+														name: 'disk_analysis',
+														pluginName: 'Disk_analysis',
+														ps: 'Quickly analyze disk/Hard disk usage',
+														preview: false,
+														limit: 'ltd',
+														description:['Check hard disk space','Occupancy percentage display'],
+														imgSrc:'https://www.bt.cn/Public/new/plugin/disk_analysis/1.png'
+													}
+												product_recommend.recommend_product_view(item, {
+														imgArea: ['783px', '718px']
+													},'ltd',120,item.name)
+											}else{
+												$.post('/files/size/scan_disk_info', {path: $path}, function (rdata) {
+													if(!rdata.status) {
+														if(rdata['code'] && rdata['code'] === 404){
+															bt.soft.install('disk_analysis')
+														}
+													}else{
+														var $scanView = $(layero).find('.disk-scan-view');
+														var shellView = $(layero).find('.disk-scan-view pre');
+														$scanView.removeClass('hide');
+														$(layero).find('.disk-file-view').addClass('hide')
+														$(layero).find('.disk_cont').addClass('hide').siblings('.disk_scan_cont').removeClass('hide');
+														taskStatus[$(layero).find('.disk_scanning').data('index')] = true;
+														renderScanTitle(shellView,'开始扫描磁盘目录\n',true)
+														renderScanTitle(shellView,'<span style="display:flex;" class="omit">目录正在扫描中<span>\n')
+														renderTaskSpeed(function (rdata) {
+															id = rdata.id;
+															$(layero).find('.disk_scanning').data('id',id)
+														},function() {
+															renderScanTitle(shellView, '扫描完成，等待扫描结果返回\n');
+															renderFilesView({
+																path: $path,
+																init: true,
+															});
+														})
+													}
+												})
+											}
+										})
+
+										/**
+										 * @description 渲染文件列表
+										 * @param {Object} data 数据
+										 */
+										function renderFilesView (data,flag) {
+											var param = {
+												root_path: data.path
+											}
+											if(data['subdir']) param.path = data.subdir;
+											if(flag) $(layero).find('.disk-file-load').css('display','flex')
+											bt_tools.send({url: '/files/size/get_scan_log', data: param}, function (rdata) {
+												if(flag) $(layero).find('.disk-file-load').css('display','none')
+												var $fileView = $(layero).find('.disk-file-view');
+												$fileView.removeClass('hide').prev().addClass('hide');
+												var path = rdata.fullpath
+												path = path.replace(/(\\)+/g, '/');
+												if (data.init) taskPath = path;
+												if (!taskList.hasOwnProperty(path)) taskList[path] = rdata;
+												renderFilesTable(rdata, path);
+												renderFilesPath(path);
+											});
+										}
+										// 渲染文件表格
+										function renderFilesTable (rdata, path) {
+											var $fileTableBody = $(layero).find('.filescan-list-body');
+											var list = rdata.list;
+											var html = '';
+											for (var i = 0; i < list.length; i++) {
+												var item = list[i];
+												var isDir = item.type == 1
+												html +=
+													'<div class="filescan-list-item" data-type="' +
+													(isDir ? 'folder' : 'files')+ '" data-subdir="'+ rdata.fullpath+ '/' + item.name +'" data-path="' +
+													(path + '/' + item.name) +
+													'">' +
+													'<div class="filescan-list-col text-left nowrap" title="' +
+													(path + '/' + item.name).replace('//','/') +
+													'">' +
+													'<span class="file-type-icon file_' +
+													(isDir ? 'folder' : 'icon') +
+													'"></span>' +
+													'<a class="path cut-path cursor" data-type="' +
+													(isDir ? 'folder' : 'files') +
+													'" data-path="' +
+													(path + '/' + item.name) +
+													'">' +
+													item.name +
+													'</a>' +
+													'</div>' +
+													'<div class="filescan-list-col text-left nowrap">' +
+													bt.format_size(isDir ? item.total_asize : item.asize) +
+													'</div>' +
+													'<div class="filescan-list-col text-right">' +
+													'<a href="javascript:;" data-filename="'+ item.name +'" data-fullpath="'+ rdata.fullpath +'" data-path="' +
+													(path + '/' + item.name) +
+													'" data-type="' +
+													(isDir ? '文件夹' : '文件') +
+													'" class="btlink remove-files">删除</a>' +
+													'</div>' +
+													'</div>';
+											}
+											$fileTableBody.html(html);
+											// 删除文件
+											$(layero).find('.remove-files').click(function (e) {
+												var path = $(this).data('path'),
+													type = $(this).data('type'),
+													fullpath = $(this).data('fullpath'),
+													filename = $(this).data('filename');
+												delFileDir(
+													{
+														path: path,
+														type: type,
+														filename: filename,
+													},
+													function (rdata) {
+														bt_tools.msg(rdata);
+														var list = taskList[fullpath].list.filter(function (item) { return item.name !== filename.toString() })
+														taskList[fullpath].list = list;
+														renderFilesTable(taskList[fullpath], fullpath);
+													}
+												);
+												e.stopPropagation();
+											});
+											// 打开目录
+											$(layero).find('.filescan-list-item').click(function () {
+												var root_path = $(layero).find('.disk_scanning_btn').data('path')
+												var path = $(this).data('subdir'),
+													type = $(this).data('type');
+												if (type !== 'folder' && typeof type !== 'undefined') return false;
+												if (!taskList.hasOwnProperty(path.replace('//','/'))) {
+													renderFilesView({
+														path: root_path,
+														subdir: path,
+													},true);
+												} else {
+													var rdata = taskList[path.replace('//','/')];
+													renderFilesTable(rdata, path); // 渲染文件表格
+													renderFilesPath(path); // 渲染文件路径
+												}
+											});
+										}
+										// 渲染文件路径
+										function renderFilesPath (path) {
+											var html = '';
+											var newPath = '';
+											var pathArr = [];
+											var isLevel = false;
+											var isInit = true;
+											var omission_li = []
+											pathArr = path.replace(taskPath.replace(/(\/\/)+/g, '/'), '').split('/');
+											if (pathArr.length >= 1 && pathArr[0] !== '') pathArr.unshift('');
+											if (pathArr.length > 1 && pathArr[1] !== '') {
+												var upperPath = (getDirPath(path, false) + '/').replace(/(\/\/)+/g, '/');
+												if (pathArr.length > 1) upperPath = upperPath.replace(/\/$/g, '');
+												$(layero).find('.disk_back_btn').data('path', upperPath);
+											}
+											if (pathArr.length > 2) isInit = true;
+											for (var i = 0; i < pathArr.length; i++) {
+												var element = pathArr[i];
+												newPath += '/' + element;
+												if (element === '' && i > 0) continue;
+												var isLast = pathArr.length - 1 === i;
+												var isFirst = i === 0;
+												var currentPath = isFirst ? taskPath : taskPath + newPath;
+												var divider = !isLast ? '<span class="divider">></span>' : '';
+												var menuPath = isFirst ? '当前目录(' + taskPath + ')' : element;
+												currentPath = currentPath.replace(/\/\//g, '/');
+												if(i > 1 && i< pathArr.length - 1 && pathArr.length > 3){
+													if (isInit) {
+														html += '<span class="omission">\
+														<a class="btlink" title="部分目录已经省略">...</a>\
+														<ul></ul>\
+														</span><span class="divider">></span>';
+													}
+													omission_li.push({menuPath: element, currentPath: currentPath})
+													isInit = false;
+												} else {
+													html +=
+														'<a class="filescan-nav-item nowrap ' + (isLevel && !isLast ? 'btlink cut-path' : '') + (isFirst ? ' present' : '') + '" data-path="' + currentPath + '" title="' + currentPath + '">' + menuPath + '</a>' + divider;
+												}
+											}
+											$(layero).find('#fileScanPath').html(html);
+											if(omission_li.length > 0){
+												var omission = $(layero).find('.omission')
+												var ul = omission.find('ul')
+												for (var i = 0; i < omission_li.length; i++) {
+													var element = omission_li[i];
+													ul.append('<li><a class="filescan-nav-item cut-path" data-path="' + element.currentPath + '" title="' + element.currentPath + '"><i class="file_folder_icon"></i><span>' + element.menuPath + '</span></a></li>')
+												}
+												$(layero).find('.omission').click(function (e) {
+													if($(this).hasClass('active')){
+														$(this).removeClass('active')
+													}else{
+														$(this).addClass('active')
+													}
+													$(document).click(function (ev) {
+														$(layero).find('.omission').removeClass('active')
+														ev.stopPropagation();
+														ev.preventDefault();
+													});
+													e.stopPropagation();
+													e.preventDefault();
+												})
+											}
+											//打开目录按钮
+											$(layero).find('#fileScanPath .filescan-nav-item').click(function () {
+												var root_path = $(layero).find('.disk_scanning_btn').data('path')
+												var path = $(this).data('path'),
+													type = $(this).data('type');
+												if (type !== 'folder' && typeof type != 'undefined') return layer.msg('文件暂不支持打开', { icon: 0 });
+												if (!taskList.hasOwnProperty(path.replace('//','/'))) {
+													renderFilesView({
+														path: root_path,
+														subdir: path,
+													});
+												} else {
+													var rdata = taskList[path.replace('//','/')];
+													renderFilesTable(rdata, path); // 渲染文件表格
+													renderFilesPath(path); // 渲染文件路径
+												}
+											})
+										}
+											/**
+										 * @description 获取目录地址
+										 * @param {string} path 路径
+										 * @param {number} param 参数
+										 */
+										function getDirPath(path, param) {
+											path.replace(/\/$/, '');
+											var pathArr = path.split('/');
+											if (pathArr.length === 1) return path;
+											if (param === -1) pathArr.push(status);
+											if (typeof param === 'boolean') pathArr.pop();
+											return pathArr.join('/').replace(/(\/)$/, '');
+										}
+										/**
+										 * @description 渲染文件追加功能
+										 * @param {Element} el 控制器
+										 * @param {String} html 文本
+										 * @param {Boolean} isCover 是否覆盖，默认不覆盖
+										 */
+										function renderScanTitle(el, html, isCover) {
+											var $el = typeof el === 'string' ? $(layero).find(el) : el;
+											if (isCover) {
+												$el.html(html);
+											} else {
+												$el.append(html);
+											}
+										}
+										/**
+										 * @description 渲染扫描进度
+										 * @param {Function} callack 回调函数
+										 * @param {Function} end 结束回调函数
+										 */
+										function renderTaskSpeed(callack, end) {
+											getScanTaskRequest(false, function (rdata) {
+												if (rdata.length === 0 || !taskStatus[$(layero).find('.disk_scanning').data('index')]) {
+													if (end && taskStatus[$(layero).find('.disk_scanning').data('index')]) end(rdata);
+													taskStatus[$(layero).find('.disk_scanning').data('index')] = false;
+													return;
+												}
+												for (var i = 0; i < rdata.length; i++) {
+													var item = rdata[i];
+													if (item.name.indexOf('扫描目录文件大小') > -1) {
+														if (callack) callack(rdata[0]);
+														break;
+													}
+												}
+												// 扫描目录文件大小
+												setTimeout(function () {
+													renderTaskSpeed(callack, end);
+												}, 1000);
+											});
+										}
+										/**
+										 * @description 获取扫描任务
+										 * @param {boolean} load 是否显示加载中
+										 * @param {function} callback 回调函数
+										 */
+										function getScanTaskRequest(load, callback) {
+											var isLoad = typeof load === 'function';
+											if (isLoad) callback = load;
+											bt_tools.send(
+												'task/get_task_lists',
+												{
+													status: -3,
+												},
+												function (rdata) {
+													if (callback) callback(rdata);
+												},
+												{
+													load: isLoad ? '获取扫描任务详情' : false,
+												}
+											);
+										}
+
+										/**
+										 * @description 删除文件或目录
+										 * @param {Object} data
+										 */
+										function delFileDir (data, callback) {
+											if (bt.get_cookie('file_recycle_status')==='true') {
+												bt.simple_confirm({
+														title: '删除' + data.type + '【' + data.filename + '】',
+														msg: '删除'+ data.type +'后，'+ data.type +'将迁移至文件回收站，<span class="color-org">请确认删除的文件是不需要的文件，误删文件可能会导致系统崩溃，</span>是否继续操作？</span>'
+													}, function () {
+														delFileRequest(data, function (res) {
+															if (callback) callback(res);
+															layer.msg(res.msg, {
+																icon: res.status ? 1 : 2,
+															});
+														});
+													}
+												);
+											} else {
+												bt.compute_confirm({title: '删除' + data.type + '【' + data.filename + '】',
+													msg: '风险操作，当前未开启文件回收站，删除'+ data.type +'将彻底删除，无法恢复，<span class="color-org">请确认删除的文件是不需要的文件，误删文件可能会导致系统崩溃，</span>是否继续操作？'
+												}, function () {
+														delFileRequest(data, function (res) {
+															if (callback) callback(res);
+															layer.msg(res.msg, {
+																icon: res.status ? 1 : 2,
+															});
+														});
+													}
+												);
+											}
+										}
+										/**
+										 * @description 删除文件（文件和文件夹）
+										 * @param {Object} data 文件目录参数
+										 * @param {Function} callback 回调函数
+										 * @return void
+										 */
+										function delFileRequest(data, callback) {
+											var _req = data.type === '文件' ? 'DeleteFile' : 'DeleteDir';
+											bt_tools.send(
+												'files/' + _req,
+												{
+													path: data.path,
+												},
+												function (res) {
+													if (callback) callback(res);
+												},
+												{
+													load: '删除文件/目录',
+												}
+											);
+										}
+									},
+									cancel: function(index,layero){
+											if(taskStatus[$(layero).find('.disk_scanning').data('index')]){
+												layer.confirm(
+													'取消扫描，将会中断当前扫描目录进程，是否继续？',
+													{
+														title: '取消扫描',
+														closeBtn: 2,
+														icon: 3,
+													},
+													function (indexs) {
+														taskStatus[$(layero).find('.disk_scanning').data('index')] = false
+														layer.close(indexs);
+														layer.close(index)
+														cancelScanTaskRequest($(layero).find('.disk_scanning').data('id'), function (rdata) {
+															if (!rdata.status) return bt_tools.msg(rdata);
+														});
+													}
+												);
+												return false
+										}
+									}
+								})
+							}
+							/**
+							 * @description 删除扫描任务
+							 * @param {string} id 任务id
+							 * @param {function} callback 回调函数
+							 */
+							function cancelScanTaskRequest(id, callback) {
+								bt_tools.send(
+									'task/remove_task',
+									{
+										id: id,
+									},
+									function (rdata) {
+										if (callback) callback(rdata);
+									},
+									{
+										load: '取消扫描任务',
+									}
+								);
+							}
+						},function () {
+							diskInterval = setInterval(function () {
+								if($('.disk_scanning_tips'+idx).length) {
+									var diskX = $('.disk_scanning_tips'+idx).offset().left,diskY = $('.disk_scanning_tips'+idx).offset().top,
+											diskW = $('.disk_scanning_tips'+idx).width(),diskH = $('.disk_scanning_tips'+idx).height()
+									var diskChartY = $('#diskChart' + idx).offset().top,diskChartX = $('#diskChart' + idx).offset().left,
+											diskChartW = $('#diskChart' + idx).width(),diskChartH = $('#diskChart' + idx).height()
+									var is_move_disk = mouseX >= diskChartX && mouseX <= diskChartX + diskChartW && mouseY >= diskChartY && mouseY <= diskChartY + diskChartH
+									var is_move = mouseX >= diskX && mouseX <= diskX + diskW && mouseY >= diskY && mouseY <= diskY + diskH
+									if(!is_move && !is_move_disk) {
+										$('.disk_scanning_tips'+ idx).remove()
+									}
+								}else{
+									clearInterval(diskInterval)
+								}
+							}, 500)
+						})
+						if($('.disk_scanning_tips'+i).length){
+							var disk =  $('#diskChart' + i).data('disk')
+							var size3 = parseFloat(disk.size[3].substring(0, disk.size[3].lastIndexOf("%")))
+							$('.disk_scanning_tips' + i +' .disk-body-list .progressBar span').text(disk.size[3]).css({
+								left: (size3 < 12 ? (size3 + 2) : (size3 - 11)) +'%;',
+								color: size3 < 12 ? '#666;' : '#fff'
+							})
+							var progressCss = {
+								width: disk.size[3],
+							}
+							if(size3 === 100) progressCss.borderRadius = '2px'
+							$('.disk_scanning_tips' + i +' .disk-body-list .progressBar .progress').css(progressCss)
+							$('.disk_scanning_tips' + i +' .disk-body-list .progressBar .progress').removeClass('bg-red bg-org bg-green').addClass(size3 >= 80 ? size3 >= 90 ? 'bg-red' : 'bg-org' : 'bg-green')
+							$('.disk_scanning_tips' + i +' .disk-body-list.use_disk').html(parseFloat(disk.size[2])+' ' + disk.size[2].replace(parseFloat(disk.size[2]),'') +'可用，'+ parseFloat(disk.size[1]) + ' ' +disk.size[1].replace(parseFloat(disk.size[1]),'') +'已用，共'+ parseFloat(disk.size[0]) + ' ' + disk.size[0].replace(parseFloat(disk.size[0]),''))
+							$('.disk_scanning_tips' + i +' .disk-body-list.inodes0').html('Inode总数：'+ disk.inodes[0])
+							$('.disk_scanning_tips' + i +' .disk-body-list.inodes1').html('Inode已用：'+ disk.inodes[1])
+							$('.disk_scanning_tips' + i +' .disk-body-list.inodes2').html('Inode可用：'+ disk.inodes[2])
+							$('.disk_scanning_tips' + i +' .disk-body-list.inodes3').html('Inode使用率：'+ disk.inodes[3])
+						}
+					}
+
           _this.get_server_info(rdata);
           if(rdata.installed === false) bt.index.rec_install();
           if (rdata.user_info.status) {
@@ -329,28 +988,26 @@ var index = {
         })
         setTimeout(function () { _this.interval.start(); }, 40)
         setTimeout(function () { index.get_index_list(); }, 50)
-        setTimeout(function () {
-           _this.net.init();
-        }, 60);
-        setTimeout(function () {
-          _this.iostat.init()
-        }, 60);
+        setTimeout(function () { _this.net.init(); }, 60);
+        setTimeout(function () { _this.iostat.init(); }, 60);
 
         setTimeout(function () {
-            bt.system.check_update(function (rdata) {
-                //console.log(rdata);
-                if (rdata.status !== false) {
-                    $('#toUpdate a').html(lan.index.update+'<i style="display: inline-block; color: red; font-size: 40px;position: absolute;top: -35px; font-style: normal; right: -8px;">.</i>');
-                    $('#toUpdate a').css("position", "relative");
-
-                }
-                // if (rdata.msg.is_beta === 1) {
-                //     $('#btversion').prepend('<span style="margin-right:5px;">Beta</span>');
-                //     $('#btversion').append('<a class="btlink" href="https://www.bt.cn/bbs/forum-39-1.html" target="_blank">  ['+lan.index.find_bug_reward+']</a>');
-                // }
-
-            }, false)
-        }, 70)
+					bt.system.check_update(function (rdata) {
+						if (rdata.status !== false) {
+							var res = rdata.msg;
+							var ignore = res.ignore;
+							var beta = res.beta;
+							var is_beta = res.is_beta;
+							if (ignore.indexOf(is_beta ? beta.version : res.version) == -1) index.check_update(true);
+							$('#toUpdate a').html(lan.index.update+'<i style="display: inline-block; color: red; font-size: 40px;position: absolute;top: -35px; font-style: normal; right: -8px;">.</i>');
+							$('#toUpdate a').css("position", "relative");
+						}
+						// if (rdata.msg.is_beta === 1) {
+						//     $('#btversion').prepend('<span style="margin-right:5px;">Beta</span>');
+						//     $('#btversion').append('<a class="btlink" href="https://www.bt.cn/bbs/forum-39-1.html" target="_blank">  ['+lan.index.find_bug_reward+']</a>');
+						// }
+					}, false);
+        }, 70);
     },
     get_server_info: function (info) {
       var memFree = info.memTotal - info.memRealUsed;
@@ -780,9 +1437,7 @@ var index = {
                         setup_length ++;
                     }
                 }
-            } catch (error) {
-                console.log(error)
-            }
+            } catch (error) {}
             //软件位置移动
             if (setup_length <= softboxsum) {
                 for (var i = 0; i < softboxsum - setup_length; i++) {
@@ -800,85 +1455,111 @@ var index = {
         })
     },
     check_update: function () {
-    	var _load = bt.load('Getting updates, please wait...');
-        bt.system.check_update(function (rdata) {
-        	_load.close();
-            if (rdata.status === false) {
-                if (!rdata.msg.beta) {
-                    bt.msg(rdata);
-                    return;
-                }
-                var result = rdata,
-                is_beta = rdata.msg.is_beta,
-                loading = bt.open({
-                    type: 1,
-                    title: '[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + ']-'+lan.index.update_log,
-                    area: '550px',
-                    shadeClose: false,
-                    skin: 'layui-layer-dialog',
-                    closeBtn: 2,
-                    content: '<div class="setchmod bt-form">\
-                                <div class="update_title"><i class="layui-layer-ico layui-layer-ico1"></i><span>'+lan.index.last_version_now+'</span></div>\
-                                <div class="update_version">'+lan.index.this_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_this_version_log+'">'+lan.index.bt_linux+ (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version+' ' + rdata.msg.version) + '</a>&nbsp;&nbsp;'+ lan.index.release_time + (rdata.msg.is_beta == 1 ? rdata.msg.beta.uptime : rdata.msg.uptime) + '</div>\
-                                <div class="update_conter">\
-                                        <div class="update_tips">'+ lan.index.last_version_is+(is_beta != 1 ? lan.index.test_version : lan.index.final_version)  + (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
-                                        '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">&nbsp;&nbsp;'+lan.index.change_final+'</a></span>') + '\
-                                    </div>\
-                                <div class="bt-form-submit-btn">\
-                                    <button type="button" class="btn btn-danger btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.cancel + '</button>\
-                                    <button type="button" class="btn btn-success btn-sm btn-title btn_update_panel" onclick="layer.closeAll()">'+ lan.public.know + '</button>\
-                                </div>\
-                            </div>\
-                            <style>\
-                                .setchmod{padding-bottom:40px;padding-top: 0;}\
-                                .update_title{overflow: hidden;position: relative;vertical-align: middle;margin-top: 10px;}\
-                                .update_title .layui-layer-ico{display: block;left: 10px !important;top: 1px !important;}\
-                                .update_title span{display: inline-block;color: #333;height: 30px;margin-left: 45px;margin-top: 3px;font-size: 20px;}\
-                                .update_conter{background: #f9f9f9;border-radius: 4px;padding: 20px;margin: 15px 37px;margin-top: 15px;}\
-                                .update_version{font-size: 12px;margin:15px 0 10px 60px}\
-                                .update_logs{margin-bottom:10px;border-bottom:1px solid #ececec;padding-bottom:10px;}\
-                                .update_tips{font-size: 13px;color: #666;font-weight: 600;}\
-                                .update_tips span{padding-top: 5px;display: block;font-weight: 500;}\
-                            </style>'
-                });
-                return;
-            }
-            if (rdata.status === true) {
-                var result = rdata
-                var is_beta = rdata.msg.is_beta
-                if (is_beta) {
-                    rdata = result.msg.beta
-                } else {
-                    rdata = result.msg
-                }
-                var loading = bt.open({
-                    type: 1,
-                    title: '[Linux' + (is_beta === 1 ? lan.index.test_version : lan.index.final_version) + ']-'+ lan.index.update_log,
-                    area: '520px',
-                    shadeClose: false,
-                    skin: 'layui-layer-dialog',
-                    closeBtn: 2,
-                    content: '<div class="setchmod bt-form" style="padding-bottom:50px;">\
-                                    <div class="update_title"><i class="layui-layer-ico layui-layer-ico0"></i><span>'+lan.index.have_new_version+'</span></div>\
-                                    <div class="update_conter">\
-                                        <div class="update_version">'+lan.index.last_version+'<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="'+lan.index.check_version_log+'">'+lan.index.bt_linux+ (is_beta === 1 ? lan.index.test_version : lan.index.final_version) +' '+ rdata.version + '</a></br>'+lan.index.update_date + (result.msg.is_beta == 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
-                                        <div class="update_logs">'+ rdata.updateMsg + '</div>\
-                                    </div>\
-                                    <div class="update_conter">\
-                                        <div class="update_tips">'+ lan.index.last_version_is +(is_beta !== 1 ? lan.index.test_version : lan.index.final_version) +  (result.msg.is_beta != 1 ? result.msg.beta.version : result.msg.version) + '&nbsp;&nbsp;&nbsp;'+lan.index.update_time+'&nbsp;&nbsp;' + (is_beta != 1 ? result.msg.beta.uptime : result.msg.uptime) + '</div>\
-                                        '+ (is_beta !== 1 ? '<span>'+lan.index.update_verison_click+'<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>'+lan.index.change_final_click+'<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">'+lan.index.change_final+'</a></span>') + '\
-                                    </div>\
-                                    <div class="bt-form-submit-btn">\
-                                        <button type="button" class="btn btn-danger btn-sm btn-title" onclick="layer.closeAll()">'+ lan.public.cancel + '</button>\
-                                        <button type="button" class="btn btn-success btn-sm btn-title btn_update_panel" onclick="index.to_update()" >'+ lan.index.update_go + '</button>\
-                                    </div>\
-                                </div>\
-                                <style>\
-                                    .update_title{overflow: hidden;position: relative;vertical-align: middle;margin-top: 10px;}.update_title .layui-layer-ico{display: block;left: 71px !important;top: 1px !important;}.update_title span{display: inline-block;color: #333;height: 30px;margin-left: 117px;margin-top: 3px;font-size: 20px;}.update_conter{background: #f9f9f9;border-radius: 4px;padding: 20px;margin: 15px 37px;margin-top: 15px;}.update_version{font-size: 13.5px; margin-bottom: 10px;font-weight: 600;}.update_logs{margin-bottom:10px;}.update_tips{font-size: 13px;color:#666;}.update_conter span{display: block;font-size:13px;color:#666}\
-                                </style>'
-                });
-            }
-        })
+    	if ($('.layui-layer-dialog').length > 0) return false;
+			var loadT = bt.load();
+			bt.system.check_update(function (rdata) {
+				loadT.close();
+				if (rdata.status === false && typeof rdata.msg === 'string') {
+					try {
+						messagebox()
+					} catch (err) {}
+					layer.msg(rdata.msg, { icon: 2 });
+					return
+				}
+				var data = rdata.msg
+				var is_beta = data.is_beta
+				var beta = data.beta
+				var versionData = is_beta ? beta : data
+				var isOld = rdata.status;
+				
+				if (isOld) {
+					content = '\
+					<div class="update-title">[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + '] - '+lan.index.update_log + '</div>\
+						<img class="update_bg" src="static/img/update_1.png" alt="" />\
+						<div class="setchmod bt-form">\
+							<div class="update_title">\
+								<div class="sup_title">'+ lan.index.have_new_version +'</div>\
+								<div class="sub_title">'+ lan.index.last_version + '<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' + lan.index.check_version_log + '">'+ lan.index.bt_linux + (is_beta === 1 ? lan.index.test_version : lan.index.final_version) +' '+ versionData.version + '</a>'+ (!isOld ? '&nbsp;&nbsp;' + lan.index.update_date + versionData.uptime : '') +'</div>\
+							</div>\
+							<div class="update_conter">' +
+								(isOld ? '<div class="update_logs">'+versionData.updateMsg+'</div><hr>' : '') +
+								'<div class="update_tips">'+ lan.index.last_version_is + (is_beta ? lan.index.final_version : lan.index.test_version) +  (is_beta ? data.version : beta.version) + '&nbsp;&nbsp;&nbsp;' + lan.index.update_time + '&nbsp;' + (is_beta ? data.uptime : beta.uptime) + '&nbsp;&nbsp;&nbsp;\
+								'+ (!is_beta ? '<span>' + lan.index.update_verison_click + '<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">'+lan.index.check_detail+'</a></span>' : '<span>' + lan.index.change_final_click + '<a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">' + lan.index.change_final + '</a></span>') + '\
+							</div>\
+						</div>\
+						<div class="bt-form-btn '+ (!isOld?'hide':'') +'">\
+							<button type="button" class="btn ignore-renew">' + lan.index.ignore_update + '</button>\
+							<button type="button" class="btn btn-success btn_update_panel" onclick="index.to_update()" >'+ lan.index.update_go + '</button>\
+						</div>\
+					</div>'
+				}else{
+					content = '\
+					<div class="update_back"><img src="/static/img/update_back.png"></div>\
+						<div class="setchmod bt-form">\
+							<div class="update_title">\
+								<img src="/static/img/update-icon.png"/>\
+								<span>' + lan.index.last_version_now + '</span>\
+							</div>\
+							<div class="update_version">\
+								<span>' + lan.index.this_version + '<a href="https://forum.aapanel.com/d/9-aapanel-linux-panel-6-1-5-installation-tutorial/36" target="_blank" class="btlink" title="' + lan.index.check_this_version_log + '">' + lan.index.bt_linux + (rdata.msg.is_beta == 1 ? lan.index.test_version+' ' + rdata.msg.beta.version : lan.index.final_version + ' ' + rdata.msg.version) + '</a></span><span style="margin-left:25px">' + lan.index.release_time + versionData.uptime + '</span>\
+							</div>\
+							<div class="update_conter">\
+								<div class="update_tips">\
+									<div class="tip_version">\
+										<span class="mr10">' + lan.index.last_version_is + (is_beta? lan.index.final_version : lan.index.test_version) + (is_beta ? data.version : data.beta.version) + '</span>\
+										<span class="ml10">' + lan.index.update_time + (is_beta?data.uptime.replaceAll('/','-'):beta.uptime.replaceAll('/','-')) + '</span>\
+									</div>\
+									'+ (!is_beta ? '<span style="margin-top:8px;">' + lan.index.update_verison_click + '<a href="javascript:;" onclick="index.beta_msg()" class="btlink btn_update_testPanel">' + lan.index.check_detail + '</a></span>' : '<span><a href="javascript:;" onclick="index.to_not_beta()" class="btlink btn_update_testPanel">' + lan.index.change_final + '</a></span>') + '\
+									</span>\
+								</div>\
+							</div>\
+						</div>\
+						<style>\
+							.update_title{display:flex;justify-content:center;align-items:center;position: relative;vertical-align: middle;margin: 12px 0;}\
+							.update_title img{width:32px;margin-top: 4px;margin-right: 8px;}\
+							.layui-layer-title{border:none;}\
+							.update_title .layui-layer-ico{display: block;left: 40px !important;top: 1px !important;}\
+							.update_back{background:linear-gradient(to top,rgb(255 255 255),#37BC51);position:absolute;width:100%;height:100px;z-index:-1;}\
+							.update_back img{position:absolute;top:0;width:100%}\
+							.update_title span{font-weight: 700;display: inline-block;color: #555;line-height: 32px;font-size: 24px;}\
+							.update_conter{background: rgb(247, 252, 248);border-radius: 4px;padding: 24px 16px;margin:20px 32px 32px;margin-top: 16px;border: 1px solid #efefef;}\
+							.update_version{font-size: 13px;text-align:center;font-weight:500;margin:0 36px 0;display:flex;justify-content:space-between;}\
+							.update_version span{display:inline-block !important;text-align:left;}\
+							.update_logs{font-size: 12px;color:#555;max-height:200px;overflow:auto;}\
+							.update_tips{font-size: 12px;color:rgb(51, 51, 51);font-weight:400;}\
+							.update_tips>span{font-size: 12px;color:rgb(51, 51, 51);font-weight:400;margin-top:0;}\
+							.update_conter span{display: block;font-size:12px;color:#666}\
+							.bt-form-btn {text-align: center;padding: 10px 0;}\
+							.bt-form-btn .btn:nth-child(1):hover {background: #d4d4d4}\
+							.bt-form-btn .btn {display: inline-block;line-height: 38px;height: 40px;border-radius: 20px;width: 140px;padding:0;margin-right: 30px;font-size:13.5px;}\
+							.bt-form-btn .btn:nth-child(2) {margin-right: 0;}\
+							.setchmod{height:auto;background-color:white;margin-top:32px;background:linear-gradient(to top,rgb(255 255 255),rgb(255 255 255),rgb(255 255 255),rgb(255 255 255),rgba(255,255,255,0));display:flex;justify-content:center;flex-direction:column;border-radius: 4px;}\
+							.setchmod.bt-form .btswitch-btn {margin-bottom: 0;height: 1.9rem;width: 3.2rem;position: relative;top: 4.5px;}\
+							.tip_version{width:100%;display:flex;flex-direction:row;}\
+					</style>'
+				}
+				bt.open({
+					type: 1,
+					title: isOld ? false : ['[Linux' + (rdata.msg.is_beta == 1 ? lan.index.test_version : lan.index.final_version) + '] - '+lan.index.update_log,'background-color:#37BC51;color:white;height:36px;padding:0 80px 0 13.5px;'],
+					area: isOld ? '480px' : '530px',
+					shadeClose: false,
+					skin: 'layui-layer-dialog'+(!isOld ? '' : ' new-layer-update active'),
+					closeBtn: 2,
+					content: content,
+					success:function (layers,indexs) {
+						if(!isOld) $(layers).find('.layui-layer-content').css('padding','0');
+						$('.ignore-renew').on('click',function () {
+							bt.send('ignore_version', 'ajax/ignore_version', { version: versionData.version }, function (rdata) {
+								bt.msg(rdata);
+								if(rdata.status) layer.close(indexs);
+							});
+						});
+					},
+					cancel:function () {
+						if(isOld) bt.send('ignore_version', 'ajax/ignore_version', { version: versionData.version })
+					}
+				})
+			})
     },
     to_update: function () {
         layer.closeAll();
@@ -974,7 +1655,6 @@ var index = {
             }
             settime($('#notice'));
             $('#notice').click(function () {
-                console.log($(this).prop('checked'))
                 if ($(this).prop('checked')) {
                     $('.btn_update_panel_beta').removeAttr('disabled');
                 } else {
@@ -1120,9 +1800,7 @@ var index = {
         }, 'jsonp');
     },
     get_cloud_list: function () {
-        $.post('/plugin?action=get_soft_list', { type: 8, p: 1, force: 1, cache: 1 }, function (rdata) {
-            console.log(lan.index.get_soft_list_success);
-        });
+        $.post('/plugin?action=get_soft_list', { type: 8, p: 1, force: 1, cache: 1 }, function (rdata) {});
     },
     // 获取安全风险列表
     get_warning_list:function(active,callback){
@@ -1394,9 +2072,7 @@ var index = {
         </div>'
                 $('#home-recommend').html(html)
             }
-        } catch (error) {
-            console.log(error)
-        }
+        } catch (error) {}
     }
 }
 index.get_init();
