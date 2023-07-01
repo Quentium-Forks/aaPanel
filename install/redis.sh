@@ -1,7 +1,7 @@
 #!/bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
-redis_version=7.0.5
+redis_version=7.0.11
 runPath=/root
 public_file=/www/server/panel/install/public.sh
 [ ! -f $public_file ] && wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
@@ -353,7 +353,7 @@ version=$2
 vphp=${version:0:1}.${version:1:1}
 
 if [ "$version" == "7.0" ];then
-	redis_version="7.0.5"
+	redis_version="7.0.11"
 elif [ "$version" == "6.2" ]; then
 	redis_version="6.2.7"
 fi

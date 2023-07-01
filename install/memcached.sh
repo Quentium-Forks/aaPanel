@@ -2,7 +2,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-memcachedVer="1.6.17"
+memcachedVer="1.6.20"
 memcachedPhpVer="3.2.0"
 
 Centos6Check=$(cat /etc/redhat-release|grep ' 6.'|grep -i centos)
