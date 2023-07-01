@@ -31,6 +31,7 @@ nginx_121='1.21.4'
 nginx_122='1.22.1'
 nginx_123='1.23.4'
 nginx_124='1.24.0'
+nginx_125='1.25.1'
 openresty='1.19.9.1'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
@@ -127,7 +128,7 @@ Install_LuaJIT2(){
     ldconfig
 }
 Install_LuaJIT() {
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
         Install_LuaJIT2
         return
     fi
@@ -217,7 +218,7 @@ Download_Src() {
 
     #lua_nginx_module
     LuaModVer="0.10.13"
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
         LuaModVer="0.10.24"
     fi
     wget -c -O lua-nginx-module-${LuaModVer}.zip ${download_Url}/src/lua-nginx-module-${LuaModVer}.zip
@@ -286,7 +287,7 @@ Install_Configure() {
     fi
 	
     ENABLE_STICKY="--add-module=${Setup_Path}/src/nginx-sticky-module"
-	if [ "$version" == "1.23" ] || [ "$version" == "1.24" ];then
+	if [ "$version" == "1.23" ] || [ "$version" == "1.24" ] || [ "${version}" == "1.25" ];then
         ENABLE_STICKY=""
 	fi
 
@@ -318,7 +319,7 @@ Install_Configure() {
     export LUAJIT_INC=/usr/local/include/${LUAJIT_INC_PATH}/
     export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 
-    ./configure --user=www --group=www --prefix=${Setup_Path} ${ENABLE_LUA} --add-module=${Setup_Path}/src/ngx_cache_purge ${ENABLE_STICKY} --with-openssl=${Setup_Path}/src/openssl --with-pcre=pcre-${pcre_version} ${ENABLE_HTTP2} --with-http_stub_status_module --with-http_ssl_module --with-http_image_filter_module --with-http_gzip_static_module --with-http_gunzip_module --with-ipv6 --with-http_sub_module --with-http_flv_module --with-http_addition_module --with-http_realip_module --with-http_mp4_module --add-module=${Setup_Path}/src/ngx_http_substitutions_filter_module-master --with-ld-opt="-Wl,-E" --with-cc-opt="-Wno-error" ${jemallocLD} ${ENABLE_WEBDAV} ${ENABLE_NGX_PAGESPEED} ${ADD_EXTENSION} ${i_make_args}
+    ./configure --user=www --group=www --prefix=${Setup_Path} ${ENABLE_LUA} --add-module=${Setup_Path}/src/ngx_cache_purge ${ENABLE_STICKY} --with-openssl=${Setup_Path}/src/openssl --with-pcre=pcre-${pcre_version} ${ENABLE_HTTP2} --with-http_stub_status_module --with-http_ssl_module --with-http_image_filter_module --with-http_gzip_static_module --with-http_gunzip_module --with-ipv6 --with-http_sub_module --with-http_flv_module --with-http_addition_module --with-http_realip_module --with-http_mp4_module --with-http_v3_module --add-module=${Setup_Path}/src/ngx_http_substitutions_filter_module-master --with-ld-opt="-Wl,-E" --with-cc-opt="-Wno-error" ${jemallocLD} ${ENABLE_WEBDAV} ${ENABLE_NGX_PAGESPEED} ${ADD_EXTENSION} ${i_make_args}
     make -j${cpuCore}
 }
 Install_Nginx() {
@@ -360,7 +361,7 @@ Install_Nginx() {
         exit 1
     fi
 
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
         wget -c -O lua-resty-core-0.1.26.zip ${download_Url}/src/lua-resty-core-0.1.26.zip
         unzip lua-resty-core-0.1.26.zip
         cd lua-resty-core-0.1.26
@@ -534,7 +535,7 @@ EOF
         done
     fi
 
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
         if [ -d "/www/server/btwaf" ];then
             rm -rf /www/server/btwaf/ngx
             rm -rf /www/server/btwaf/resty
@@ -628,6 +629,9 @@ else
         ;;
     '1.24')
         nginxVersion=${nginx_124}
+        ;;
+    '1.25')
+        nginxVersion=${nginx_125}
         ;;
     '1.8')
         nginxVersion=${nginx_108}
