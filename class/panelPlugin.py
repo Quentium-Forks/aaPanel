@@ -352,46 +352,29 @@ class panelPlugin:
         if force_refresh == 1:
             focre = 1
         if not softList or focre > 0:
-            requesting_tag_key = "REQUESTING_SERVER_SOFTWARE_LIST"
+            self.clean_panel_log()
+            # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
+            cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
+            import panelAuth
+            import requests
+            pdata = panelAuth.panelAuth().create_serverid(None)
+            # listTmp = public.httpPost(cloudUrl,pdata,6)
+            url_headers={}
+            if 'token' in pdata:
+                url_headers = {"authorization": "bt {}".format(pdata['token'])}
+            pdata['environment_info'] = json.dumps(public.fetch_env_info())
+            listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
+            listTmp=listTmp.json()
+            if not listTmp:
+                listTmp = public.readFile(lcoalTmp)
             try:
-                max_waiting_time = 120
-                has_waiting =  False
-                while cache.get(requesting_tag_key):
-                    has_waiting = True
-                    time.sleep(0.1)
-
-                if has_waiting:
-                    return self.get_cloud_list(get)
-                    
-                cache.set(requesting_tag_key, True, timeout=max_waiting_time)
-
-                self.clean_panel_log()
-                # cloudUrl = 'https://console.aapanel.com/api/panel/get_soft_list'
-                cloudUrl = '{}/api/panel/getSoftList'.format(self.__official_url)
-                import panelAuth
-                import requests
-                pdata = panelAuth.panelAuth().create_serverid(None)
-                # listTmp = public.httpPost(cloudUrl,pdata,6)
-                url_headers={}
-                if 'token' in pdata:
-                    url_headers = {"authorization": "bt {}".format(pdata['token'])}
-                pdata['environment_info'] = json.dumps(public.fetch_env_info())
-                try:
-                    listTmp = requests.post(cloudUrl, params=pdata, headers=url_headers,verify=False)
-                    listTmp=listTmp.json()
-                    if not listTmp:
-                        listTmp = public.readFile(lcoalTmp)
-                    softList = listTmp
-                except: pass
-                if softList: public.writeFile(lcoalTmp,json.dumps(softList))
-                public.ExecShell('rm -f /tmp/bmac_*')
-                public.run_thread(self.getCloudPHPExt)
-                # 专业版和企业版到期提醒，aaPanel目前没有先注释
-                # self.expire_msg(softList)
-            except:
-                pass
-            finally:
-                cache.delete(requesting_tag_key)
+                softList = listTmp
+            except: pass
+            if softList: public.writeFile(lcoalTmp,json.dumps(softList))
+            public.ExecShell('rm -f /tmp/bmac_*')
+            public.run_thread(self.getCloudPHPExt)
+            # 专业版和企业版到期提醒，aaPanel目前没有先注释
+            # self.expire_msg(softList)
         try:
             public.writeFile("/tmp/" + cache.get('p_token'),str(softList['pro']))
         except:pass
@@ -704,11 +687,9 @@ class panelPlugin:
 
     #取软件列表
     def get_soft_list(self,get = None):
-        print("get soft list normal.")
         softList = self.get_cloud_list(get)
         if not softList:
             get.force = 1
-            print("get soft list force.")
             softList = self.get_cloud_list(get)
             if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
         softList['list'] = self.set_coexist(softList['list'])
@@ -735,6 +716,7 @@ class panelPlugin:
         if os.path.exists('/www/server/nginx/conf/nginx.conf'):
             import one_key_wp
             one_key_wp.fast_cgi().set_nginx_conf()
+            one_key_wp.fast_cgi().set_nginx_init()
             public.ExecShell("/etc/init.d/nginx start")
         return softList
 
@@ -1372,7 +1354,7 @@ class panelPlugin:
             
             apacheVersion='false'
             if public.get_webserver() == 'apache':
-                apacheVersion = public.readFile('/www/server/apache/version.pl')
+                apacheVersion = public.xss_version(public.readFile('/www/server/apache/version.pl'))
             public.writeFile('/var/bt_apacheVersion.pl',apacheVersion)
             public.writeFile('/var/bt_setupPath.conf',public.GetConfigValue('root_path'))
             isTask = '/tmp/panelTask.pl'

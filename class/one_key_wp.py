@@ -1250,6 +1250,42 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         print("Nginx FastCgi cache configuration complete")
         return public.return_msg_gettext(True, "Nginx FastCgi cache configuration complete")
 
+    def set_nginx_init(self):
+        # if not os.path.exists("/dev/shm/nginx-cache/wp"):
+        #     os.makedirs("/dev/shm/nginx-cache/wp")
+        #     one_key_wp().set_permission("/dev/shm/nginx-cache")
+        conf2 = """
+    #AAPANEL_FASTCGI_CONF_BEGIN
+    mkdir -p /dev/shm/nginx-cache/wp
+    #AAPANEL_FASTCGI_CONF_END
+"""
+        init_path = "/etc/init.d/nginx"
+        public.back_file(init_path)
+        content_init = public.readFile(init_path)
+        if not content_init:
+            return
+        if "#AAPANEL_FASTCGI_CONF_BEGIN" in content_init:
+            one_key_wp().write_logs("|-Nginx init FastCgi cache configuration already exists")
+            print("Nginx init FastCgi cache configuration already exists")
+            return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration already exists")
+        #content_init = re.sub(r"\$NGINX_BIN -c \$CONFIGFILE", + conf2, content_init)
+        rep2 = "\$NGINX_BIN -c \$CONFIGFILE"
+        content_init = re.sub(rep2, conf2 + "        $NGINX_BIN -c $CONFIGFILE", content_init)
+        public.writeFile(init_path, content_init)
+
+        # 如果配置出错恢复
+        public.ExecShell("/etc/init.d/nginx restart")
+        conf_pass = public.is_nginx_process_exists()
+        if conf_pass == False:
+            public.restore_file(init_path)
+            one_key_wp().write_logs("|-Nginx init FastCgi configuration error! {}".format(conf_pass))
+            print("Nginx init FastCgi configuration error! {}".format(conf_pass))
+            return public.return_msg_gettext(False, "Nginx init FastCgi configuration error!")
+        one_key_wp().write_logs("|-Nginx init FastCgi cache configuration complete...")
+        print("Nginx init FastCgi cache configuration complete")
+        return public.return_msg_gettext(True, "Nginx init FastCgi cache configuration complete")
+
+
     def set_fastcgi_php_conf(self,version):
         conf_path = "/www/server/nginx/conf/enable-php-{}-wpfastcgi.conf".format(version)
         if os.path.exists(conf_path):
@@ -1297,6 +1333,8 @@ fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
         get.version
         get.name
         """
+        # 设置nginx启动文件
+        self.set_nginx_init()
         # 设置nginx全局配置
         self.set_nginx_conf()
         # 设置fastcgi location

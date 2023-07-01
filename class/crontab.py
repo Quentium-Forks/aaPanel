@@ -57,9 +57,36 @@ class crontab:
 
             log_file = '/www/server/cron/{}.log'.format(tmp['echo'])
             if os.path.exists(log_file):
-                tmp['addtime'] = public.format_date(times=int(os.path.getmtime(log_file)))
+                tmp['addtime'] = self.get_last_exec_time(log_file)
             data.append(tmp)
         return data
+
+
+    def get_last_exec_time(self,log_file):
+        '''
+            @name 获取上次执行时间
+            @author hwliang
+            @param log_file<string> 日志文件路径
+            @return format_date
+        '''
+        exec_date = ''
+        try:
+            log_body = public.GetNumLines(log_file,20)
+            if log_body:
+                log_arr = log_body.split('\n')
+                date_list = []
+                for i in log_arr:
+                    if i.find('★') != -1 and i.find('[') != -1 and i.find(']') != -1:
+                        date_list.append(i)
+                if date_list:
+                    exec_date = date_list[-1].split(']')[0].split('[')[1]
+        except:
+            pass
+
+        finally:
+            if not exec_date:
+                exec_date = public.format_date(times=int(os.path.getmtime(log_file)))
+        return exec_date
 
 
     #清理日志
@@ -105,7 +132,6 @@ class crontab:
         if not os.path.exists(filePath):
             public.downloadFile(public.GetConfigValue('home') + '/linux/logsBackup.py',filePath)
         #检查计划任务服务状态
-        
         import system
         sm = system.system()
         if os.path.exists('/etc/init.d/crond'): 
@@ -166,7 +192,7 @@ class crontab:
         public.M('crontab').where('id=?',(id,)).save(columns,values)
         self.remove_for_crond(cronInfo['echo'])
         self.sync_to_crond(cronInfo)
-        public.WriteLog('TYPE_CRON',"MODIFY_CRON",(cronInfo['name']))
+        public.WriteLog('TYPE_CRON',"MODIFY_CRON",(cronInfo['name'],))
         return public.return_msg_gettext(True,'Setup successfully!')
 
 
@@ -178,8 +204,7 @@ class crontab:
 
     #同步到crond
     def sync_to_crond(self,cronInfo):
-        if 'status' in cronInfo:
-            if cronInfo['status'] == 0: return False
+        if not 'status' in cronInfo: return False
         if 'where_hour' in cronInfo:
             cronInfo['hour'] = cronInfo['where_hour']
             cronInfo['minute'] = cronInfo['where_minute']
@@ -188,11 +213,12 @@ class crontab:
         cronPath=public.GetConfigValue('setup_path')+'/cron'
         cronName=self.GetShell(cronInfo)
         if type(cronName) == dict: return cronName
+        if cronInfo['status'] == 0: return False
         cuonConfig += ' ' + cronPath+'/'+cronName+' >> '+ cronPath+'/'+cronName+'.log 2>&1'
         wRes = self.WriteShell(cuonConfig)
         if type(wRes) != bool: return False
         self.CrondReload()
-        
+
     #添加计划任务
     def AddCrontab(self,get):
         if len(get['name'])<1:
@@ -219,6 +245,9 @@ class crontab:
         1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],
         get['urladdress'], get["save_local"], get['notice'], get['notice_channel'])
         addData=public.M('crontab').add(columns,values)
+        public.add_security_logs('计划任务','添加计划任务['+get['name']+']成功'+str(values))
+        if type(addData) == str:
+            return public.return_msg_gettext(False, addData)
         if addData>0:
             result = public.return_msg_gettext(True,'Setup successfully!')
             result['id'] = addData
@@ -336,6 +365,7 @@ class crontab:
             if os.path.exists(sfile): os.remove(sfile)
             
             public.M('crontab').where("id=?",(id,)).delete()
+            public.add_security_logs("Delete cron", "Delete cron:" + find['name'])
             public.WriteLog('TYPE_CRON', 'CRONTAB_DEL',(find['name'],))
             return public.return_msg_gettext(True, 'Successfully deleted')
         except:

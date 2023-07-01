@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-from BTPanel import session, cache, request, abort, redirect, g
+from BTPanel import session, cache , request, redirect, g,abort
 from datetime import datetime
 from public import dict_obj
 import os
@@ -25,14 +25,16 @@ class panelSetup:
         if g.ua:
             ua = g.ua.lower()
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
-                return redirect('https://www.google.com')
-        g.version = '6.8.27'
+                return abort(403)
+
+        g.version = '6.9.70'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
         g.pyversion = sys.version_info[0]
         session['version'] = g.version
 
+        if not public.get_improvement(): session['is_flush_soft_list'] = 1
         if request.method == 'GET':
             if not g.debug:
                 g.cdn_url = public.get_cdn_url()
@@ -140,7 +142,7 @@ class panelAdmin(panelSetup):
     # 检查面板是否关闭
     def checkClose(self):
         if os.path.exists('data/close.pl'):
-            return abort(404)
+            return redirect('/close')
 
     # 检查登录
     def check_login(self):
@@ -150,54 +152,55 @@ class panelAdmin(panelSetup):
             if not 'login' in session:
                 api_check = self.get_sk()
                 if api_check:
-                    session.clear()
+                    if not isinstance(api_check,dict):
+                        if public.get_admin_path() == '/login':
+                            return redirect('/login?err=1')
                     return api_check
                 g.api_request = True
             else:
                 if session['login'] == False:
                     session.clear()
-                    return abort(404)
+                    return redirect(public.get_admin_path())
 
                 if 'tmp_login_expire' in session:
                     s_file = 'data/session/{}'.format(session['tmp_login_id'])
                     if session['tmp_login_expire'] < time.time():
                         session.clear()
                         if os.path.exists(s_file): os.remove(s_file)
-                        return abort(404)
+                        return redirect(public.get_admin_path())
                     if not os.path.exists(s_file):
                         session.clear()
-                        return abort(404)
-                ua_md5 = public.md5(g.ua)
-                if ua_md5 != session.get('login_user_agent',ua_md5):
+                        return redirect(public.get_admin_path())
+
+                if not public.check_client_hash():
                     session.clear()
-                    return abort(404)
+                    return redirect(public.get_admin_path())
 
             if api_check:
                 now_time = time.time()
                 session_timeout = session.get('session_timeout',0)
                 if session_timeout < now_time and session_timeout != 0:
                     session.clear()
-                    return redirect('/login?dologin=True&go=0')
-
+                    return redirect(public.get_admin_path())
 
             login_token = session.get('login_token','')
             if login_token:
                 if login_token != public.get_login_token_auth():
                     session.clear()
-                    return redirect('/login?dologin=True&go=1')
+                    return redirect(public.get_admin_path())
 
             # if api_check:
             #     filename = 'data/sess_files/' + public.get_sess_key()
             #     if not os.path.exists(filename):
             #         session.clear()
-            #         return redirect('/login?dologin=True&go=2')
+            #         return redirect(public.get_admin_path())
 
             # 标记新的会话过期时间
             session['session_timeout'] = time.time() + public.get_session_timeout()
         except:
-            public.WriteLog('Login auth',public.get_error_info())
+            public.print_log(public.get_error_info())
             session.clear()
-            return abort(404)
+            return redirect('/login?id=2')
 
     # 获取sk
     def get_sk(self):
@@ -205,11 +208,12 @@ class panelAdmin(panelSetup):
         if not os.path.exists(save_path):
             return public.error_not_login('/login')
 
+
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return public.error_not_login('/login')
+            return  public.error_not_login('/login')
 
         if not api_config['open']:
             return  public.error_not_login('/login')
@@ -218,7 +222,7 @@ class panelAdmin(panelSetup):
         client_ip = public.GetClientIp()
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return public.error_not_login('/login')
+                return  public.error_not_login('/login')
 
             num_key = client_ip + '_api'
             if not public.get_error_num(num_key,20):
@@ -267,7 +271,6 @@ class panelAdmin(panelSetup):
         return public.returnJson(False,'Secret key verification failed')
 
     # 检查系统配置
-
     def checkConfig(self):
         if not 'config' in session:
             session['config'] = public.M('config').where("id=?", ('1',)).field(

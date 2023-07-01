@@ -15,6 +15,7 @@ import sys
 import json
 import re
 import time
+import shlex
 
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
@@ -86,6 +87,7 @@ class backup:
 
     #构造排除
     def get_exclude(self,exclude = []):
+        self._exclude = ""
         if not exclude:
             tmp_exclude = os.getenv('BT_EXCLUDE')
             if tmp_exclude:
@@ -235,23 +237,35 @@ class backup:
         if not self._cloud:
             backups = public.M('backup').where("type=? and pid=? and name=? and filename NOT LIKE '%|%'",('2',0,spath)).field('id,name,filename').select()
         else:
-            backups = public.M('backup').where("type=? and pid=? and name=? and filename LIKE '%{}%'".format(self._cloud._name),('2',0,spath)).field('id,name,filename').select()
+            backups = public.M('backup').where("type=? and pid=? and name=? and filename LIKE ?",('2',0,spath,'%{}%'.format(self._cloud._name))).field('id,name,filename').select()
+
 
         self.delete_old(backups,save,'path')
         self.echo_end()
         self.save_backup_status(True, target=spath)
         return dfile
 
-    
     #清理过期备份文件
-    def delete_old(self,backups,save,data_type = None):
+    def delete_old(self,backups,save,data_type = None,site_name=None):
         if type(backups) == str:
             self.echo_info(public.get_msg_gettext('Failed to clean expired backup, error: {}',(backups,)))
             return
         self.echo_info(public.get_msg_gettext('Keep the latest number of backups: {} copies',(str(save),)))
+
+        # 跳过手动备份文件
+        new_backups = []
+        for i in range(len(backups)):
+            if data_type == 'database' and backups[i]['name'][:3] =='db_': # 数据库备份
+                new_backups.append(backups[i])
+            elif data_type == 'site' and backups[i]['name'][:4] == 'web_' and backups[i]['name'][-7:] == '.tar.gz': # 网站备份
+                new_backups.append(backups[i])
+            elif data_type == 'path' and backups[i]['name'][:5] == 'path_': # 目录备份
+                new_backups.append(backups[i])
+        if new_backups:
+            backups = new_backups[:]
         num = len(backups) - int(save)
         if  num > 0:
-            self._get_local_backdir()
+            # self._get_local_backdir()
             self.echo_info('-' * 88)
             for backup in backups:
                 #处理目录备份到远程的情况
@@ -263,9 +277,10 @@ class backup:
                 if os.path.exists(backup['filename']):
                     try:
                         os.remove(backup['filename'])
+                        self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from disk: {}',
+                                                              (backup['filename'],)))
                     except:
                         pass
-                    self.echo_info(public.get_msg_gettext('Expired backup files have been cleaned from disk: {}',(backup['filename'],)))
                 #尝试删除远程文件
                 if self._cloud:
                     self._cloud.delete_file(backup['name'],data_type)
@@ -275,10 +290,33 @@ class backup:
                 public.M('backup').where('id=?',(backup['id'],)).delete()
                 num -= 1
                 if num < 1: break
+        if data_type=='site':
+            backup_path = public.get_backup_path()+'/site'.replace('//','/')
+            site_lists = os.listdir(backup_path)
+            file_info =[]
+            del_list=[]
+            check_name = 'web_{}_'.format(site_name)
+            for site_v in site_lists:
+                tmp_dict = {}
+                if check_name=='web__':continue
+                if site_v.find(check_name)==-1:continue
+                filename =os.path.join(backup_path,site_v)
+                if os.path.isfile(filename):
+                    tmp_dict['name']=filename
+                    tmp_dict['time']=int(os.path.getmtime(filename))
+                    file_info.append(tmp_dict)
+            if file_info and len(file_info)>int(save):
+                file_info=sorted(file_info,key=lambda keys:keys['time'])
+                del_list=file_info[:-int(save)]
+                for del_file in del_list:
+                    if not del_file:continue
+                    if os.path.isfile(del_file['name']):
+                        os.remove(del_file['name'])
+                        self.echo_info(u"Expired backup files cleaned from disk：" + del_file['name'])
 
     # 获取本地备份目录
-    def _get_local_backdir(self):
-        self._local_backdir = public.M('config').field('backup_path').find()['backup_path']
+    # def _get_local_backdir(self):
+    #     self._local_backdir = public.M('config').field('backup_path').find()['backup_path']
 
     #压缩目录
     def backup_path_to(self,spath,dfile,exclude = [],siteName = None):
@@ -293,7 +331,6 @@ class backup:
         dpath = os.path.dirname(dfile)
         if not os.path.exists(dpath):
             os.makedirs(dpath,384)
-
         self.get_exclude(exclude)
         exclude_config = self._exclude
         exclude_list = self.get_exclude_list(exclude)
@@ -433,15 +470,15 @@ class backup:
         if not self._cloud:
             backups = public.M('backup').where("type=? and pid=? and filename NOT LIKE '%|%'",('0',pid)).field('id,name,filename').select()
         else:
-            backups = public.M('backup').where('type=? and pid=? and filename LIKE "%{}%"'.format(self._cloud._name),('0',pid)).field('id,name,filename').select()
+            backups = public.M('backup').where('type=? and pid=? and filename LIKE ?',('0',pid,"%{}%".format(self._cloud._name))).field('id,name,filename').select()
 
-        self.delete_old(backups,save,'site')
+        self.delete_old(backups,save,'site',siteName)
         self.echo_end()
         return dfile
 
     #备份所有数据库
     def backup_database_all(self,save = 3):
-        databases = public.M('databases').field('name').select()
+        databases = public.M('databases').where("type=?","MySQL").field('name').select()
         self._backup_all = True
         failture_count = 0
         results = []
@@ -524,6 +561,36 @@ class backup:
         error_msg = ""
         # ----- 判断是否为远程数据库START  @author hwliang<2021-01-08>--------
         db_find = public.M('databases').where("name=?",(db_name,)).find()
+        if db_find['type'] != "MySQL":
+            # if db_find['type'] in ['SQLServer','Redis']:
+            print("|-{}The database does not currently support backup".format(db_find['type']))
+            return False
+            # if db_find['type'] == "MongoDB":
+            #     import databaseModel.mongodbModel as mongodbModel
+            #     args = public.dict_obj()
+            #     args.id = db_find['id']
+            #     args.name = db_find['name']
+            #     backup_res = mongodbModel.panelMongoDB().ToBackup(args)
+            # elif db_find['type'] == "PgSQL":
+            #     import databaseModel.pgsqlModel as pgsqlModel
+            #     args = public.dict_obj()
+            #     args.id = db_find['id']
+            #     args.name = db_find['name']
+            #     backup_res = pgsqlModel.panelPgsql().ToBackup(args)
+
+            # if not isinstance(backup_res,dict) or not 'status' in backup_res:
+
+            #     return False
+
+            # if not backup_res['status']:
+            #     print("|-{}数据库备份失败".format(db_find['name']))
+            #     print("|-{}".format(backup_res['msg']))
+            #     return False
+            # dfile = dfile = os.path.join(self._path,'database',,fname)
+            # print("|-{}数据库备份成功".format(db_find['name']))
+            # print("|-数据库已备份到:{}".format(dfile))
+
+            # return False
         conn_config = {}
         self._db_mysql = public.get_mysql_obj(db_name)
         is_cloud_db = db_find['db_type'] in ['1',1,'2',2]
@@ -535,7 +602,10 @@ class backup:
             else:
                 conn_config = json.loads(db_find['conn_config'])
             conn_config['db_port'] = str(int(conn_config['db_port']))
-            self._db_mysql.set_host(conn_config['db_host'],int(conn_config['db_port']),conn_config['db_name'],conn_config['db_user'],conn_config['db_password'])
+            if not self._db_mysql or  not self._db_mysql.set_host(conn_config['db_host'],int(conn_config['db_port']),conn_config['db_name'],conn_config['db_user'],conn_config['db_password']):
+                error_msg = "Failed to connect to remote database [{}:{}]".format(conn_config['db_host'],conn_config['db_port'])
+                print(error_msg)
+                return False
         # ----- 判断是否为远程数据库END @author hwliang<2021-01-08>------------
         d_tmp = self._db_mysql.query("select sum(DATA_LENGTH)+sum(INDEX_LENGTH) from information_schema.tables where table_schema='%s'" % db_name)
         try:
@@ -588,12 +658,14 @@ class backup:
             if not is_cloud_db:
                 # 本地数据库 @author hwliang<2021-01-08>
                 password = public.M('config').where('id=?',(1,)).getField('mysql_root')
-                os.environ["MYSQL_PWD"] = password
-                backup_cmd = mysqldump_bin + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root" + " 2>"+self._err_log+"| gzip > " + dfile
+                password = shlex.quote(str(password))
+                os.environ["MYSQL_PWD"] = str(password)
+                backup_cmd = mysqldump_bin + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u root -p\"" + str(password) + "\" 2>"+self._err_log+"| gzip > " + dfile
             else:
                 # 远程数据库 @author hwliang<2021-01-08>
-                os.environ["MYSQL_PWD"] = conn_config['db_password']
-                backup_cmd = mysqldump_bin + " -h " + conn_config['db_host'] + " -P " + conn_config['db_port'] + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u " + conn_config['db_user'] + " 2>"+self._err_log+"| gzip > " + dfile
+                password = str(shlex.quote(str(conn_config['db_password'])))
+                os.environ["MYSQL_PWD"] = password
+                backup_cmd = mysqldump_bin + " -h " + conn_config['db_host'] + " -P " + str(conn_config['db_port']) + " -E -R --default-character-set="+ character +" --force --hex-blob --opt " + db_name + " -u " + str(conn_config['db_user']) + ' -p"'+password+'" 2>'+self._err_log+"| gzip > " + dfile
             public.ExecShell(backup_cmd)
         except Exception as e:
             raise
@@ -682,7 +754,9 @@ class backup:
         if not self._cloud:
             backups = public.M('backup').where("type=? and pid=? and filename NOT LIKE '%|%'",('1',pid)).field('id,name,filename').select()
         else:
-            backups = public.M('backup').where('type=? and pid=? and filename LIKE "%{}%"'.format(self._cloud._name),('1',pid)).field('id,name,filename').select()
+            backups = public.M('backup').where('type=? and pid=? and filename LIKE ?',('1',pid,"%{}%".format(self._cloud._name))).field('id,name,filename').select()
+
+
         self.delete_old(backups,save,'database')
         self.echo_end()
         self.save_backup_status(True, target=db_name)
@@ -773,6 +847,8 @@ class backup:
             pass
         return {}
 
+    def send_success_notification(self, msg, target="", remark=""):
+        pass
     def send_failture_notification(self, error_msg, target="", remark=""):
         """发送任务失败消息
 

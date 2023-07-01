@@ -47,7 +47,10 @@ class panelSearch:
             zfile=False
             back_zip=False
         return_data = []
-        [[return_data.append(os.path.join(root, file)) for file in files] for root, dirs, files in os.walk(path)]
+        [[return_data.append(os.path.join(root, file)) for file in files]
+         for root, dirs, files in os.walk(path)]
+        num = 0
+        public.writeSpeed('files_search', num, len(return_data))
         for i in return_data:
             for i2 in exts:
                 i3 = i.split('.')
@@ -60,6 +63,8 @@ class panelSearch:
                                 result.append(temp)
                         else:
                             result[i] = temp
+            num += 1
+            public.writeSpeed('files_search', num, len(return_data))
         if is_backup:
             if zfile:
                 zfile.close()
@@ -85,16 +90,22 @@ class panelSearch:
         for root, dirs, files in os.walk(path):
             list_data=files
             break
-        for i in exts:
-            for i2 in list_data:
-                i3=i2.split('.')
-                if i3[-1]==i:
-                    temp=self.get_files_lin(path+'/'+i2, text,mode,isword,iscase,noword,is_backup,rtext,zfile)
+        num = 0
+        public.writeSpeed('files_search', num, len(list_data))
+        for i2 in list_data:
+            for i in exts:
+                i3 = i2.split('.')
+                if i3[-1] == i:
+                    temp = self.get_files_lin(path + '/' + i2, text, mode,
+                                              isword, iscase, noword,
+                                              is_backup, rtext, zfile)
                     if temp:
                         if isinstance(result,list):
                             result.append(path+'/'+i2)
                         else:
-                            result[path+'/'+i2]=temp
+                            result[path + '/' + i2] = temp
+            num += 1
+            public.writeSpeed('files_search', num, len(list_data))
         if is_backup:
             if zfile:
                 zfile.close()

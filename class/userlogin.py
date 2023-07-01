@@ -16,20 +16,25 @@ class userlogin:
     def request_post(self,post):
         if not hasattr(post, 'username') or not hasattr(post, 'password'):
             return public.returnJson(False,'User name or password cannot be empty!'),json_header
-        
         self.error_num(False)
-        if self.limit_address('?') < 1: return public.returnJson(False,'You have failed to log in many times。 Please wait for {} seconds and try again!'.format(int(self.limit_expire_time - time.time()))),json_header
-        # if self.limit_address('?') < 1: return public.returnJson(False,'You cannot login now because login failed too many times!'),json_header
+        if self.limit_address('?') < 1: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
         post.username = post.username.strip()
+        format_error = 'Parameter format error'
 
         # 核验用户名密码格式
-        if len(post.username) != 32: return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
-        if len(post.password) != 32: return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
+        post.username = public.rsa_decrypt(post.username)
+
+        if len(post.username) != 32:
+            return public.returnMsg(False,format_error+"1"),json_header
+        post.password = public.rsa_decrypt(post.password)
+        if len(post.password) != 32:
+            return public.returnMsg(False,format_error+"2"),json_header
+
         if not re.match(r"^\w+$",post.username): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
         if not re.match(r"^\w+$",post.password): return public.return_msg_gettext(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
         last_login_token = session.get('last_login_token',None)
         if not last_login_token:
-            public.write_log_gettext('Login','Verification code error, account number: {}, verification code: {}, login IP: {}',('****','****',public.GetClientIp()))
+            public.WriteLog('TYPE_LOGIN','LOGIN_ERR_CODE',('****','****',public.GetClientIp()))
             return public.returnJson(False,"Verification failed, please refresh the page and log in again!"),json_header
 
         public.chdck_salt()
@@ -54,10 +59,10 @@ class userlogin:
                     return public.returnJson(False,'Verification code is incorrect, please try again!'),json_header
         try:
             if not userInfo:
-                public.write_log_gettext('Login','Wrong password, account: {}, password: {}, login IP: {}',('****','******',public.GetClientIp()))
+                public.WriteLog('TYPE_LOGIN','LOGIN_ERR_PASS',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
-                if not num: return public.returnJson(False,'You have failed to log in many times, please wait {} seconds and try again!'.format(int(self.limit_expire_time - time.time()))),json_header
-                return public.returnJson(False,'Username or password is wrong, <span style="color:red;">Please refresh the page and try again</span>, you can try again [{}] times'.format(num)),json_header
+                if not num: return public.returnJson(False,'You have failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
+                return public.returnJson(False,'wrong user name or password，<span style="color:red;">please refresh the page and try again</span>，You can retry {} more times'.format(num)),json_header
 
             if userInfo and not userInfo['salt']:
                 public.chdck_salt()
@@ -68,7 +73,7 @@ class userlogin:
             if s_username != post.username or userInfo['password'] != password:
                 public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
                 num = self.limit_address('+')
-                if not num: return public.returnJson(False,'You have failed to log in many times, please wait {} seconds and try again!'.format(int(self.limit_expire_time - time.time()))),json_header
+                if not num: return public.returnJson(False,'You failed to log in many times, please try again in {} seconds!'.format(int(self.limit_expire_time - time.time()))),json_header
                 return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
             _key_file = "/www/server/panel/data/two_step_auth.txt"
 
@@ -77,7 +82,9 @@ class userlogin:
             if not public.password_expire_check():
                 session['password_expire'] = True
 
-            # public.login_send_body("Userinfo",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
+            #登陆告警
+            #public.run_thread(public.login_send_body,("账号密码",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
+            # public.login_send_body("账号密码",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT')))
             if hasattr(post,'vcode'):
                 if not re.match(r"^\d+$",post.vcode): return public.returnJson(False,'Incorrect format of verification code'),json_header
                 if self.limit_address('?',v="vcode") < 1: return public.returnJson(False,'You have failed verification many times, forbidden for 10 minutes'),json_header
@@ -102,7 +109,7 @@ class userlogin:
             acc_client_ip = self.check_two_step_auth()
 
             if not os.path.exists(_key_file) or acc_client_ip:
-                # public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
+                public.run_thread(public.login_send_body,("account",userInfo['username'],public.GetClientIp(),str(int(request.environ.get('REMOTE_PORT')))))
                 self.set_cdn_host(post)
                 return self._set_login_session(userInfo)
             self.limit_address('-')
@@ -137,7 +144,7 @@ class userlogin:
             session['username'] = userInfo['username']
             session['tmp_login'] = True
             session['uid'] = userInfo['id']
-            ids = public.write_log_gettext('Login','Login success',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
+            ids=public.WriteLog('TYPE_LOGIN','Login success',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             public.cache_set(public.GetClientIp() + ":" + str(request.environ.get('REMOTE_PORT')), ids)
             self.limit_address('-')
             cache.delete('panelNum')
@@ -204,6 +211,7 @@ class userlogin:
             public.run_thread(public.login_send_body("Temporary authorization",userInfo['username'],public.GetClientIp(),str(request.environ.get('REMOTE_PORT'))))
             return redirect('/')
         except:
+            public.print_log(public.get_error_info(),'ERROR')
             return public.get_msg_gettext('Login failed')
 
 
@@ -245,7 +253,7 @@ class userlogin:
         html_token_key = public.get_csrf_html_token_key()
         session[html_token_key] = public.GetRandomString(48)
         session[html_token_key.replace("https_","")] = public.GetRandomString(48)
-
+        session['client_hash'] = public.get_client_hash()
 
     def set_cdn_host(self,get):
         try:
@@ -267,9 +275,10 @@ class userlogin:
             num = 1
         if s: cache.inc(nKey,1)
         if num > 6: session['code'] = True
-
+    
     #IP限制
     def limit_address(self,type,v=""):
+        import time
         clientIp = public.GetClientIp()
         numKey = 'limitIpNum_' + v + clientIp
         limit = 5
@@ -334,11 +343,35 @@ class userlogin:
             try:
                 default_pl = "{}/default.pl".format(public.get_panel_path())
                 public.writeFile(default_pl,"********")
-                public.run_thread(public.login_send_body, (
-                "Userinfo", userInfo['username'], public.GetClientIp(), str(request.environ.get('REMOTE_PORT'))))
             except:
                 pass
-            return public.returnJson(True,'Login succeeded, loading...'),json_header
+
+            address = public.GetClientIp()
+            port =  str(request.environ.get('REMOTE_PORT'))
+
+            login_address = '{}(unknown)'.format(address,)
+            #返回增加登录地区
+            res = public.returnMsg(True,'LOGIN_SUCCESS')
+            res['login_time'] = time.time()
+            try:
+                ip_info = public.get_free_ip_info(address)
+                if 'city' in ip_info:
+                    res['ip_info'] = ip_info
+                login_address = '{}({})'.format(address,ip_info['info'])
+            except:
+                print(public.get_error_info())
+
+            last_login = {}
+            last_file = 'data/last_login.pl'
+            try:
+                last_login = json.loads(public.readFile(last_file))
+            except:pass
+            public.writeFile(last_file,json.dumps(res))
+
+            res['last_login'] = last_login
+            session['login_address'] = public.xsssec(login_address)
+
+            return public.getJson(res),json_header
         except Exception as ex:
             stringEx = str(ex)
             if stringEx.find('unsupported') != -1 or stringEx.find('-1') != -1:

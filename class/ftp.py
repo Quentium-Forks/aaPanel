@@ -24,7 +24,7 @@ class ftp:
             import files,time
             fileObj=files.files()
             if get['ftp_username'].strip().find(' ') != -1: return public.returnMsg(False,'Username cannot contain spaces')
-            if re.search("\W + ",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
+            if re.search("\W+",get['ftp_username']): return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, special characters are NOT allowed!')}
             if len(get['ftp_username']) < 3: return {'status':False,'code':501,'msg':public.get_msg_gettext('Username is illegal, cannot be less than 3 characters!')}
             if not fileObj.CheckDir(get['path']): return {'status':False,'code':501,'msg':public.get_msg_gettext('System critical directory cannot be used as FTP directory!')}
             if public.M('ftps').where('name=?',(get.ftp_username.strip(),)).count(): return public.return_msg_gettext(False,'User [{}] exists!',(get.ftp_username,))

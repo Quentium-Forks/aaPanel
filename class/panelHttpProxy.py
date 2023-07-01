@@ -194,9 +194,7 @@ class HttpProxy:
                     'User-Agent':'BT-Panel',
                     'Connection':'close'
                 }
-                try:
-                    session[s_key].headers['Host'] = public.en_punycode(request.url_root).replace('http://','').replace('https://','').split('/')[0]
-                except:pass
+
                 if proxy_url.find('phpmyadmin') != -1:
                     if proxy_url.find('https://') == 0:
                         session[s_key].cookies.update({'pma_lang_https':'zh_CN'})
@@ -206,6 +204,10 @@ class HttpProxy:
 
             if 'Authorization' in request.headers:
                 session[s_key].headers['Authorization'] = request.headers['Authorization']
+
+            try:
+                session[s_key].headers['Host'] = public.en_punycode(request.url_root).replace('http://','').replace('https://','').split('/')[0]
+            except:pass
             # headers = self.get_request_headers()
             headers = None
             if request.method == 'GET':

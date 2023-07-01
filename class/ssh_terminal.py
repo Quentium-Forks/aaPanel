@@ -94,7 +94,7 @@ class ssh_terminal:
         import paramiko
 
         self._tp = paramiko.Transport(sock)
-        pkey = None
+
         try:
             self._tp.start_client()
             if not self._pass and not self._pkey:
@@ -111,6 +111,7 @@ class ssh_terminal:
                     p_file = BytesIO(self._pkey)
                 else:
                     p_file = StringIO(self._pkey)
+
                 try:
                     if self._key_passwd:
                         pkey = paramiko.RSAKey.from_private_key(p_file,password=self._key_passwd)
@@ -119,7 +120,7 @@ class ssh_terminal:
                     self.debug("尝试使用RSA私钥认证")
                 except Exception as ex:
                     try:
-                        p_file.seek(0)
+                        p_file.seek(0) # 重置游标
                         if self._key_passwd:
                             pkey = paramiko.Ed25519Key.from_private_key(p_file,password=self._key_passwd)
                         else:
@@ -141,14 +142,14 @@ class ssh_terminal:
                                 except Exception as ex:
                                     ex = str(ex)
                                     if ex.find('OpenSSH private key file checkints do not match') != -1:
-                                        return public.returnMsg(False,'Incorrect private key password: {}'.format(ex))
+                                        return public.returnMsg(False,'Incorrect private key password:{}'.format(ex))
                                     elif ex.find('encountered RSA key, expected DSA key') != -1:
                                         pkey = paramiko.RSAKey.from_private_key(p_file,password=self._key_passwd)
                                     else:
-                                        return public.returnMsg(False,'private key error: {}'.format(ex))
+                                        return public.returnMsg(False,'Private key error: {}'.format(ex))
                             else:
                                 pkey = paramiko.DSSKey.from_private_key(p_file)
-                if not pkey: return public.returnMsg(False,'Incorrect private key!')
+                if not pkey: return public.returnMsg(False,'Private key error!')
                 self._tp.auth_publickey(username=self._user, key=pkey)
             else:
                 try:
@@ -174,13 +175,13 @@ class ssh_terminal:
                 self.debug("认证超时{}".format(e))
                 return public.return_msg_gettext(False,'Authentication timed out, please press enter to try again!{}',(e,))
             if e.find('Authentication failed') != -1:
-                self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
+                self.debug('认证失败{}'.format(e))
                 if self._key_passwd:
                     sshd_config = public.readFile('/etc/ssh/sshd_config')
                     if sshd_config and sshd_config.find('ssh-dss') == -1:
                         return returnMsg(False,'The private key verification fails, the private key may be incorrect, or the ssh-dss private key authentication type may not be enabled in the /etc/ssh/sshd_config configuration file')
                     return returnMsg(False,'Authentication failed, please check whether the private key is correct: {}'.format(e + "," + self._user + "@" + self._host + ":" +str(self._port)))
-                return returnMsg(False,'account or password incorrect:{}'.format(e + "," + self._user + "@" + self._host + ":" +str(self._port)))
+                return public.return_msg_gettext(False,'Account or Password incorrect: {}',(str(e + "," + self._user + "@" + self._host + ":" +str(self._port)),))
             if e.find('Bad authentication type; allowed types') != -1:
                 self.debug(public.get_msg_gettext('Authentication failed {}',(str(e),)))
                 if self._host in ['127.0.0.1','localhost'] and self._pass == 'none':
@@ -253,8 +254,6 @@ class ssh_terminal:
             return tuple(resp)
 
         self._tp.auth_interactive(self._user, handler)
-
-
 
     def get_login_user(self):
         '''
@@ -344,7 +343,6 @@ class ssh_terminal:
                             if not os.path.exists(host_path):
                                 os.makedirs(host_path,384)
                             return
-
 
 
                 if not self._pass or not self._pkey or not self._user:
@@ -449,8 +447,6 @@ class ssh_terminal:
                     public.writeFile(sshd_config_file,self._sshd_config_backup)
                     self.restart_ssh()
                 return True
-
-
 
             pin = r'^\s*PubkeyAuthentication\s+(yes|no)'
             pubkey_status = re.findall(pin,sshd_config,re.I)
@@ -654,7 +650,6 @@ class ssh_terminal:
             self._last_cmd = self._last_cmd[:-1]
             return
 
-
         #过滤特殊符号
         if send_data in ["\x1b[C","\x1b[D","\x1b[K","\x07","\x08","\x03","\x01","\x02","\x04","\x05","\x06","\x1bOB","\x1bOA","\x1b[8P","\x1b","\x1b[4P","\x1b[6P","\x1b[5P"]:
             return
@@ -680,8 +675,6 @@ class ssh_terminal:
         else:
             if self._last_num >= 0:
                 self._last_cmd += send_data
-            else:
-                self._last_cmd.insert(len(self._last_cmd) + self._last_num, send_data)
 
 
     def close(self):
@@ -773,7 +766,6 @@ class ssh_terminal:
             result = self.set_attr(ssh_info)
         else:
             result = public.get_msg_gettext(True,'ALREADY_CONNECTED')
-
         if result['status']:
             sendt = threading.Thread(target=self.send)
             recvt = threading.Thread(target=self.recv)
@@ -1165,7 +1157,7 @@ class ssh_host_admin(ssh_terminal):
             }
             @return dict
         '''
-        title = args.title.strip()
+        args.title = args.title.strip()
         command = self.get_command_list(sys_cmd=True)
         if not self.command_exists(command,args.title):
             return public.return_msg_gettext(False,'The specified command does not exist')
