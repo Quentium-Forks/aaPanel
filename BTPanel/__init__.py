@@ -439,18 +439,18 @@ def acme(pdata = None):
             'apply_cert_api', 'apply_dns_auth')
     return publicObject(acme_v2_object, defs, None, pdata)
 
-import panelMessage
-message_object = panelMessage.panelMessage()
-@app.route('/message/<action>', methods=method_all)
-def message(action=None):
-    # 提示消息管理
-    comReturn = comm.local()
-    if comReturn: return comReturn
-    import panelMessage
-    message_object = panelMessage.panelMessage()
-    defs = (
-    'get_messages', 'get_message_find', 'create_message', 'status_message', 'remove_message', 'get_messages_all')
-    return publicObject(message_object, defs, action, None)
+# import panelMessage
+# message_object = panelMessage.panelMessage()
+# @app.route('/message/<action>', methods=method_all)
+# def message(action=None):
+#     # 提示消息管理
+#     comReturn = comm.local()
+#     if comReturn: return comReturn
+#     import panelMessage
+#     message_object = panelMessage.panelMessage()
+#     defs = (
+#     'get_messages', 'get_message_find', 'create_message', 'status_message', 'remove_message', 'get_messages_all')
+#     return publicObject(message_object, defs, action, None)
 
 
 

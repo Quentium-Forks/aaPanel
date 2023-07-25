@@ -1660,6 +1660,8 @@ var bt_tools = {
                         })
                         html += '<ul class="help-info-text c7' + _that.$verify(item['class']) + '"' + _that.$verify(that.$reader_style(item.style), 'style') + ' ' + attribute + '>' + _html + '</ul>';
                         break;
+										case 'other':
+											html += item.boxcontent;
                 }
                 html += item.unit ? '<span class="' + (item.type === 'text-tips' ? 'text-tips' : 'unit') + '">' + item.unit + '</span>' : '';
                 html += '</div>'

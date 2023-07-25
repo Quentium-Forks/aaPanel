@@ -112,6 +112,7 @@ var logs = {
 			var _that = this
 			$('#panelCrontab .Tab').empty()
 			bt_tools.send({url: '/data?action=getData&table=crontab',data: {search: search ? search : '',p: 1,limit: 9999}}, function (rdata) {
+				$('#panelCrontab .Tab').empty()
 				$.each(rdata.data, function (index, item) {
 					$('#panelCrontab .Tab').append($('<div class="Item '+ (_that.crontabId && _that.crontabId === item.id ? 'active' : '' ) +'" title="'+ bt.htmlEncode.htmlEncodeByRegExp(item.name) + '" data-id="'+ item.id +'">'+ item.name +'</div>'))
 				})
