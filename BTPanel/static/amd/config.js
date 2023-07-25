@@ -284,6 +284,7 @@ define(["require", "exports", "./snabbdom", "./public/public", "./panelConfig", 
 							noticeConfig.init({ messageChannelInfo: messageChannelInfo, loginAlarmInfo: loginAlarmInfo });
 					})
 							.catch(function (err) {
+							console.log(err);
 							_this.$error(err.msg || 'Server Error');
 					})
 							.finally(function () {

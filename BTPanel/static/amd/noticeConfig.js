@@ -293,6 +293,7 @@ define(["require", "exports", "./public/public"], function (require, exports, pu
 							return __generator(this, function (_b) {
 									switch (_b.label) {
 											case 0:
+													console.log(1);
 													return [4, Promise.all([this.$request(['config/get_msg_configs'], { loading: false, msg: false }), this.$request(['config/get_login_send'], { loading: false, msg: false })])];
 											case 1:
 													_a = _b.sent(), alarms = _a[0], send = _a[1];

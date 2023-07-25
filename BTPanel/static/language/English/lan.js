@@ -31,8 +31,9 @@ var lan = {
 		}
 
 		if(!msgs[key]) return '';
-		var msg = msgs[key];
+		msg = msgs[key];
 		for(var i=0;i<args.length;i++){
+			// console.log('test',args[i])
 			msg = msg.replace('{'+(i+1)+'}',args[i]+'');
 		}
 

@@ -300,11 +300,13 @@ function _handle_send_session(zsession) {
                 {
                     on_offer_response(obj, xfer) {
                         if (xfer) _show_progress();
+                        //console.log("offer", xfer ? "accepted" : "skipped");
                     },
                     on_progress(obj, xfer) {
                         _update_progress(xfer);
                     },
                     on_file_complete(obj) {
+                        //console.log("COMPLETE", obj);
                         _hide_progress();
                     },
                 }

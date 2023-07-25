@@ -1287,7 +1287,43 @@ var bt = {
             }
         }
         return that;
-    }
+    },
+	/**
+	 * @description 普通提示弹窗
+	 * @param {Object} config 弹窗对象 {title:标题, msg:提示内容}
+	 * @param {function} callback 确认回调函数
+	 * @param {function} callback1 取消回调函数
+	 */
+	simple_confirm: function (config, callback, callback1) {
+		layer.open({
+			type: 1,
+			title: config.title,
+			area: '430px',
+			closeBtn: 2,
+			shadeClose: false,
+			btn: [lan['public'].ok, lan['public'].cancel],
+			content:
+				'<div class="bt-form hint_confirm pd30">\
+        <div class="hint_title">\
+          <i class="hint-confirm-icon"></i>\
+          <div class="hint_con">' +
+				config.msg +
+				'</div>\
+        </div>\
+      </div>',
+			yes: function (index, layero) {
+				if (callback && typeof callback(index) === 'undefined') layer.close(index);
+			},
+			btn2: function (index) {
+				//取消返回回调
+				if (callback1 && typeof callback1(index) === 'undefined') layer.close(index);
+			},
+			cancel: function (index) {
+				//取消返回回调
+				if (callback1 && typeof callback1(index) === 'undefined') layer.close(index);
+			}
+		});
+	},
 };
 
 
@@ -1368,6 +1404,47 @@ bt.pub = {
             })
         })
     },
+		set_ftp_logs: function (type) {
+			var serverName = 'pure-ftpd';
+			var data = 'exec_name=' + type;
+			var typeName = 'enabling ';
+			var TypeName = 'Enabling ';
+			switch (type) {
+				case 'stop':
+					typeName = 'disabling ';
+					TypeName = 'Disabling ';
+					break;
+			}
+			var status = type == 'stop' ? false : true;
+			layer.confirm(
+				'After '+typeName + 'pure-ftpd Logs management,' + (status ? 'all login and operation records of FTP users will be recorded.' : 'it will no longer be possible to record all login and operation records of FTP users. ') + ' Do you want to proceed?',
+				{
+					title: TypeName + serverName + ' logs management',
+					closeBtn: 2,
+					icon: 3,
+					cancel: function () {
+						$('#isFtplog').prop('checked', !status);
+					},
+				},
+				function () {
+					var load = bt.load(TypeName + 'Pure-FTPd logs management, please wait...');
+					bt.send('ftp', 'ftp/set_ftp_logs', data, function (rdata) {
+						load.close();
+						bt.msg(rdata);
+						$('.bt-soft-menu p').eq(3).click();
+					});
+				},
+				function () {
+					$('#isFtplog').prop('checked', !status);
+				}
+			);
+		},
+		get_ftp_logs: function (callback) {
+			bt.send('ftp', 'ftp/set_ftp_logs', { exec_name: 'getlog' }, function (res) {
+				var _status = res.msg === 'start' ? true : false;
+				if (callback) callback(_status);
+			});
+		},
     set_server_status_by: function(data, callback) {
         bt.send('system', 'system/ServiceAdmin', data, function(rdata) {
             if (callback) callback(rdata)
@@ -4149,7 +4226,9 @@ bt.soft = {
             var index = 0;
             try {
               delete rdata.pid
-            } catch (error) {}
+            } catch (error) {
+              console.log(rdata.pid);
+            }
             that.each(rdata, function (key, item) {
               _arry.push($.extend({cycle: parseInt(key)}, item));
             });
@@ -5391,6 +5470,7 @@ bt.soft = {
             // })
             bt.soft.show_speed_window({title:'Updating to [' + title+'-'+version+'.'+min_version+'],Please wait...',status:true,soft:{type:parseInt(type)}},function(){
 				bt.send('install_plugin', 'plugin/install_plugin', { sName: name, version: version, upgrade: version }, function (rdata) {
+                    console.log(rdata);
 					if (rdata.size) {
 						_this.install_other(rdata)
 						return;
@@ -7512,3 +7592,123 @@ function setPanelSSL(){
         // }, 200);
     });
 }
+
+var dynamic = {
+	loadList: [],
+	fileFunList: {},
+	load: false,
+	callback: null,
+
+	// 初始化执行
+	execution: function () {
+		for (var i = 0; i < this.loadList.length; i++) {
+			var fileName = this.loadList[i];
+			if (fileName in this.fileFunList) this.fileFunList[fileName]();
+		}
+	},
+
+	/**
+	 * @description 动态加载js,css文件
+	 * @param urls {string|array} 文件路径或文件数组
+	 * @param fn {function|undefined} 回调函数
+	 */
+	require: function (urls, fn) {
+		if (!Array.isArray(urls)) urls = [urls];
+
+		this.fileFunList = {};
+
+		var i = 0;
+		var that = this;
+		var total = urls.length;
+		var callback = function () {
+			i++;
+			if (i < total) {
+				that.loadFile(urls[i], callback);
+			} else {
+				fn && fn();
+			}
+		};
+		this.loadFile(urls[i], callback);
+	},
+	/**
+	 * @description 加载js,css文件
+	 * @param {string} url 文件路径
+	 * @param {function} fn 回调函数
+	 */
+	loadFile: function (url, fn) {
+		this.load = true;
+
+		var that = this;
+		var element = this.createElement(url);
+
+		if (element.readyState) {
+			element.onreadystatechange = function (ev) {
+				if (element.readyState === 'loaded' || element.readyState === 'complete') {
+					element.onreadystatechange = null;
+					that.execution();
+					fn && fn.call(that);
+					that.load = false;
+				}
+			};
+		} else {
+			element.onload = function (ev) {
+				that.execution();
+				fn && fn.call(that);
+				that.load = false;
+			};
+		}
+		document.getElementsByTagName('head')[0].appendChild(element);
+	},
+	/**
+	 * @description 创建元素
+	 * @param {string} url 文件路径
+	 * @returns
+	 */
+	createElement: function (url) {
+		var element = null;
+		if (url.indexOf('.js') > -1) {
+			element = document.createElement('script');
+			element.type = 'text/javascript';
+			element.src = bt.url_merge('/vue/' + url);
+		} else if (url.indexOf('.css') > -1) {
+			element = document.createElement('link');
+			element.rel = 'stylesheet';
+			element.href = bt.url_merge('/vue/' + url);
+		}
+		return element;
+	},
+	/**
+	 * @default 执行延迟文件内容执行
+	 * @param fileName {string} 文件名称，不要加文件后缀
+	 * @param callback {function} 回调行数
+	 */
+	delay: function delay(fileName, callback) {
+		if (!this.load) {
+			callback();
+			return false;
+		}
+		this.fileFunList[fileName] = callback;
+	},
+};
+
+// 过滤编码
+bt.htmlEncode = {
+	/**
+	 * @description 正则转换特殊字符
+	 * @param {string} layid 字符内容
+	 */
+	htmlEncodeByRegExp: function (str) {
+		if (typeof str == 'undefined' || str.length == 0) return '';
+		return str
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/ /g, '&nbsp;')
+			.replace(/\'/g, '&#39;')
+			.replace(/\"/g, '&quot;')
+			.replace(/\(/g, '&#40;')
+			.replace(/\)/g, '&#41;')
+			.replace(/`/g, '&#96;')
+			.replace(/=/g, '＝');
+	},
+};

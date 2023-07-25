@@ -1437,7 +1437,9 @@ var index = {
                         setup_length ++;
                     }
                 }
-            } catch (error) {}
+            } catch (error) {
+                console.log(error)
+            }
             //软件位置移动
             if (setup_length <= softboxsum) {
                 for (var i = 0; i < softboxsum - setup_length; i++) {
@@ -1655,6 +1657,7 @@ var index = {
             }
             settime($('#notice'));
             $('#notice').click(function () {
+                console.log($(this).prop('checked'))
                 if ($(this).prop('checked')) {
                     $('.btn_update_panel_beta').removeAttr('disabled');
                 } else {
@@ -1800,7 +1803,9 @@ var index = {
         }, 'jsonp');
     },
     get_cloud_list: function () {
-        $.post('/plugin?action=get_soft_list', { type: 8, p: 1, force: 1, cache: 1 }, function (rdata) {});
+        $.post('/plugin?action=get_soft_list', { type: 8, p: 1, force: 1, cache: 1 }, function (rdata) {
+            console.log(lan.index.get_soft_list_success);
+        });
     },
     // 获取安全风险列表
     get_warning_list:function(active,callback){
@@ -2072,7 +2077,9 @@ var index = {
         </div>'
                 $('#home-recommend').html(html)
             }
-        } catch (error) {}
+        } catch (error) {
+            console.log(error)
+        }
     }
 }
 index.get_init();

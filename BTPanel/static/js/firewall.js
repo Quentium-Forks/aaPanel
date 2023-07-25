@@ -579,6 +579,9 @@ var safety = {
 						}, lan.security.firewall.import_req)
 					}
 				}
+			},
+			error: function (e) {
+				console.log("上传规则文件出问题喽!")
 			}
 		})
 	},
@@ -2200,6 +2203,7 @@ var intrusion = {
 					group: [{
 						title: lan.public.del,
 						event: function (row, index) {
+							console.log(arguments);
 							bt.confirm({
 								title: lan.security.intrusion.del_whitelist_title + ' ['+ row +']',
 								msg: lan.security.intrusion.del_whitelist_msg
@@ -3006,6 +3010,7 @@ var logAudit = {
 		var that = this;
 		var column = [], data = rdata[0] ? rdata[0] : { 'Time': '--', 'Role': '--', 'Even': '--' }, i = 0;
 		$.each(data, function (key) {
+			// console.log(key === '时间',i)
 			column.push({ title: key, fid: key,width: (key === 'Time' &&  i === 0) ? '200px' : (key === 'Time'?'300px':'') })
 			i++;
 		})

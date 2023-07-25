@@ -2,6 +2,7 @@ $(function(){
     $.fn.extend({
         fixedThead:function(options){
             var _that = $(this);
+            console.log(_that);
             var option = {
                 height:400,
                 shadow:true,
@@ -2996,6 +2997,7 @@ function loadScript(arry, param, callback) {
             if (script.readyState) {
                 (function(i) {
                     script.onreadystatechange = function() {
+                        console.log(arry[i]);
                         if (script.readyState == "loaded" || script.readyState == "complete") {
                             script.onreadystatechange = null;
                             bt['loadScript'].push(arry[i]);
@@ -3835,6 +3837,7 @@ function messagebox(){
 						bt.send('GetExecLog','files/GetExecLog',{},function(res){
 							loadT.close();
 							var exec_log = $('#execLog');
+							// console.log(exec_log)
 							exec_log.html(res)
 							exec_log[0].scrollTop = exec_log[0].scrollHeight
 						})
@@ -4323,13 +4326,17 @@ var Term = {
 	// 		if(Term.state === 3) return
 	// 		Term.term.write(msg)
 	// 		Term.state = 3;
-	// 	   }
+	// 	}else{
+	// 		console.log(ws_event)
+	// 	}
     // },
     on_error: function (ws_event) {
 		if(ws_event.target.readyState === 3){
 			if(Term.state === 3) return
 			Term.term.write(msg)
 			Term.state = 3;
+		}else{
+			console.log(ws_event)
 		}
     },
 
@@ -5335,6 +5342,7 @@ var product_recommend = {
     recommend_product_view: function (config) {
         var name = config.name.split('_')[0];
         var status = this.get_pay_status();
+        console.log(status);
         bt.open({
             title:false,
             area:'650px',

@@ -527,6 +527,8 @@ var controlObj = {
             var read_GB = read_MB / 1024;
             var write_GB = write_MB / 1024;
             if ((read_GB >= 1 || write_GB >= 1) && !is_gt_GB) {
+              // console.log(read_GB);
+              // console.log(write_GB);
               is_gt_GB = true;
             }
           }
@@ -1004,6 +1006,7 @@ var controlObj = {
      * 获取平均负载图表配置
      */
     get_load_option: function (startTime, endTime, yData, zData, aData, bData) {
+			console.log(1);
       var that = this;
       var option = this.get_default_option(startTime, endTime);
       var interval = ((endTime - startTime) / 3) * 1000;

@@ -1138,6 +1138,9 @@ var site = {
                 //         [{"启动命令":rdata.user}],
                 //     ])
                 //
+                // console.log(tabelCon)
+                //
+                //
                 //     function reand_table_config(conifg){
                 //         var html = '';
                 //         for (var i = 0; i < conifg.length; i++) {
@@ -1145,8 +1148,10 @@ var site = {
                 //             html += '<tr>';
                 //             for (var j = 0; j < item; j++) {
                 //                 var items = config[j],name = Object.keys(items)[0];
+                //                 console.log(items,name)
                 //                 html += '<td>'+  name +'</td><td>'+ items[name] +'</td>'
                 //             }
+                //             console.log(html)
                 //             html += '</tr>'
                 //         }
                 //         return '<div class="divtable"><table class="table"><tbody>'+ html  +'</tbody></tbody></table></div>';
@@ -1738,6 +1743,7 @@ var site = {
                         return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
                     },
                     event: function (row, index, ev, key, that) {
+                        //   console.log(row, '111');
                         site.web_edit(row);
                         setTimeout(function () {
                             $('.site-menu p:eq(8)').click();
@@ -1847,6 +1853,7 @@ var site = {
 											event: function (ev) {
 												site.add_site(function (res, param) {
 													var id = bt.get_cookie('site_type');
+													console.log(id)
 													if (param) { // 创建站点
 														if (id != -1 && id != param.type_id) {
 															$('#php_cate_select .bt_select_list .item.active').click();
@@ -2459,6 +2466,7 @@ var site = {
                     var data = {};
                     data.file_name = $(this).attr('backup-name');
                     data.site_id = $(this).attr('site-id');
+                    // console.log(data);
                     layer.confirm('Are you sure to restore backup file?', {
                         icon: 0,
                         closeBtn: 2,
@@ -2517,6 +2525,7 @@ var site = {
                                     var data = {};
                                     data.file_name = row.name;
                                     data.site_id = config.id;
+                                    // console.log(data);
                                     layer.confirm('Are you sure to restore backup file?', {
                                         icon: 0,
                                         closeBtn: 2,
@@ -4600,6 +4609,7 @@ var site = {
                                                             text: 'Save',
                                                             type: 'button',
                                                             callback: function (ldata) {
+                                                                console.log(ret)
                                                                 bt.files.set_file_body(ret.filename, ldata.dir_config, 'utf-8', function (sdata) {
                                                                     if (sdata.status) load_form.close();
                                                                     bt.msg(sdata);
@@ -5540,6 +5550,7 @@ var site = {
                     setTimeout(function () {
                         $('select[name="versions"]').change(function () {
                             var phpversion = $(this).val();
+                            // console.log(phpversion);
                             if (phpversion == 'other') {
                                 $('.other-version').show();
                             } else {
@@ -7090,6 +7101,7 @@ var site = {
                     title: "Let's Encrypt",
                     callback: function (robj) {
                         robj = $('#webedit-con .tab-con')
+                        // console.log(robj,'obj');
                         acme.get_account_info(function (let_user) {
                         });
                         acme.id = web.id;
@@ -7367,6 +7379,7 @@ var site = {
                                     $('#ymlist li:visible input[type="checkbox"]:checked').each(function () {
                                         ldata['domains'].push($(this).val());
                                     });
+																		console.log(ldata)
                                     var auth_type = 'http'
                                     var auth_to = web.id
                                     var auto_wildcard = '0'

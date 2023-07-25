@@ -1487,7 +1487,9 @@ var bt_tools = {
                         (help ? ('<div class="c9 mt5 ' + _that.$verify(help['class'], 'class') + '" ' + _that.$verify(that.$reader_style(help.style), 'style') + '>' + help.list.join('</br>') + '</div>') : '') +
                         '</div>' +
                         '</div>';
-                } catch (error) {}
+                } catch (error) {
+                    console.log(error)
+                }
             },
 
             /**
@@ -2143,6 +2145,7 @@ var bt_tools = {
                     $('#tab_' + that.random + ' .' + _theme['body'] + '>div:eq(' + index + ')').addClass(active).siblings().removeClass(active);
                     that.active = index;
                     if (!config.init) {
+                        // console.log(_theme)
                         var contentItem = $('#tab_' + that.random + ' .' + _theme['body'] + '>div:eq(' + index + ')')
                         contentItem.html(config.content);
                         if (config.success) config.success(contentItem);

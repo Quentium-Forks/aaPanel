@@ -630,6 +630,7 @@ var database = {
 		$('input[type="checkbox"].check:checked').each(function () {
 			if (!isNaN($(this).val())) data.push($(this).val());
 		});
+		console.log(type);
 		bt.database.sync_to_database({ type: type, ids: JSON.stringify(data) }, function (rdata) {
 			if (rdata.status) that.getDatabaseList();
 		});

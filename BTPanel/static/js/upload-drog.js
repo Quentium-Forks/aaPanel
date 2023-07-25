@@ -261,6 +261,7 @@ UploadFile.prototype = {
                         _this2.isUpload = true;
                         _this2.isGetFiles = true;
                         var files = ev.target.files;
+                        // console.log(files)
                         for (var i = 0; i < files.length; i++) {
                             if (!_this2.file_upload_limit(files[i])) return false;
                         }
@@ -533,6 +534,8 @@ UploadFile.prototype = {
                                 _this3.uploadInfo.uploadedSize += parseInt(fileEnd - fileStart);
                             }
 
+                            // console.log(rdata, index);
+
                             // 继续上传文件
                             _this3.upload_file(rdata, index);
                         } else {
@@ -633,7 +636,10 @@ UploadFile.prototype = {
 
             file_info.querySelector('.uploadNumber').innerText = '(' + this.uploadList.length + '/' + this.fileList.length + ')';
             file_info.querySelector('.uploadProgress').innerText = ((this.uploadInfo.uploadedSize / this.fileTotalSize) * 100).toFixed(2) + '%';
-        } catch (e) {}
+        } catch (e) {
+            console.log(e)
+        }
+
     },
 
 

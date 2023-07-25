@@ -1099,6 +1099,7 @@ var soft = {
                 var arrs = datas.public;
                 if (name == 'phpmyadmin') arrs = [];
                 if (name == 'openlitespeed') arrs.length = 1;
+								if(name === 'pureftpd') arrs.push({type: 'pureftpd_log',title: 'Logs Manage'});
                 arrs = arrs.concat(datas[name]);
                 if (arrs) {
                     for (var i = 0; i < arrs.length; i++) {
@@ -1131,7 +1132,7 @@ var soft = {
             var menu = $('.bt-soft-menu').data("data", rdata);
             setTimeout(function() {
                 menu.append($('<p class="bgw bt_server" onclick="soft.get_tab_contents(\'service\',this)">' + lan.soft.service + '</p>'))
-                if (rdata.version_coexist) {
+								if (rdata.version_coexist) {
                     var ver = name.split('-')[1].replace('.', '');
                     var opt_list = [{
                             type: 'set_php_config',
@@ -1255,6 +1256,27 @@ var soft = {
             var version = data.name;
             if (data.name.indexOf('php-') >= 0) version = data.name.split('-')[1].replace('.', '');
             switch (key) {
+									case 'pureftpd_log': //ftp日志管理
+									var tabCon = $(".soft-man-con").empty();
+									bt.pub.get_ftp_logs(function (_status) {
+										tabCon.append('<div class="inlineBlock" style="height: 30px;">\
+												<span style="vertical-align: middle;">Logs manage switch</span>\
+												<div class="ftp-log ml5" style="float: inherit;display: inline-block;vertical-align: middle;">\
+														<input class="btswitch btswitch-ios" id="isFtplog" type="checkbox" '+ (_status ? 'checked' : '') +'>\
+														<label class="btswitch-btn isFtplog" for="isFtplog"></label>\
+												</div>\
+										</div><ul class="help-info-text c7"><li>After enabling it, all login and operation records of FTP users will be logged.</li></ul>');
+										$('.ftp-log .isFtplog').unbind('click').click(function () {
+											var status = $(this).prev().prop('checked');
+											bt.pub.set_ftp_logs(status ? 'stop' : 'start')
+										})
+										var pro = parseInt(bt.get_cookie('pro_end')  || -1)
+										if(pro < 0){
+											tabCon.append('<div class="mask_layer">\
+												<div class="prompt_description" style="margin-top: -60px;"><i class="layui-layer-ico layui-layer-ico0" style="width: 20px;height: 20px;display: inline-block;margin-right: 15px;vertical-align: middle;background-size: 700%;"></i>This feature is exclusive to the Professional version, <a class="btlink" onclick="bt.soft.product_pay_view({totalNum:56,limit:\''+ "ltd" +'\',closePro:false})">Buy Now</a></div></div>')
+										}
+									})
+								break;
                 case 'service':
                     var tabCon = $(".soft-man-con").empty();
                     var status_list = [{
@@ -4144,6 +4166,7 @@ var score = {
                     </div>\
                     <div class="comment_box_content">' + (getLength(_data[j].ps) > 65 ? reBytesStr(_data[j].ps, 65) + '...&nbsp;<a href="javascript:;" class="btlink">Details</a>' : _data[j].ps) + '</div>\
                 </div>'
+                    // console.log(getLength(_data[j].ps)>70?reBytesStr(_data[j].ps,70)+'&nbsp;<a href="javascript:;" class="btlink">详情</a>':_data[j].ps);
             }
             _this.data = _this.data.concat(_data);
             if (res.total > 10 && _data.length === 10) {

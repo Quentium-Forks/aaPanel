@@ -171,6 +171,9 @@ $('#panel_verification').click(function(){
 				$('#panel_verification').prop('checked',!_checked);
 		   });
 	}
+
+	// console.log(_data);
+
 });
 
 $('.open_two_verify_view').click(function(){
@@ -935,6 +938,7 @@ $(function () {
 
 function bt_init() {
     var btName = $("input[name='btusername']").val();
+    //console.log(btName);
     if (!btName) {
         $('.wxapp_p .inputtxt').val(lan.config.no_bind_bt_account);
         $('.wxapp_p .modify').attr("onclick", "");
@@ -1132,6 +1136,7 @@ function set_panel_report(){
 				$(".bt-w-menu p").click(function () {
 					var index = $(this).index();
 					$(this).addClass('bgw').siblings().removeClass('bgw');
+					console.log(index,'111');
 					switch(index){
 						case 0:
 							get_log_table();

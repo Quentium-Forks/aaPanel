@@ -391,7 +391,7 @@ def ftp(pdata = None):
         return render_template('ftp.html',data=data)
     import ftp
     ftpObject = ftp.ftp()
-    defs = ('AddUser','DeleteUser','SetUserPassword','SetStatus','setPort','set_user_home')
+    defs = ('AddUser','DeleteUser','SetUserPassword','SetStatus','setPort','set_user_home','get_login_logs', 'get_action_logs', 'set_ftp_logs')
     return publicObject(ftpObject,defs,None,pdata)
 
 
@@ -477,6 +477,17 @@ def control(pdata=None):
     data['js_random'] = get_js_random()
     return render_template( 'control.html',data=data)
 
+
+
+@app.route('/logs',methods=method_all)
+def logs(pdata = None):
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    if request.method == method_get[0] and not pdata:
+        data={}
+        data['lan'] = public.GetLan('soft')
+        data['show_workorder'] = not os.path.exists('data/not_workorder.pl')
+        return render_template( 'logs.html',data=data)
 
 @app.route('/firewall', methods=method_all)
 def firewall(pdata=None):
