@@ -36,23 +36,23 @@ from BTPanel import app,sys,public
 is_debug = os.path.exists('data/debug.pl')
 
 
-# # 检查加载器
-# def check_plugin_loader():
-#     plugin_loader_file = 'class/PluginLoader.so'
-#     machine = 'x86_64'
-#     try:
-#         machine = os.uname().machine
-#     except:
-#         pass
-#     plugin_loader_src_file = "class/PluginLoader.{}.Python3.7.so".format(machine)
-#     if machine == 'x86_64':
-#         glibc_version = public.get_glibc_version()
-#         if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
-#             plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.7.so".format(machine)
-#     if os.path.exists(plugin_loader_src_file):
-#         os.system("\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
+# 检查加载器
+def check_plugin_loader():
+    plugin_loader_file = 'class/PluginLoader.so'
+    machine = 'x86_64'
+    try:
+        machine = os.uname().machine
+    except:
+        pass
+    plugin_loader_src_file = "class/PluginLoader.{}.Python3.7.so".format(machine)
+    if machine == 'x86_64':
+        glibc_version = public.get_glibc_version()
+        if glibc_version in ['2.14','2.13','2.12','2.11','2.10']:
+            plugin_loader_src_file = "class/PluginLoader.{}.glibc214.Python3.7.so".format(machine)
+    if os.path.exists(plugin_loader_src_file):
+        os.system("\cp -f {} {}".format(plugin_loader_src_file, plugin_loader_file))
 
-# check_plugin_loader()
+check_plugin_loader()
 
 
 if is_debug:
