@@ -34,19 +34,9 @@ class tg_msg:
     def __init__(self):
         try:
             red_conf_path = public.readFile(self.conf_path)
-            # public.print_log("开始检查--red_conf_path:{}".format(red_conf_path))
 
             self.__tg_info = json.loads(red_conf_path)
-            # public.print_log("开始检查--self.__tg_info:{}".format(self.__tg_info))
-
-            # aa = self.__tg_info['bot_token']
-            # public.print_log("开始检查--bot_token:{}".format(aa))
-
-            # a1 = self.__tg_info['my_id']
-            # public.print_log("开始检查--my_id:{}".format(a1))
-
             if not 'bot_token' in self.__tg_info or not 'my_id' in self.__tg_info:
-                # public.print_log("开始检查--aaa2")
                 self.__tg_info = None
         except:
             self.__tg_info = None
@@ -220,7 +210,7 @@ class tg_msg:
             return public.returnMsg(True, 'send complete, send result: True.')
 
         except:
-            public.print_log('错误信息为:{}'.format(str(public.get_error_info())))
+            public.print_log('Error:{}'.format(str(public.get_error_info())))
 
             ret = {'success': 0}
 

@@ -395,6 +395,8 @@ class main(databaseBase):
             item['conn_config'] = cloud_list['id-' + str(arrs[0])]
 
             nlist.append(item)
+        if hasattr(get, 'sort'):
+            nlist = sorted(nlist, key=lambda data: data['mtime'], reverse=get["sort"] == "desc")
         return nlist
 
 

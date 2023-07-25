@@ -61,6 +61,32 @@ class crontab:
             data.append(tmp)
         return data
 
+    def get_backup_list(self, args):
+        '''
+            @name 获取指定备份任务的备份文件列表
+            @author hwliang
+            @param args<dict> 参数{
+                cron_id<int> 任务ID 必填
+                p<int> 页码 默认1
+                rows<int> 每页显示条数 默认10
+                callback<string> jsonp回调函数  默认为空
+            }
+            @return <dict>{
+                page<str> 分页HTML
+                data<list> 数据列表
+            }
+        '''
+
+        p = args.get('p/d', 1)
+        rows = args.get('rows/d', 10)
+        tojs = args.get('tojs/s', '')
+        callback = args.get('callback/s', '') if tojs else tojs
+
+        cron_id = args.get('cron_id/d')
+        count = public.M('backup').where('cron_id=?', (cron_id,)).count()
+        data = public.get_page(count, p, rows, callback)
+        data['data'] = public.M('backup').where('cron_id=?', (cron_id,)).limit(data['row'], data['shift']).select()
+        return data
 
     def get_last_exec_time(self,log_file):
         '''

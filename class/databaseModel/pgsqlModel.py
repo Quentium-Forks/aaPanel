@@ -10,8 +10,7 @@
 #------------------------------
 # postgresql模型
 #------------------------------
-from genericpath import isfile
-import os,sys,re,json,shutil,psutil,time
+import os,re,json,time
 from databaseModel.base import databaseBase
 import public
 try:

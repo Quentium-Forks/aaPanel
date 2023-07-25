@@ -806,6 +806,17 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
     # 创建文件
     def CreateFile(self, get):
+        # 校验磁盘大小
+        df_data = public.ExecShell("df -T | grep '/'")[0]
+        for data in str(df_data).split("\n"):
+            data_list = data.split()
+            if not data_list: continue
+            use_size = data_list[4]
+            size = data_list[5]
+            disk_path = data_list[6]
+            if int(use_size) < 1024 and str(size).rstrip("%") == "100" and disk_path in ["/","/www"]:
+                return public.return_msg_gettext(False, f"File creation failed! The disk is full! please clear the space first!")
+
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8').strip()
         try:
@@ -974,7 +985,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def Re_Recycle_bin(self, get):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
-
+        get.path = public.html_decode(get.path).replace(';','')
         dFile = get.path.replace('_bt_', '/').split('_t_')[0]
 
         # 检查所在回收站目录
@@ -1055,6 +1066,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def Del_Recycle_bin(self, get):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
+
+        get.path = public.html_decode(get.path).replace(';','')
 
         dFile = get.path.split('_t_')[0]
         # 检查所在回收站目录
@@ -1617,7 +1630,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             total_size = os.path.getsize(path)
             total_num = 1
             if total_size > max_size:
-                return True
+                return True,total_size,total_num
             return False,total_size,total_num
 
         # 是否为目录？
@@ -1657,6 +1670,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         total_size = 0
         total_num = 0
         status = True
+        if not os.path.exists(os.path.dirname(get.dfile)):
+            os.makedirs(os.path.dirname(get.dfile))
         for file_name in get.sfile.split(','):
             path = os.path.join(get.path,file_name)
             status,total_size,total_num = self.is_max_size(path,max_size,max_num,total_size,total_num)
@@ -1867,7 +1882,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                     sfile = session['selected']['path'] + '/' + key
                     dfile = get.path + '/' + key
 
-                if dfile.find(sfile) == 0:
+                if os.path.commonpath([dfile, sfile]) == sfile:
                     return public.return_msg_gettext(False,'Wrong copy logic, from {} copy to {} has an inclusive relationship, there is an infinite loop copy risk!'.format(sfile,dfile))
 
             for key in myfiles:
@@ -1875,7 +1890,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 public.writeSpeed(key, i, l)
                 try:
                     if sys.version_info[0] == 2:
-                        sfile = session['selected']['path'] + '/' + key.encode('utf-8')
+                        sfile = session['selected']['path'] + \
+                            '/' + key.encode('utf-8')
                         dfile = get.path + '/' + key.encode('utf-8')
                     else:
                         sfile = session['selected']['path'] + '/' + key

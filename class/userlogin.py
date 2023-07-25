@@ -188,7 +188,7 @@ class userlogin:
             public.set_error_num(skey,True)
             userInfo = public.M('users').where("id=?",(1,)).field('id,username').find()
             session['login'] = True
-            session['username'] = public.get_msg_gettext('TEMPORARY_ID',(data['id'],))
+            session['username'] = public.get_msg_gettext('TEMPORARY_ID({})',(data['id'],))
             session['tmp_login'] = True
             session['tmp_login_id'] = str(data['id'])
             session['tmp_login_expire'] = time.time() + 3600
@@ -253,7 +253,7 @@ class userlogin:
         html_token_key = public.get_csrf_html_token_key()
         session[html_token_key] = public.GetRandomString(48)
         session[html_token_key.replace("https_","")] = public.GetRandomString(48)
-        session['client_hash'] = public.get_client_hash()
+        #session['client_hash'] = public.get_client_hash()
 
     def set_cdn_host(self,get):
         try:

@@ -390,27 +390,126 @@ class main(databaseBase):
         name = args.name
         file = args.file
 
-        find = public.M('databases').where("name=?",(name,)).find()
+        if not os.path.exists(file): return public.returnMsg(False,'导入路径不存在!')
+        if not os.path.isfile(file): return public.returnMsg(False,'仅支持导入压缩文件!')
+        find = public.M('databases').where("name=? AND LOWER(type)=LOWER('MongoDB')",(name,)).find()
         if not find: return public.returnMsg(False,'This database was not found!')
 
         get = public.dict_obj()
         get.sid = find['sid']
-        try:
-            sid = int(find['sid'])
-        except:
-            return public.returnMsg(False, 'Database type sid needs int type!')
         if not public.process_exists("mongod") and not int(find['sid']):
             return public.returnMsg(False,"Mongodb service has not been started yet!")
         info = self.get_info_by_db_id(find['id'])
-        sql_dump = '{}/mongodb/bin/mongo'.format(public.get_setup_path())
-        if not os.path.exists(sql_dump): return public.returnMsg(False,'Lack of backup tools, please install MongoDB through [APP Store] first!')
+        mongorestore_obj = '{}/mongodb/bin/mongorestore'.format(public.get_setup_path())
+        mongoimport_obj = '{}/mongodb/bin/mongoimport'.format(public.get_setup_path())
+        if not os.path.exists(mongorestore_obj): return public.returnMsg(False,'Lack of backup tools, please install MongoDB through [APP Store] first!')
 
-        if self.get_local_auth(get):
-            shell = "{} -h {} --port {} -u {} -p {} -d {} --drop {} ".format(sql_dump,info['db_host'],info['db_port'],info['db_user'],info['db_password'],find['name'] ,file)
+        dir_tmp, file_tmp = os.path.split(file)
+        split_tmp = file_tmp.split(".")
+        ext = split_tmp[-1]
+
+        ext_err = ".".join(split_tmp[1:])
+        if len(split_tmp[1:]) == 2 and split_tmp[1] not in ['json', 'csv']:
+            return public.returnMsg(False, f'.{ext_err} This file format is not currently supported！')
+        if ext not in ['json', 'csv', 'gz', 'zip']:
+            return public.returnMsg(False, f'.{ext_err} This file format is not currently supported！')
+
+        tmpFile = ".".join(split_tmp[:-1])
+        isgzip = False
+        if ext != '': # gz zip
+            if tmpFile == '':
+                return public.returnMsg(False, 'FILE_NOT_EXISTS', (tmpFile,))
+            isgzip = True
+
+            # 面板默认备份路径
+            backupPath = session['config']['backup_path'] + '/database'
+            input_path = os.path.join(backupPath, tmpFile)
+            # 备份文件的路径
+            input_path2 = os.path.join(dir_tmp, tmpFile)
+
+            if ext == 'zip': # zip
+                public.ExecShell("cd " + backupPath + " && unzip " + '"' + file + '"')
+            else: # gz
+                public.ExecShell("cd " + backupPath + " && tar zxf " + '"' + file + '"')
+                if not os.path.exists(input_path):
+                    # 兼容从备份文件所在目录恢复
+                    if not os.path.exists(input_path2):
+                        public.ExecShell("cd " + backupPath + " && gunzip -q " + '"' + file + '"')
+                    else:
+                        input_path = input_path2
+
+            if not os.path.exists(input_path) and os.path.isfile(input_path2):
+                input_path = input_path2
         else:
-            shell = "{} -h {} --port {} -d {} --drop {}".format(sql_dump,info['db_host'],info['db_port'],find['name'] ,file)
-        public.ExecShell(shell)
+            input_path = file
 
+        if os.path.isdir(input_path): # zip,gz,bson
+            if self.get_local_auth(get):
+                for temp_file in os.listdir(input_path):
+                    shell = f"""
+                        {mongorestore_obj} \
+                        --host={info['db_host']} \
+                        --port={info['db_port']} \
+                        --db={find['name']} \
+                        --username={info['db_user']} \
+                        --password={info['db_password']} \
+                        --drop \
+                        {os.path.join(input_path, temp_file)}
+                    """
+                    public.ExecShell(shell)
+            else:
+                for temp_file in os.listdir(input_path):
+                    shell = f"""
+                        {mongorestore_obj} \
+                        --host={info['db_host']} \
+                        --port={info['db_port']} \
+                        --db={find['name']} \
+                        --drop \
+                        {os.path.join(input_path, temp_file)}
+                    """
+                    public.ExecShell(shell)
+            if isgzip is True:
+                public.ExecShell("rm -f " + input_path)
+        else:# json,csv
+            file_tmp = os.path.basename(input_path)
+            file_name = file_tmp.split(".")[0]
+            ext = file_tmp.split(".")[-1]
+
+            if ext not in ["json","csv"]:
+                return public.returnMsg(False, 'File format is incorrect!')
+
+            shell_txt = ""
+            if ext == "csv":
+                fp = open(input_path, "r")
+                fields_list = fp.readline()
+                fp.close()
+                shell_txt = f"--fields={fields_list}"
+            if self.get_local_auth(get):
+                shell = f"""
+                    {mongoimport_obj} \
+                    --host={info['db_host']} \
+                    --port={info['db_port']} \
+                    --db={find['name']} \
+                    --username={info['db_user']} \
+                    --password={info['db_password']} \
+                    --collection={file_name} \
+                    --file={input_path} \
+                    --type={ext} \
+                    --drop
+                """
+            else:
+                shell = f"""
+                    {mongoimport_obj} \
+                    --host={info['db_host']} \
+                    --port={info['db_port']} \
+                    --db={find['name']} \
+                    --collection={file_name} \
+                    --file={input_path} \
+                    --type={ext} \
+                    --drop
+                """
+            shell = f"{shell} {shell_txt}"
+            public.ExecShell(shell)
         public.WriteLog("Database manager", 'Import database [{}] succeeded'.format(name))
         return public.returnMsg(True, 'Successfully imported database!')
 
@@ -420,10 +519,10 @@ class main(databaseBase):
         @备份数据库 id 数据库id
         """
         id = args['id']
-        find = public.M('databases').where("id=?",(id,)).find()
+        find = public.M('databases').where("id=? AND LOWER(type)=LOWER('MongoDB')",(id,)).find()
         if not find: return public.returnMsg(False,'The specified database does not exist.')
 
-        fileName = find['name'] + '_' + time.strftime('%Y%m%d_%H%M%S',time.localtime())
+        fileName = f"{find['name']}_mongodb_data_{time.strftime('%Y%m%d_%H%M%S',time.localtime())}"
         backupName = session['config']['backup_path'] + '/database/mongodb/' + fileName
 
         spath = os.path.dirname(backupName)
@@ -453,13 +552,17 @@ class main(databaseBase):
         if not os.path.exists(backupName):
             return public.returnMsg(False,'Database backup failed, file does not exist');
 
-        sfile = '{}/{}/chat.bson'.format(backupName,find['name'])
-        public.M('backup').add('type,name,pid,filename,size,addtime',(1,fileName,id,sfile,0,time.strftime('%Y-%m-%d %X',time.localtime())))
+
+        backupFile = f"{backupName}.zip"
+        public.ExecShell(f"cd {spath} && zip {backupFile} -r  {fileName}")
+        fileName = f"{fileName}.zip"
+        public.M('backup').add('type,name,pid,filename,size,addtime',(1,fileName,id,backupFile,0,time.strftime('%Y-%m-%d %X',time.localtime())))
         public.WriteLog("TYPE_DATABASE", "DATABASE_BACKUP_SUCCESS",(find['name'],))
 
-        if not os.path.exists(sfile):
+        public.ExecShell(f"rm -rf {backupName}")
+        if not os.path.exists(backupFile):
             return public.returnMsg(True, 'Backup failed,{}.'.format(ret[0]))
-        if os.path.getsize(sfile) < 1:
+        if os.path.getsize(backupFile) < 1:
             return public.returnMsg(True, 'The backup is executed successfully, the backup file is less than 1b, please check the backup integrity.')
         else:
             return public.returnMsg(True, 'BACKUP_SUCCESS')

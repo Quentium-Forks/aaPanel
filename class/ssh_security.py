@@ -23,6 +23,8 @@ class ssh_security:
         "rsa": "/root/.ssh/id_rsa",
         "dsa": "/root/.ssh/id_dsa"
     }
+    open_ssh_login = public.get_panel_path() + '/data/open_ssh_login.pl'
+
     __SSH_CONFIG='/etc/ssh/sshd_config'
     __ip_data = None
     __ClIENT_IP='/www/server/panel/data/host_login_ip.json'
@@ -98,6 +100,18 @@ class ssh_security:
 
 
     def __init__(self):
+        if not public.M('sqlite_master').where('type=? AND name=?', ('table', 'ssh_login_record')).count():
+            public.M('').execute('''CREATE TABLE ssh_login_record (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                addr TEXT,
+                server_ip TEXT,
+                user_agent TEXT,
+                ssh_user TEXT,
+                login_time INTEGER DEFAULT 0,
+                close_time INTEGER DEFAULT 0,
+                video_addr TEXT);''')
+            public.M('').execute('CREATE INDEX ssh_login_record ON ssh_login_record (addr);')
+
         if not os.path.exists(self.__ClIENT_IP):
             public.WriteFile(self.__ClIENT_IP,json.dumps([]))
         self.__mail=send_mail.send_mail()
@@ -400,7 +414,7 @@ class ssh_security:
             if re.search(self.return_python(),datassss):
                 public.WriteFile(self.return_profile(),datassss.replace(self.return_python(),''))
 
-            return public.returnMsg(True, '关闭成功')
+            return public.returnMsg(True, 'Closed successfully')
         else:
             return public.returnMsg(True, 'Closed successfully')
 
@@ -444,6 +458,7 @@ class ssh_security:
         file = ['/root/.ssh/id_{}.pub'.format(s_type), '/root/.ssh/id_{}'.format(s_type)]
         for i in file:
             if os.path.exists(i):
+                public.ExecShell('sed -i "\~$(cat %s)~d" %s' % (file[0], authorized_keys))
                 os.remove(i)
         os.system("ssh-keygen -t {s_type} -P '' -f /root/.ssh/id_{s_type} |echo y".format(s_type = s_type))
         if os.path.exists(file[0]):
@@ -822,6 +837,60 @@ class ssh_security:
         import ssh_authentication
         ssh_class=ssh_authentication.ssh_authentication()
         return public.returnMsg(True, ssh_class.get_pin())
+
+    def get_login_record(self,get):
+        if os.path.exists(self.open_ssh_login):
+
+            return public.returnMsg(True,'')
+        else:
+            return public.returnMsg(False,'')
+    def start_login_record(self,get):
+        if os.path.exists(self.open_ssh_login):
+            return public.returnMsg(True,'')
+        else:
+            public.writeFile(self.open_ssh_login,"True")
+            return public.returnMsg(True,'')
+    def stop_login_record(self,get):
+        if os.path.exists(self.open_ssh_login):
+            os.remove(self.open_ssh_login)
+            return public.returnMsg(True,'')
+        else:
+            return public.returnMsg(True,'')
+    # 获取登录记录列表
+    def get_record_list(self, get):
+        if 'limit' in get:
+            limit = int(get.limit.strip())
+        else:
+            limit = 12
+        import page
+        page = page.Page()
+        count = public.M('ssh_login_record').order("id desc").count()
+        info = {}
+        info['count'] = count
+        info['row'] = limit
+        info['p'] = 1
+        if hasattr(get, 'p'):
+            info['p'] = int(get['p'])
+        info['uri'] = get
+        info['return_js'] = ''
+        if hasattr(get, 'tojs'):
+            info['return_js'] = get.tojs
+        data = {}
+        # 获取分页数据
+        data['page'] = page.GetPage(info, '1,2,3,4,5,8')
+
+        data['data'] = public.M('ssh_login_record').order('id desc').limit(
+            str(page.SHIFT) + ',' + str(page.ROW)).select()
+
+        return data
+
+    def get_file_json(self,get):
+
+        if os.path.exists(get.path):
+            ret=json.loads(public.ReadFile(get.path))
+            return  ret
+        else:
+            return ''
 
 if __name__ == '__main__':
     import sys

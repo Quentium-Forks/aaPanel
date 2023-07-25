@@ -401,7 +401,7 @@ class main(databaseBase):
         password = public.trim(args['password'])
         try:
             if not password:
-                return public.returnMsg(False, 'The password of database [' + password + '] cannot be empty.')
+                return public.returnMsg(False, 'The password of database [' + username + '] cannot be empty.')
             if len(re.search("^[\w@\.]+$", password).groups()) > 0:
                 return public.returnMsg(False, 'saThe password cannot be empty or have special symbols')
         except :

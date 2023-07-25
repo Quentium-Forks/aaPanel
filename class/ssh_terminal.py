@@ -50,6 +50,44 @@ class ssh_terminal:
     _s_code = None
     _last_num = 0
     _key_passwd = None
+    _video_addr = ""
+    _host_row_id = ""
+
+    def __init__(self):
+        # 创建jp_login_record表记录ssh登录记录
+        if not public.M('sqlite_master').where('type=? AND name=?', ('table', 'ssh_login_record')).count():
+            public.M('').execute('''CREATE TABLE ssh_login_record (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                addr TEXT,
+                server_ip TEXT,
+                user_agent TEXT,
+                ssh_user TEXT,
+                login_time INTEGER DEFAULT 0,
+                close_time INTEGER DEFAULT 0,
+                video_addr TEXT);''')
+            public.M('').execute('CREATE INDEX ssh_login_record ON ssh_login_record (addr);')
+        self.time = time.time()
+
+    def record(self, rtype, data):
+        if os.path.exists(public.get_panel_path() + "/data/open_ssh_login.pl") and  self._video_addr:
+            path=self._video_addr
+            if rtype == 'header':
+                with open(path, 'w') as fw:
+                    fw.write(json.dumps(data) + '\n')
+                    return True
+            else:
+                with open(path, 'r') as fr:
+                    content = json.loads(fr.read())
+                    stdout = content["stdout"]
+                atime = time.time()
+                iodata = [atime - self.time, data]
+                stdout.append(iodata)
+                content["stdout"] = stdout
+                with open(path, 'w') as fw:
+                    fw.write(json.dumps(content) + '\n')
+                    self.time = atime
+                    return True
+        return False
 
     def connect(self):
         '''
@@ -68,6 +106,7 @@ class ssh_terminal:
 
         if self._host in ['127.0.0.1','localhost']:
             self._port = public.get_ssh_port()
+            self.set_sshd_config(True)
 
         num = 0
         while num < 5:
@@ -218,6 +257,30 @@ class ssh_terminal:
         self.history_send(public.get_msg_gettext("Login success\n"))
         self.set_sshd_config(True)
         self.debug(public.get_msg_gettext('Login success'))
+        from BTPanel import session
+        self._video_addr = "/www/server/panel/plugin/jumpserver/static/video/%s.json" % str(int(self._connect_time))
+        if not os.path.exists("/www/server/panel/plugin/jumpserver/static/video/"):
+            os.makedirs("/www/server/panel/plugin/jumpserver/static/video/")
+        # 如果开启了录像功能
+        user_agent = str(request.headers.get('User-Agent'))
+        if os.path.exists(public.get_panel_path() + "/data/open_ssh_login.pl"):
+            self._host_row_id = public.M('ssh_login_record').add(
+                'addr,server_ip,ssh_user,user_agent,login_time,video_addr',
+                (self._client, self._host, self._user, user_agent
+                 , int(self._connect_time),
+                 self._video_addr))
+
+            self.record('header', {
+                "version": 1,
+                "width": 100,
+                "height": 29,
+                "timestamp": int(self._connect_time),
+                "env": {
+                    "TERM": "xterm",
+                    "SHELL": "/bin/bash",
+                },
+                "stdout": []
+            })
         return public.return_msg_gettext(True,'connection succeeded')
 
     def _auth_interactive(self):
@@ -546,7 +609,7 @@ class ssh_terminal:
                         result = resp_line.decode()
                     except:
                         result = str(resp_line)
-
+                self.record('iodata', result)
                 self._ws.send(result)
 
                 # self.history_recv(result)
@@ -684,6 +747,9 @@ class ssh_terminal:
             @return void
         '''
         try:
+            if self._host_row_id:
+                public.M('ssh_login_record').where('id=?', self._host_row_id).update(
+                    {'close_time': int(time.time())})
             if self._ssh:
                 self._ssh.close()
             if self._tp:  # 关闭宿主服务

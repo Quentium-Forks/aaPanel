@@ -334,6 +334,17 @@ class config:
         public.WriteLog('TYPE_PANEL','Set the password expiration time to [{}] days'.format(expire))
         return public.returnMsg(True,'The password expiration time is set to [{}] days'.format(expire))
 
+    def setlastPassword(self, get):
+        public.add_security_logs("Change Password", "Successfully used last password!")
+        self.reload_session()
+        # 密码过期时间
+        expire_time_file = public.get_panel_path() + '/data/password_expire_time.pl'
+        if os.path.exists(expire_time_file): os.remove(expire_time_file)
+        self.get_password_config(None)
+        if session.get('password_expire', False):
+            session['password_expire'] = False
+        return public.returnMsg(True, 'USER_PASSWORD_SUCCESS')
+
     def get_password_config(self,get=None):
         '''
             @name 获取密码配置
@@ -1017,14 +1028,14 @@ class config:
         result = json.loads(public.httpPost(cert_api, {'data': json.dumps(pdata)}))
         if 'status' in result:
             if result['status']:
-                # if os.path.exists('ssl/certificate.pem'):
-                #     os.remove('ssl/certificate.pem')
-                # if os.path.exists('ssl/privateKey.pem'):
-                #     os.remove('ssl/privateKey.pem')
-                # if os.path.exists('ssl/baota_root.pfx'):
-                #     os.remove('ssl/baota_root.pfx')
-                # if os.path.exists('ssl/root_password.pl'):
-                #     os.remove('ssl/root_password.pl')
+                if os.path.exists('ssl/certificate.pem'):
+                    os.remove('ssl/certificate.pem')
+                if os.path.exists('ssl/privateKey.pem'):
+                    os.remove('ssl/privateKey.pem')
+                if os.path.exists('ssl/baota_root.pfx'):
+                    os.remove('ssl/baota_root.pfx')
+                if os.path.exists('ssl/root_password.pl'):
+                    os.remove('ssl/root_password.pl')
                 public.writeFile('ssl/certificate.pem', result['cert'])
                 public.writeFile('ssl/privateKey.pem', result['key'])
                 public.writeFile('ssl/baota_root.pfx', base64.b64decode(result['pfx']), 'wb+')
@@ -1033,7 +1044,25 @@ class config:
                 # public.ExecShell("/etc/init.d/bt reload")
                 print('1')
                 return True
-        print('0')
+        if os.path.exists('ssl/input.pl'): return True
+        import OpenSSL
+        key = OpenSSL.crypto.PKey()
+        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        cert = OpenSSL.crypto.X509()
+        cert.set_serial_number(0)
+        cert.get_subject().CN = public.GetLocalIp()
+        cert.set_issuer(cert.get_subject())
+        cert.gmtime_adj_notBefore( 0 )
+        cert.gmtime_adj_notAfter(86400 * 3650)
+        cert.set_pubkey( key )
+        cert.sign( key, 'md5' )
+        cert_ca = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+        private_key = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+
+        if len(cert_ca) > 100 and len(private_key) > 100:
+            public.writeFile('ssl/certificate.pem',cert_ca,'wb+')
+            public.writeFile('ssl/privateKey.pem',private_key,'wb+')
+            return True
         return False
 
     def get_ipaddress(self):

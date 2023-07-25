@@ -1671,6 +1671,33 @@ def xssencode(text):
     except:
         return text.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
 
+def html_decode(text):
+    '''
+        @name HTML解码
+        @author hwliang
+        @param text 要解码的HTML
+        @return string 返回解码后的HTML
+    '''
+    try:
+        from cgi import html
+        text2=html.unescape(text)
+        return text2
+    except:
+        return text
+
+def html_encode(text):
+    '''
+        @name HTML编码
+        @author hwliang
+        @param text 要编码的HTML
+        @return string 返回编码后的HTML
+    '''
+    try:
+        from cgi import html
+        text2=html.escape(text)
+        return text2
+    except:
+        return text
 
 #xss 防御
 def xsssec(text):
@@ -4076,6 +4103,19 @@ def get_class_path():
         @return string
     '''
     return "{}/class".format(get_panel_path())
+
+def decode_data(srcBody):
+    """
+    遍历解码字符串
+    """
+    arrs = ['utf-8', 'GBK', 'ANSI', 'BIG5']
+    for encoding in arrs:
+        try:
+            data = srcBody.decode(encoding)
+            return encoding, data
+        except:
+            pass
+    return False, None
 
 def get_logs_path():
     '''

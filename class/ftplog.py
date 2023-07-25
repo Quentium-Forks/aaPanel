@@ -251,7 +251,7 @@ class ftplog:
                             search_str) != -1 or info['in_time'].find(
                                 search_str) != -1:
                         data.append(info)
-                    if info['out_time'] and info['out_time'].find(
+                    elif info['out_time'] and info['out_time'].find(
                             search_str) != -1:
                         data.append(info)
                 except:

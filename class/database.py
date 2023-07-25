@@ -782,7 +782,7 @@ SetLink
             #修改SQLITE
             if self.sid:
                 public.M('database_servers').where('id=?',self.sid).setField('db_password',password)
-                public.write_log_gettext("TYPE_DATABASE", "Change the password of the remote MySQL server")
+                public.write_log_gettext("Database manager", "Change the password of the remote MySQL server")
             else:
                 public.M('config').where("id=?",(1,)).setField('mysql_root',password)
                 public.write_log_gettext("Database manager", 'Successfully modified root password!')
@@ -1038,7 +1038,7 @@ SetLink
             finally:
                 os.environ["MYSQL_PWD"] = ""
 
-        public.write_log_gettext("TYPE_DATABASE", 'Successfully imported database [{}]',(name,))
+        public.write_log_gettext("Database manager", 'Successfully imported database [{}]',(name,))
         return public.return_msg_gettext(True, 'Successfully imported database!')
         #except Exception as ex:
             #public.WriteLog("TYPE_DATABASE", 'DATABASE_INPUT_ERR',(name,str(ex)))
