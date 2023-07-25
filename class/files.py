@@ -1682,6 +1682,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             get.password = ''
         if not os.path.exists(get.sfile):
             return public.returnMsg(False, 'The specified archive does not exist!')
+        if not os.path.exists(get.dfile):
+            os.makedirs(get.dfile)
         zip_size = os.path.getsize(get.sfile)
         task_obj = panelTask.bt_task()
         if zip_size < 1024 * 1024 * 50:
@@ -2518,6 +2520,7 @@ cd %s
                 return public.return_msg_gettext(False,'The composer.json configuration file was not found in the specified directory!')
         log_file = '/tmp/composer.log'
         user = ''
+        # del_cache = self._composer_user_home()
         if 'user' in get:
             user = 'sudo -u {} '.format(get.user)
             if not os.path.exists('/usr/bin/sudo'):
@@ -2526,6 +2529,7 @@ cd %s
                 else:
                     public.ExecShell("yum install sudo -y > {}".format(log_file))
             public.ExecShell("mkdir -p /home/www && chown -R www:www /home/www")
+            # del_cache = self._composer_user_home()
 
         #设置指定源
         if 'repo' in get:
@@ -2546,6 +2550,7 @@ cd %s
         if os.path.exists(log_file): os.remove(log_file)
         public.ExecShell("cd {} && export COMPOSER_HOME=/tmp && {} nohup {} &> {} && echo 'BT-Exec-Completed' >> {}  && rm -rf /home/www &".format(get.path,user,composer_exec_str,log_file,log_file))
         public.write_log_gettext('Composer',"Execute composer [{}] in the directory: [{}]",(get.path,get.composer_args))
+        # del_cache()
         return public.return_msg_gettext(True,'Command has been sent!')
 
     # 取composer版本

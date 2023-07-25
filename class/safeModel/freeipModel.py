@@ -62,10 +62,10 @@ class main(safeBase):
             for key in res:
                 info = res[key]
                 if public.is_local_ip(key):
-                    res[key]['city']="intranet address"
+                    res[key]['city']="intranet"
                 if not res[key]['city']: continue
                 if not res[key]['city'].strip() and not res[key]['continent'].strip():
-                    info = {'info':'Unknown IP attribution'}
+                    info = {'info':'Unknown IP'}
                 else:
                     info['info'] = '{} {} {} {}'.format(info['carrier'],info['country'],info['province'],info['city']).strip()
                 data[key] = info

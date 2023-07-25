@@ -496,16 +496,42 @@ class data:
             search = re.search(r"[\w\x80-\xff\.\_\-]+",search).group()
         except:
             return '',()
+        conditions = ''
+        if '_' in search:
+            cs = ''
+            for i in search:
+                if i == '_':
+                    cs += '/_'
+                else:
+                    cs += i
+            search = cs
+            conditions = " escape '/'"
         wheres = {
-            'sites'     :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
-            'ftps'      :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
-            'databases' :   ("(name LIKE ? OR ps LIKE ?)",("%"+search+"%","%"+search+"%")),
-            'logs'      :   ("username=? OR type LIKE ? OR log LIKE ?",(search,'%'+search+'%','%'+search+'%')),
+            'sites': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
+            'ftps': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
+            'databases': (
+                "name LIKE ? {} OR ps LIKE ?{}".format(conditions, conditions),
+                ("%" + search + "%", "%" + search + "%")),
+            'crontab': ("name LIKE ?{}".format(conditions), ('%' + (search) + '%')),
+            'logs': ("username=? OR type LIKE ?{} OR log LIKE ?{}".format(conditions, conditions),
+                     (search, '%' + search + '%', '%' + search + '%')),
             'backup'    :   ("pid=?",(search,)),
             'users'     :   ("id='?' OR username=?",(search,search)),
             'domain'    :   ("pid=? OR name=?",(search,search)),
             'tasks'     :   ("status=? OR type=?",(search,search)),
             }
+
+        # wheres = {
+        #     'sites'     :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
+        #     'ftps'      :   ("name LIKE ? OR ps LIKE ?",('%'+search+'%','%'+search+'%')),
+        #     'databases' :   ("(name LIKE ? OR ps LIKE ?)",("%"+search+"%","%"+search+"%")),
+        #     'logs'      :   ("username=? OR type LIKE ? OR log LIKE ?",(search,'%'+search+'%','%'+search+'%')),
+        #     'backup'    :   ("pid=?",(search,)),
+        #     'users'     :   ("id='?' OR username=?",(search,search)),
+        #     'domain'    :   ("pid=? OR name=?",(search,search)),
+        #     'tasks'     :   ("status=? OR type=?",(search,search)),
+        #     }
+
         try:
             return wheres[tableName]
         except:

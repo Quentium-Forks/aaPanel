@@ -229,8 +229,10 @@ echo "[*] shut down"
         result['sql'] = self.get_log_count(speed + 'sql.log')
         result['san'] = self.get_log_count(speed + 'san.log')
         result['php'] = self.get_log_count(speed + 'php.log')
-        result['ip'] = 'Detail' #self.get_log_count(speed + 'ip.log')
-        result['url'] = 'Detail'#self.get_log_count(speed + 'url.log')
+        result['ip'] = self.get_log_count(speed + 'ip.log')
+        result['url'] = self.get_log_count(speed + 'url.log')
+        # result['ip'] = 'Detail' #self.get_log_count(speed + 'ip.log')
+        # result['url'] = 'Detail'#self.get_log_count(speed + 'url.log')
         return result
 
     def get_detailed(self, get):

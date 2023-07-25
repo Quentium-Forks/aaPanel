@@ -3807,7 +3807,7 @@ def get_free_ip_info(address):
             return res[address]
     except: pass
 
-    return {'info':'Unknown IP attribution'}
+    return {'info':'Unknown'}
 
 #使用免费IP库获取IP地区
 def free_login_area(login_ip,login_type = 'panel'):

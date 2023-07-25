@@ -39,6 +39,7 @@
             }
             $('.sms_label').click(function(){
                 var _ev = $('#panel_login'),tips = '';
+                console.log(_ev.prop('checked'),'che')
                 if(_ev.prop('checked')){
                     tips = '是否关闭短信登录？'
                 }else{

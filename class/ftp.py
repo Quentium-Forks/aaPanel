@@ -137,6 +137,21 @@ class ftp:
     def FtpReload(self):
         public.ExecShell(self.__runPath + '/pure-pw mkdb /www/server/pure-ftpd/etc/pureftpd.pdb')
 
+    def get_login_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        return ftpobj.get_login_log(get)
+    def get_action_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        return ftpobj.get_action_log(get)
+
+    def set_ftp_logs(self, get):
+        import ftplog
+        ftpobj = ftplog.ftplog()
+        result = ftpobj.set_ftp_log(get)
+        return result
+
     #修改用户密码
     def set_user_home(self,get):
         """
