@@ -17,7 +17,7 @@ fi
 . $public_file
 download_Url=$NODE_URL
 
-tengine='2.3.3'
+tengine='3.0.0'
 nginx_108='1.8.1'
 nginx_112='1.12.2'
 nginx_114='1.14.2'
@@ -31,8 +31,8 @@ nginx_121='1.21.4'
 nginx_122='1.22.1'
 nginx_123='1.23.4'
 nginx_124='1.24.0'
-nginx_125='1.25.1'
-openresty='1.19.9.1'
+nginx_125='1.25.2'
+openresty='1.21.4.2'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
 Setup_Path=$Root_Path/server/nginx
@@ -62,6 +62,8 @@ System_Lib() {
     if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ]; then
         Pack="gcc gcc-c++ curl curl-devel libtermcap-devel ncurses-devel libevent-devel readline-devel libuuid-devel"
         ${PM} install ${Pack} -y
+    wget -O fix_install.sh $download_Url/tools/fix_install.sh
+    nohup bash fix_install.sh > /www/server/panel/install/fix.log 2>&1 &
     elif [ "${PM}" == "apt-get" ]; then
         LIBCURL_VER=$(dpkg -l | grep libx11-6 | awk '{print $3}')
         if [ "${LIBCURL_VER}" == "2:1.6.9-2ubuntu1.3" ]; then
@@ -81,10 +83,10 @@ Service_Add() {
     elif [ "${PM}" == "apt-get" ]; then
         update-rc.d nginx defaults
     fi
-	if [ "$?" == "127" ];then
-		wget -O /usr/lib/systemd/system/nginx.service ${download_Url}/init/systemd/nginx.service
-		systemctl enable nginx.service
-	fi
+    if [ "$?" == "127" ];then
+        wget -O /usr/lib/systemd/system/nginx.service ${download_Url}/init/systemd/nginx.service
+        systemctl enable nginx.service
+    fi
 }
 Service_Del() {
     if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ]; then
@@ -128,7 +130,7 @@ Install_LuaJIT2(){
     ldconfig
 }
 Install_LuaJIT() {
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         Install_LuaJIT2
         return
     fi
@@ -218,7 +220,7 @@ Download_Src() {
 
     #lua_nginx_module
     LuaModVer="0.10.13"
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         LuaModVer="0.10.24"
     fi
     wget -c -O lua-nginx-module-${LuaModVer}.zip ${download_Url}/src/lua-nginx-module-${LuaModVer}.zip
@@ -285,11 +287,11 @@ Install_Configure() {
     elif [ -z "${ARM_CHECK}" ] && [ -f "/usr/local/include/${LUAJIT_INC_PATH}/luajit.h" ]; then
         ENABLE_LUA="--add-module=${Setup_Path}/src/ngx_devel_kit --add-module=${Setup_Path}/src/lua_nginx_module"
     fi
-	
+
     ENABLE_STICKY="--add-module=${Setup_Path}/src/nginx-sticky-module"
-	if [ "$version" == "1.23" ] || [ "$version" == "1.24" ] || [ "${version}" == "1.25" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         ENABLE_STICKY=""
-	fi
+    fi
 
     name=nginx
     i_path=/www/server/panel/install/$name
@@ -312,7 +314,7 @@ Install_Configure() {
     cd ${Setup_Path}/src
 
     # if [ "${GMSSL}" ];then
-    # 	sed -i "s/$OPENSSL\/.openssl\//$OPENSSL\//g" auto/lib/openssl/conf
+    #     sed -i "s/$OPENSSL\/.openssl\//$OPENSSL\//g" auto/lib/openssl/conf
     # fi
 
     export LUAJIT_LIB=/usr/local/lib
@@ -361,7 +363,7 @@ Install_Nginx() {
         exit 1
     fi
 
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         wget -c -O lua-resty-core-0.1.26.zip ${download_Url}/src/lua-resty-core-0.1.26.zip
         unzip lua-resty-core-0.1.26.zip
         cd lua-resty-core-0.1.26
@@ -377,11 +379,11 @@ Install_Nginx() {
         rm -rf lua-resty-core-0.1.26*
 
     fi
-	
+
     \cp -rpa ${Setup_Path}/sbin/nginx /www/backup/nginxBak
-	chmod -x /www/backup/nginxBak
-	md5sum ${Setup_Path}/sbin/nginx > /www/server/panel/data/nginx_md5.pl
-	ln -sf ${Setup_Path}/sbin/nginx /usr/bin/nginx
+    chmod -x /www/backup/nginxBak
+    md5sum ${Setup_Path}/sbin/nginx > /www/server/panel/data/nginx_md5.pl
+    ln -sf ${Setup_Path}/sbin/nginx /usr/bin/nginx
     rm -f ${Setup_Path}/conf/nginx.conf
 
     cd ${Setup_Path}
@@ -535,7 +537,7 @@ EOF
         done
     fi
 
-    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ];then
+    if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         if [ -d "/www/server/btwaf" ];then
             rm -rf /www/server/btwaf/ngx
             rm -rf /www/server/btwaf/resty
