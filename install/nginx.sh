@@ -99,12 +99,12 @@ Service_Del() {
 Set_Time() {
     BASH_DATE=$(stat nginx.sh | grep Modify | awk '{print $2}' | tr -d '-')
     SYS_DATE=$(date +%Y%m%d)
-    [ "${SYS_DATE}" -lt "${BASH_DATE}" ] && date -s "$(curl https://www.bt.cn//api/index/get_date)"
+    [ "${SYS_DATE}" -lt "${BASH_DATE}" ] && date -s "$(curl https://www.bt.cn/api/index/get_date)"
 }
 Install_Jemalloc() {
     if [ ! -f '/usr/local/lib/libjemalloc.so' ]; then
         wget -O jemalloc-5.0.1.tar.bz2 ${download_Url}/src/jemalloc-5.0.1.tar.bz2
-        tar -xvf jemalloc-5.0.1.tar.bz2
+        tar -xzf jemalloc-5.0.1.tar.bz2
         cd jemalloc-5.0.1
         ./configure
         make && make install
@@ -116,7 +116,7 @@ Install_Jemalloc() {
 Install_LuaJIT2(){
     LUAJIT_INC_PATH="luajit-2.1"
     wget -c -O luajit2-2.1-20230410.zip ${download_Url}/src/luajit2-2.1-20230410.zip
-    unzip -o luajit2-2.1-20230410.zip
+    unzip -q -o luajit2-2.1-20230410.zip
     cd luajit2-2.1-20230410
     make -j${cpuCore}
     make install
@@ -137,7 +137,7 @@ Install_LuaJIT() {
     OEPN_LUAJIT=$(cat /usr/local/include/luajit-2.1/luajit.h|grep 2022)
     if [ ! -f '/usr/local/lib/libluajit-5.1.so' ] || [ ! -f "/usr/local/include/${LUAJIT_INC_PATH}/luajit.h" ] || [ "${OEPN_LUAJIT}" ]; then
         wget -c -O LuaJIT-${LUAJIT_VER}.tar.gz ${download_Url}/install/src/LuaJIT-${LUAJIT_VER}.tar.gz -T 10
-        tar xvf LuaJIT-${LUAJIT_VER}.tar.gz
+        tar -xzf LuaJIT-${LUAJIT_VER}.tar.gz
         cd LuaJIT-${LUAJIT_VER}
         make linux
         make install
@@ -156,7 +156,7 @@ Install_LuaJIT() {
 Install_cjson() {
     if [ ! -f /usr/local/lib/lua/5.1/cjson.so ]; then
         wget -O lua-cjson-2.1.0.tar.gz $download_Url/install/src/lua-cjson-2.1.0.tar.gz -T 20
-        tar xvf lua-cjson-2.1.0.tar.gz
+        tar -xzf lua-cjson-2.1.0.tar.gz
         rm -f lua-cjson-2.1.0.tar.gz
         cd lua-cjson-2.1.0
         make
@@ -170,13 +170,12 @@ Download_Src() {
     cd ${Setup_Path}
     rm -rf ${Setup_Path}/src
     if [ "${version}" == "tengine" ] || [ "${version}" == "openresty" ]; then
-        wget -O ${Setup_Path}/src.tar.gz ${download_Url}/src/${version}-${nginxVersion}.tar.gz -T20
-        tar -xvf src.tar.gz
+        wget -O ${Setup_Path}/src.tar.gz http://nginx.org/download/${version}-${nginxVersion}.tar.gz -T20
+        tar -xzf src.tar.gz
         mv ${version}-${nginxVersion} src
     else
-        wget -O ${Setup_Path}/src.tar.gz ${download_Url}/src/nginx-${nginxVersion}.tar.gz -T20
-        tar -xvf src.tar.gz
-        tar -xvf src.tar.gz
+        wget -O ${Setup_Path}/src.tar.gz http://nginx.org/download/nginx-${nginxVersion}.tar.gz -T20
+        tar -xzf src.tar.gz
         mv nginx-${nginxVersion} src
     fi
 
@@ -190,31 +189,31 @@ Download_Src() {
             opensslVersion="1.0.2u"
         fi
         wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
-        tar -xvf openssl.tar.gz
+        tar -xzf openssl-${opensslVersion}.tar.gz
         mv openssl-${opensslVersion} openssl
         rm -f openssl.tar.gz
     else
         wget -O GmSSL-master.zip ${download_Url}/src/GmSSL-master.zip
-        unzip GmSSL-master.zip
+        unzip -q -o GmSSL-master.zip
         mv GmSSL-master openssl
         rm -f GmSSL-master.zip
     fi
 
     pcre_version="8.43"
     wget -O pcre-$pcre_version.tar.gz ${download_Url}/src/pcre-$pcre_version.tar.gz
-    tar zxf pcre-$pcre_version.tar.gz
+    tar -xzf pcre-$pcre_version.tar.gz
 
     wget -O ngx_cache_purge.tar.gz ${download_Url}/src/ngx_cache_purge-2.3.tar.gz
-    tar -zxvf ngx_cache_purge.tar.gz
+    tar -xzf ngx_cache_purge.tar.gz
     mv ngx_cache_purge-2.3 ngx_cache_purge
     rm -f ngx_cache_purge.tar.gz
 
     wget -O nginx-sticky-module.zip ${download_Url}/src/nginx-sticky-module.zip
-    unzip -o nginx-sticky-module.zip
+    unzip -q -o nginx-sticky-module.zip
     rm -f nginx-sticky-module.zip
 
     wget -O nginx-http-concat.zip ${download_Url}/src/nginx-http-concat-1.2.2.zip
-    unzip -o nginx-http-concat.zip
+    unzip -q -o nginx-http-concat.zip
     mv nginx-http-concat-1.2.2 nginx-http-concat
     rm -f nginx-http-concat.zip
 
@@ -224,26 +223,26 @@ Download_Src() {
         LuaModVer="0.10.24"
     fi
     wget -c -O lua-nginx-module-${LuaModVer}.zip ${download_Url}/src/lua-nginx-module-${LuaModVer}.zip
-    unzip -o lua-nginx-module-${LuaModVer}.zip
+    unzip -q -o lua-nginx-module-${LuaModVer}.zip
     mv lua-nginx-module-${LuaModVer} lua_nginx_module
     rm -f lua-nginx-module-${LuaModVer}.zip
 
     #ngx_devel_kit
     NgxDevelKitVer="0.3.1"
     wget -c -O ngx_devel_kit-${NgxDevelKitVer}.zip ${download_Url}/src/ngx_devel_kit-${NgxDevelKitVer}.zip
-    unzip -o ngx_devel_kit-${NgxDevelKitVer}.zip
+    unzip -q -o ngx_devel_kit-${NgxDevelKitVer}.zip
     mv ngx_devel_kit-${NgxDevelKitVer} ngx_devel_kit
     rm -f ngx_devel_kit-${NgxDevelKitVer}.zip
 
     #nginx-dav-ext-module
     NgxDavVer="3.0.0"
     wget -c -O nginx-dav-ext-module-${NgxDavVer}.tar.gz ${download_Url}/src/nginx-dav-ext-module-${NgxDavVer}.tar.gz
-    tar -xvf nginx-dav-ext-module-${NgxDavVer}.tar.gz
+    tar -xzf nginx-dav-ext-module-${NgxDavVer}.tar.gz
     mv nginx-dav-ext-module-${NgxDavVer} nginx-dav-ext-module
     rm -f nginx-dav-ext-module-${NgxDavVer}.tar.gz
     
     wget -c -O ngx_http_substitutions_filter_module-master.zip ${download_Url}/src/ngx_http_substitutions_filter_module-master.zip
-    unzip -o ngx_http_substitutions_filter_module-master.zip
+    unzip -q -o ngx_http_substitutions_filter_module-master.zip
     rm -f ngx_http_substitutions_filter_module-master.zip
 
 
@@ -251,7 +250,7 @@ Download_Src() {
         if [ "${version}" == "1.15" ] || [ "${version}" == "1.17" ] || [ "${version}" == "tengine" ]; then
             NGX_PAGESPEED_VAR="1.13.35.2"
             wget -O ngx-pagespeed-${NGX_PAGESPEED_VAR}.tar.gz ${download_Url}/src/ngx-pagespeed-${NGX_PAGESPEED_VAR}.tar.gz
-            tar -xvf ngx-pagespeed-${NGX_PAGESPEED_VAR}.tar.gz
+            tar -xzf ngx-pagespeed-${NGX_PAGESPEED_VAR}.tar.gz
             mv ngx-pagespeed-${NGX_PAGESPEED_VAR} ngx-pagespeed
             rm -f ngx-pagespeed-${NGX_PAGESPEED_VAR}.tar.gz
         fi
@@ -365,14 +364,14 @@ Install_Nginx() {
 
     if [ "${version}" == "1.23" ] || [ "${version}" == "1.24" ] || [ "${version}" == "1.25" ] || [ "${version}" == "tengine" ];then
         wget -c -O lua-resty-core-0.1.26.zip ${download_Url}/src/lua-resty-core-0.1.26.zip
-        unzip lua-resty-core-0.1.26.zip
+        unzip -q -o lua-resty-core-0.1.26.zip
         cd lua-resty-core-0.1.26
         make install PREFIX=/www/server/nginx
         cd ..
         rm -rf lua-resty-core-0.1.26*
 
         wget -c -O lua-resty-lrucache-0.13.zip ${download_Url}/src/lua-resty-lrucache-0.13.zip
-        unzip lua-resty-lrucache-0.13.zip
+        unzip -q -o lua-resty-lrucache-0.13.zip
         cd lua-resty-lrucache-0.13
         make install PREFIX=/www/server/nginx
         cd ..
