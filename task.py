@@ -588,7 +588,7 @@ def daemon_panel():
 
 
 def update_panel():
-    os.system("curl https://node.aapanel.com/install/update6_en.sh|bash &")
+    os.system("curl -k https://node.aapanel.com/install/update6_en.sh|bash &")
 
 
 def service_panel(action='reload'):
