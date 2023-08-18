@@ -468,9 +468,10 @@ class one_key_wp:
         mysql_obj = panelMysql.panelMysql()
         res = mysql_obj.query('select * from {}.{}users'.format(
             db_name,db_info['prefix']))
-        if not res:
-            return public.return_msg_gettext(False,"Get failed wordpress user failed!")
-        return public.return_msg_gettext(True,[i[1] for i in res])
+        if hasattr(res, '__iter__'):
+            return public.return_msg_gettext(True, [i[1] for i in res])
+        else:
+            return public.return_msg_gettext(False, "Site database [{}] failed to query users, try setting the database for this site. Error: {}".format(db_name, res))
 
     def reset_wp_password(self,get):
         """

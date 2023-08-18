@@ -187,6 +187,8 @@ class ajax:
         filename = public.GetConfigValue('setup_path') + '/panel/data/'+get.name+'As.conf'
         conf = get.access_key.strip() + '|' + get.secret_key.strip() + '|' + get.bucket_name.strip() + '|' + get.bucket_domain.strip()
         public.writeFile(filename,conf)
+        if not os.path.exists(filename):
+            return public.return_msg_gettext(False, 'write file failed!')
         public.ExecShell("chmod 600 " + filename)
         result = public.ExecShell(public.get_python_bin() + " " + public.GetConfigValue('setup_path') + "/panel/script/backup_"+get.name+".py list")
         
@@ -979,27 +981,28 @@ class ajax:
             if i == "nginx":
                 if not os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
                     return public.return_msg_gettext(False, 'Did not find the apache phpmyadmin ssl configuration file, please try to close the ssl port settings before opening')
-                rep = "listen\s*([0-9]+)\s*.*;"
+                rep = r"listen\s*([0-9]+)\s*.*;"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
                     return public.return_msg_gettext(False, 'Did not detect the port that nginx phpmyadmin listens, please confirm whether the file has been manually modified.')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, 'listen ' + get.port + ' ssl;', conf)
             else:
-                rep = "Listen\s*([0-9]+)\s*\n"
+                rep = r"Listen\s*([0-9]+)\s*\n"
                 oldPort = re.search(rep, conf)
                 if not oldPort:
                     return public.return_msg_gettext(False, 'Did not detect the port that apache phpmyadmin listens, please confirm whether the file has been manually modified.')
                 oldPort = oldPort.groups()[0]
                 conf = re.sub(rep, "Listen " + get.port + "\n", conf, 1)
-                rep = "VirtualHost\s*\*:[0-9]+"
+                rep = r"VirtualHost\s*\*:[0-9]+"
                 conf = re.sub(rep, "VirtualHost *:" + get.port, conf, 1)
             if oldPort == get.port: return public.return_msg_gettext(False, 'Port [{}] is in use!',(get.port,))
             public.writeFile(file, conf)
             public.serviceReload()
             if i=="apache":
                 import firewalls
-                get.ps = public.getMsg('New phpMyAdmin Port')
+                # aapanel 使用 get_msg_gettext
+                get.ps = public.get_msg_gettext('New phpMyAdmin SSL Port')
                 fw = firewalls.firewalls()
                 fw.AddAcceptPort(get)
                 public.serviceReload()
@@ -1171,6 +1174,10 @@ class ajax:
                 tmp = re.search(reg,conf)
                 if tmp:
                     oldPort = tmp.groups(1)
+
+                    ## 修复 openlitespeed 修改端口报错
+                    oldPort = oldPort[0]
+
                 conf = re.sub(reg,"address *:{}".format(get.port),conf)
             if oldPort == get.port: return public.return_msg_gettext(False,'Port [{}] is in use!',(get.port,))
             

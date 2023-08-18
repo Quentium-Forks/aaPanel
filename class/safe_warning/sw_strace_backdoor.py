@@ -5,7 +5,7 @@ import os, re, public
 
 _title = 'strace obtains login credentials backdoor detection'
 _version = 1.0  # 版本
-_ps = "Detect user account information leakage via strace command during process"  # 描述
+_ps = "Detect user information leakage via strace command during process"  # 描述
 _level = 3  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2023-03-09'  # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_strace_backdoor.pl")

@@ -106,5 +106,5 @@ class main(logsBase):
 
             return data
         data['status'] = False
-        data['msg'] = '日志为空'
+        data['msg'] = 'log is empty'
         return data

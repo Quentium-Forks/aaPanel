@@ -34,9 +34,9 @@ class logsBase:
         n_data = '\r\n'.join(logs_list)
         res = public.get_ips_area(ip_list)
         for ip in ip_list:
-            area = '未知归属地'
+            area = 'Unknown'
             if 'status' in res:
-                area = '****（开通专业版可查看）'
+                area = '**** (Professional version exclusive)'
             elif ip in res:
                 area = res[ip]['info']
             n_data = n_data.replace(ip,'{}({})'.format(ip,area))

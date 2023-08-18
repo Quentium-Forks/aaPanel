@@ -148,15 +148,31 @@ echo "[*] shut down"
         @return 返回具体的分析结果
         @ 需要使用异步的方式进行扫描
         '''
-        if not os.path.exists(get.path): return public.ReturnMsg(False, 'No log file')
-        if os.path.getsize(get.path) > 9433107294: return public.ReturnMsg(False, 'The log file is too large!')
-        if os.path.getsize(get.path) < 10: return public.ReturnMsg(False, 'log is empty')
-        log_path = public.Md5(get.path)
-        if self.get_log_format(get.path):
+        path = get.path
+        log_path = public.Md5(path)
+        serverType = public.get_webserver()
+        if serverType == "nginx":
+            pass
+        elif serverType == 'apache':
+            path = path.strip("-access_log") + '-access_log'
+        elif serverType == 'openlitespeed':
+            # path = path.strip("_ols.access_log") + '_ols.access_log'
+            return public.ReturnMsg(False, 'openlitespeed is not supported yet')
+
+        public.print_log("path1:{}".format(path))
+        public.print_log("serverType:{}".format(serverType))
+
+        if not os.path.exists(path): return public.ReturnMsg(False, 'No log file')
+        if os.path.getsize(path) > 9433107294: return public.ReturnMsg(False, 'The log file is too large!')
+        if os.path.getsize(path) < 10: return public.ReturnMsg(False, 'log is empty')
+        # public.print_log("log_path{}".format(log_path))
+        # public.print_log("self.log_analysis_path{}".format(self.log_analysis_path))
+        # public.print_log("path{}".format(path))
+        if self.get_log_format(path):
             public.ExecShell(
-                "cd %s && bash %s san_log %s %s &" % (self.path, self.log_analysis_path, get.path, log_path))
+                "cd %s && bash %s san_log %s %s &" % (self.path, self.log_analysis_path, path, log_path))
         else:
-            public.ExecShell("cd %s && bash %s san %s %s &" % (self.path, self.log_analysis_path, get.path, log_path))
+            public.ExecShell("cd %s && bash %s san %s %s &" % (self.path, self.log_analysis_path, path, log_path))
         speed = self.path + '/log/' + log_path+".time"
         public.WriteFile(speed,str(time.time())+"[]"+time.strftime('%Y-%m-%d %X',time.localtime())+"[]"+"0")
         return public.ReturnMsg(True, 'Start scan successful')

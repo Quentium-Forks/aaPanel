@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@bt.cn>
 # +-------------------------------------------------------------------
-import public,db,os,time,re
+import public,db,os,time,re, json
 from BTPanel import session,cache
 class crontab:
     field = 'id,name,type,where1,where_hour,where_minute,echo,addtime,status,save,backupTo,sName,sBody,sType,urladdress'
@@ -149,6 +149,11 @@ class crontab:
     #检查环境
     def checkBackup(self):
         if cache.get('check_backup'): return None
+
+        # 检查备份表是否正确
+        if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'backup','%cron_id%')).count():
+            public.M('backup').execute("ALTER TABLE 'backup' ADD 'cron_id' INTEGER DEFAULT 0",())
+
         #检查备份脚本是否存在
         filePath=public.GetConfigValue('setup_path')+'/panel/script/backup'
         if not os.path.exists(filePath):
@@ -180,7 +185,8 @@ class crontab:
             self.remove_for_crond(cronInfo['echo'])
         else:
             cronInfo['status'] = 1
-            self.sync_to_crond(cronInfo)
+            if not self.sync_to_crond(cronInfo):
+                return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
         
         public.M('crontab').where('id=?',(id,)).setField('status',status)
         public.WriteLog('TYPE_CRON',"MODIFY_CRON_STATUS",(cronInfo['name'],str(status_msg[status])))
@@ -215,9 +221,12 @@ class crontab:
                       get['minute'],get['save'],get['backupTo'],get['sBody'],
                       get['urladdress'],get['save_local'],get["notice"],
                       get["notice_channel"])
-        public.M('crontab').where('id=?',(id,)).save(columns,values)
         self.remove_for_crond(cronInfo['echo'])
-        self.sync_to_crond(cronInfo)
+        if cronInfo['status'] == 0: return public.return_msg_gettext(False, 'The current task is Disable status, please open the task before modifying!')
+        if not self.sync_to_crond(cronInfo):
+            return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
+        public.M('crontab').where('id=?',(id,)).save(columns,values)
+
         public.WriteLog('TYPE_CRON',"MODIFY_CRON",(cronInfo['name'],))
         return public.return_msg_gettext(True,'Setup successfully!')
 
@@ -239,11 +248,12 @@ class crontab:
         cronPath=public.GetConfigValue('setup_path')+'/cron'
         cronName=self.GetShell(cronInfo)
         if type(cronName) == dict: return cronName
-        if cronInfo['status'] == 0: return False
+        #if cronInfo['status'] == 0: return False
         cuonConfig += ' ' + cronPath+'/'+cronName+' >> '+ cronPath+'/'+cronName+'.log 2>&1'
         wRes = self.WriteShell(cuonConfig)
         if type(wRes) != bool: return False
         self.CrondReload()
+        return True
 
     #添加计划任务
     def AddCrontab(self,get):
@@ -271,9 +281,10 @@ class crontab:
         1,get['save'],get['backupTo'],get['sType'],get['sName'],get['sBody'],
         get['urladdress'], get["save_local"], get['notice'], get['notice_channel'])
         addData=public.M('crontab').add(columns,values)
-        public.add_security_logs('计划任务','添加计划任务['+get['name']+']成功'+str(values))
+        public.add_security_logs('TYPE_CRON','Add Cron tasks ['+get['name']+'] success'+str(values))
         if type(addData) == str:
             return public.return_msg_gettext(False, addData)
+        public.WriteLog('TYPE_CRON', 'Add Cron tasks [' + get['name'] + '] success')
         if addData>0:
             result = public.return_msg_gettext(True,'Setup successfully!')
             result['id'] = addData
@@ -342,7 +353,13 @@ class crontab:
     #取数据列表
     def GetDataList(self,get):
         data = {}
-        data['data'] = public.M(get['type']).field('name,ps').select()
+        if get['type'] == 'databases':
+            data['data'] = public.M(get['type']).where("type=?","MySQL").field('name,ps').select()
+        else:
+            data['data'] = public.M(get['type']).field('name,ps').select()
+        for i in data['data']:
+            if 'ps' in i:
+                i['ps'] = public.xsssec(i['ps'])
         data['orderOpt'] = []
         import json
         tmp = public.readFile('data/libList.conf')
@@ -365,7 +382,7 @@ class crontab:
         logFile = public.GetConfigValue('setup_path')+'/cron/'+echo['echo']+'.log'
         if not os.path.exists(logFile):return public.return_msg_gettext(False, 'log is empty')
         log = public.GetNumLines(logFile,2000)
-        return public.return_msg_gettext(True, log)
+        return public.return_msg_gettext(True, public.xsssec(log))
     
     #清理任务日志
     def DelLogs(self,get):
@@ -383,6 +400,7 @@ class crontab:
         try:
             id = get['id']
             find = public.M('crontab').where("id=?",(id,)).field('name,echo').find()
+            if not find: return public.return_msg_gettext(False, 'The specified task does not exist!')
             if not self.remove_for_crond(find['echo']): return public.return_msg_gettext(False,'Unable to write to file, please check if system hardening is enabled!')
             cronPath = public.GetConfigValue('setup_path') + '/cron'
             sfile = cronPath + '/' + find['echo']
@@ -400,7 +418,10 @@ class crontab:
     #从crond删除
     def remove_for_crond(self,echo):
         file = self.get_cron_file()
+        if not os.path.exists(file):
+            return False
         conf=public.readFile(file)
+        if not conf: return False
         if conf.find(str(echo)) == -1: return True
         rep = ".+" + str(echo) + ".+\n"
         conf = re.sub(rep, "", conf)
@@ -535,6 +556,8 @@ echo "--------------------------------------------------------------------------
             if not os.path.exists(u_path):
                 os.makedirs(u_path,472)
                 public.ExecShell("chown root:crontab {}".format(u_path))
+        if not os.path.exists(cron_path):
+            public.writeFile(cron_path,"")
         return cron_path
 
     

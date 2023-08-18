@@ -23,6 +23,7 @@ def control_init():
     clean_hook_log()
     run_new()
     clean_max_log('/www/server/cron',1024*1024*5,20)
+    clean_max_log("/www/server/panel/plugin/webhook/script",1024*1024*1)
     #check_firewall()
     check_dnsapi()
     clean_php_log()
@@ -34,12 +35,88 @@ def control_init():
     run_script()
     set_php_cli_env()
     check_enable_php()
-    sync_node_list()
+    #sync_node_list()
     check_default_curl_file()
     null_html()
     remove_other()
     deb_bashrc()
     upgrade_gevent()
+    upgrade_polkit()
+    #hide_docker()
+    rep_pyenv_link()
+    rm_apache_cgi_test()
+
+def rm_apache_cgi_test():
+    '''
+        @name 删除apache测试cgi文件
+        @author hwliang
+        @return void
+    '''
+    test_cgi_file = '/www/server/apache/cgi-bin/test-cgi'
+    if os.path.exists(test_cgi_file):
+        os.remove(test_cgi_file)
+
+def rep_pyenv_link():
+    '''
+        @name 修复pyenv环境软链
+        @author hwliang
+        @return void
+    '''
+
+    pyenv_bin = '/www/server/panel/pyenv/bin/python3'
+    btpython_bin = '/usr/bin/btpython'
+    pip_bin = '/www/server/panel/pyenv/bin/pip3'
+    btpip_bin = '/usr/bin/btpip'
+
+    # 检查btpython软链接
+    if not os.path.exists(pyenv_bin): return
+    if not os.path.exists(btpython_bin):
+        public.ExecShell("ln -sf {} {}".format(pyenv_bin,btpython_bin))
+
+    # 检查btpip软链接
+    if not os.path.exists(pip_bin): return
+    if not os.path.exists(btpip_bin):
+        public.ExecShell("ln -sf {} {}".format(pip_bin,btpip_bin))
+
+def hide_docker():
+    '''
+        @name 隐藏docker菜单
+        @author hwliang
+        @return void
+    '''
+    tip_file = '{}/data/hide_docker.pl'.format(public.get_panel_path())
+    if os.path.exists(tip_file): return
+
+    # 正在使用docker-compose的用户不隐藏
+    docker_compose = "/usr/bin/docker-compose"
+    if os.path.exists(docker_compose): return
+
+    # 获取隐藏菜单配置
+    menu_key = 'memuDocker'
+    hide_menu_json = public.read_config('hide_menu')
+    if not isinstance(hide_menu_json,list):
+        hide_menu_json = []
+    if menu_key in hide_menu_json: return
+
+    # 保存隐藏菜单配置
+    hide_menu_json.append(menu_key)
+    public.save_config('hide_menu',hide_menu_json)
+    public.writeFile(tip_file,'True')
+
+
+
+
+
+def upgrade_polkit():
+    '''
+        @name 修复polkit提权漏洞(CVE-2021-4034)
+        @author hwliang
+        @return void
+    '''
+    upgrade_log_file = '{}/logs/upgrade_polkit.log'.format(public.get_panel_path())
+    tip_file = '{}/data/upgrade_polkit.pl'.format(public.get_panel_path())
+    if os.path.exists(tip_file): return
+    os.system("nohup {} {}/script/polkit_upgrade.py &> {}".format(public.get_python_bin(),public.get_panel_path(),upgrade_log_file))
 
 def clear_other_files():
     dirPath = '/www/server/phpmyadmin/pma'

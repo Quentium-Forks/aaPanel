@@ -16,9 +16,9 @@ os.chdir('/www/server/panel')
 sys.path.append("class/")
 import os, sys, re, public
 
-_title = 'Check the minimum interval between SSH password changes'
+_title = 'Check minimum interval between SSH password changes'
 _version = 1.0  # 版本
-_ps = "Check the minimum interval between SSH password changes"  # 描述
+_ps = "Check minimum interval between SSH password changes"  # 描述
 _level = 2  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2022-08-10'  # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_ssh_passmin.pl")

@@ -5979,6 +5979,7 @@ def get_admin_path():
     admin_path = admin_path.strip()
     if admin_path in ['','/']:
         return login_path
+    if admin_path[-1] == '/': admin_path = admin_path[:-1]
     return admin_path
 
 
@@ -6076,11 +6077,31 @@ def create_rsa_key():
         prv_key = 'rsa_private_key'
         if pub_key in session and prv_key in session:
             return True
-        from Crypto.PublicKey import RSA
-        key = RSA.generate(1024)
-        private_key = key.exportKey("PEM")
-        public_key = key.publickey().exportKey("PEM")
-        session[pub_key] = public_key.decode('utf-8')
+        try:
+            from Crypto.PublicKey import RSA
+            key = RSA.generate(1024)
+            private_key = key.exportKey("PEM")
+            public_key = key.publickey().exportKey("PEM")
+        except:
+            is_re_install = '{}/data/pycryptodome_re_install.pl'.format(get_panel_path())
+            if not os.path.exists(is_re_install):
+                os.system("nohup btpip install pycryptodome -I &> /dev/null &")
+                writeFile(is_re_install,'True')
+
+            priv_pem = '/tmp/private.pem'
+            pub_pem = '/tmp/public.pem'
+            ExecShell("openssl genrsa -out {} 1024".format(priv_pem))
+            ExecShell("openssl rsa -pubout -in {} -out {}".format(priv_pem,pub_pem))
+            if not os.path.exists(priv_pem) or not os.path.exists(pub_pem):
+                return False
+
+            private_key = readFile(priv_pem,'rb')
+            public_key = readFile(pub_pem,'rb')
+
+            if os.path.exists(priv_pem): os.remove(priv_pem)
+            if os.path.exists(pub_pem): os.remove(pub_pem)
+
+        session[pub_key] = public_key.decode('utf-8').replace("\n","")
         session[prv_key] = private_key.decode('utf-8')
 
         # writeFile(private_key_file,private_key,'wb+')
@@ -6280,3 +6301,297 @@ def get_div(div):
         sql.table('div_list').insert({'div': div})
         my_div = div
     return my_div
+
+
+def set_tasks_run(data):
+    '''
+        @name 设置运行时间
+        @param data dict 数据
+        @param data.type int 类型 1:面板 2：插件
+        @param data.time int 执行时间（必传）
+        @param data.name str 插件名称、模块名称（必传）
+        @param data.title str 插件中文名（必传）
+        @param data.fun str 执行方法（必传）
+        @param data.args dict 参数
+
+    '''
+    spath = '{}/data/tasks'.format(get_panel_path())
+    if not os.path.exists(spath): os.makedirs(spath,384)
+
+    task_file = '{}/{}'.format(spath,md5(str(time.time())))
+    writeFile(task_file,json.dumps(data))
+    return returnMsg(True,task_file)
+
+
+def Get_ip_info(get_speed=False, get_user=True):
+    '''
+    获取bt官网ip归属地列表
+    @author wzz <wzz@bt.cn>
+    @return: list[dict{}]
+    '''
+    host_list = json.loads(readFile("config/hosts_dict.json"))
+    print("host_list: ",host_list)
+
+    # 推荐，一般，较差，不推荐，不测速时，ipv6，用户服务器IP
+    level = (1, 2, 3, 4, 5, 6, 0)
+    user_server_ipaddress = []
+    if get_user:
+        user_server_ipaddress = get_user_server_ipaddress(host_list, level)
+    bt_host = get_bt_hosts(get_speed, host_list, level)
+    ips_result = user_server_ipaddress + bt_host
+    if ips_result: return ips_result
+
+def get_user_server_ipaddress(host_list, level):
+    '''
+    获取服务器公网ip归属地信息
+    @param host_list: host列表
+    @param level: 等级元组
+    @return:
+    '''
+    ips_result = []
+    headers = {"host": "www.bt.cn"}
+    for host in host_list:
+        try:
+            new_url = "https://{}/Api/getIpAddress".format(host["ip"])
+            m_str = HttpGet(new_url, 1, headers=headers)
+            ipaddress = re.search(r"^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}$", m_str).group(0)
+            s_ip_info = get_free_ip_info("{}".format(ipaddress))
+            if "ip" in s_ip_info.keys():
+                s_ip_info["info"] = "本服务器公网IP归属地信息"
+                s_ip_info["level"] = level[-1]
+                ips_result.append(s_ip_info)
+                return ips_result
+        except:
+            continue
+    if not ips_result:
+        return [{'continent': '', 'country': '未知地区', 'province': '', 'city': '', 'region': '', 'carrier': '',
+          'division': '', 'en_country': '', 'en_short_code': '', 'longitude': '',
+          'latitude': '', 'info': '本服务器公网IP归属地信息', 'ip': GetLocalIp(), 'level': 0}]
+
+def get_bt_hosts(get_speed, host_list, level):
+    '''
+    获取bt官网ip归属地列表
+    @param get_speed: 是否测速
+    @param host_list: 传host列表
+    @param level: 传等级元组
+    @return:
+    '''
+    ips_result = []
+
+    for ip in host_list:
+        ipv6 = {
+            "continent": "",
+            "country": "",
+            "province": "",
+            "city": "ipv6 地址",
+            "region": "",
+            "carrier": "",
+            "division": "",
+            "en_country": "",
+            "en_short_code": "",
+            "longitude": "",
+            "latitude": "",
+            "info": "该节点为ipv6地址,若服务器无ipv6请勿选择!",
+            "ip": "",
+            "level": None
+        }
+        try:
+            # 获取节点响应延迟
+            if get_speed: n_net, n_ping = get_timeout("https://{}".format(ip["ip"]) + ':80/net_test', 1)
+            if not is_ipv4(ip["ip"]):
+                ipv6['ip'] = ip["ip"]
+                # ipv6地址默认一般推荐
+                ipv6['level'] = level[-2]
+                if get_speed: ipv6['speed'] = ""
+                ips_result.append(ipv6)
+                continue
+            ip_result = get_free_ip_info("{}".format(ip["ip"]))
+            if "ip" in ip_result.keys():
+                ip_result['level'] = level[-3]
+                if get_speed:
+                    if int(n_ping) < 100: ip_result['level'] = level[0]
+                    if 100 < int(n_ping) < 500: ip_result['level'] = level[1]
+                    if int(n_ping) > 500: ip_result['level'] = level[2]
+                    ip_result["speed"] = n_ping + 500
+                ips_result.append(ip_result)
+                continue
+            if "info" in ip_result.keys():
+                if ip_result["info"] == "未知归属地":
+                    ipv6['ip'] = ip["ip"]
+                    ipv6["city"] = ip["area"]
+                    ipv6['level'] = level[1]
+                    if get_speed: ipv6['speed'] = ""
+                    ipv6["info"] = "节点无法测速,请选择离您服务器最近的尝试!"
+                    ips_result.append(ipv6)
+        except:
+            continue
+    if len(ips_result) < 2 and ips_result[-1]["city"] == "ipv6 地址": ips_result.pop(-1)
+    return ips_result
+
+def set_home_host2(host):
+    """
+    @name 设置官网hosts
+    @author wzz<wzz@bt.cn>
+    @param host IP地址
+    @return void
+    """
+    msg = "请尝试点击【清理旧节点】,如果仍然不行,请联系堡塔运维! https://www.bt.cn/bbs"
+    www_set = ExecShell("echo \"{} www.bt.cn\" >> /etc/hosts".format(host))
+    api_set = ExecShell("echo \"{} api.bt.cn\" >> /etc/hosts".format(host))
+    if not www_set[1] and not api_set[1]: return returnMsg(True, "节点设置成功")
+    if www_set[1]: return returnMsg(False, "节点设置失败: {}, {}".format(www_set[1],msg))
+    if api_set[1]: return returnMsg(False, "节点设置失败: {}, {}".format(api_set[1],msg))
+    return returnMsg(False, "节点设置失败: {}".format(msg))
+
+def Clean_bt_host():
+    '''
+    删除bt.cn相关的hosts绑定信息
+    @author wzz <wzz@bt.cn>
+    @return:
+    '''
+    check_hosts = ExecShell("grep \"bt.cn\" /etc/hosts")
+    if check_hosts[0]:
+        result = ExecShell("sed -i \"/bt.cn/d\" /etc/hosts")
+        if result[1]: return returnMsg(False, "旧节点清理失败: {}".format(result[1]))
+        return returnMsg(True, "旧节点已清理")
+    return returnMsg(True, "hosts没有绑定旧节点无需清理")
+
+def Set_bt_host(ip=None):
+    '''
+    设置bt官网(www && api)指定hosts节点
+    @author wzz <wzz@bt.cn>
+    @param get: 手动设置 get.ip 官网传ip地址,从public.Get_ip_info方法获取 | 自动设置
+    @return:
+    '''
+    Clean_bt_host()
+
+    if ip: return set_home_host2(ip)
+    # 如果不传ip则自动设置
+    ips_info = Get_ip_info(get_user=False)
+    headers = {"host": "www.bt.cn"}
+    for host in ips_info:
+        new_url = "https://{}".format(host['ip'])
+        res = HttpGet(new_url, 1, headers=headers)
+        if res:
+            writeFile("{}/data/home_host.pl".format(get_panel_path()), host["ip"])
+            result = set_home_host2(host["ip"])
+            if result["status"]:
+                return returnMsg(True, "已自动选择为{}{}的最优节点,运营商是: {}"
+                                 .format(host['province'],host['city'], host['carrier']))
+    return returnMsg(False, "自动选择节点失败,请尝试手动设置")
+
+
+def set_ownership( directory, user):
+    '''
+    设置指定目录及目录下所有文件、子目录所属为user
+    @param directory:
+    @param user:
+    @return:
+    '''
+    import pwd
+    uid = pwd.getpwnam(user).pw_uid
+    gid = pwd.getpwnam(user).pw_gid
+
+    os.chown(directory, uid, gid)
+
+    for root, dirs, files in os.walk(directory):
+        for d in dirs:
+            dir_path = os.path.join(root, d)
+            os.chown(dir_path, uid, gid)
+        for f in files:
+            file_path = os.path.join(root, f)
+            os.chown(file_path, uid, gid)
+
+def set_permissions(directory, permissions):
+    '''
+    设置指定目录及目录下所有文件、子目录权限为permissions
+    @param directory:
+    @param permissions: 传八进制，如0o755
+    @return:
+    '''
+    os.chmod(directory, permissions)
+
+    for root, dirs, files in os.walk(directory):
+        for d in dirs:
+            dir_path = os.path.join(root, d)
+            os.chmod(dir_path, permissions)
+        for f in files:
+            file_path = os.path.join(root, f)
+            os.chmod(file_path, permissions)
+
+def check_ssl_verify(certPath = 'ssl/ca.pem'):
+    '''
+    校验面板设置SSL双向认证证书格式
+    @param certPath:
+    @return:
+    '''
+    if "crl.pem" in certPath:
+        certKey = readFile(certPath)
+        if "-----BEGIN X509 CRL-----" not in certKey:
+            return False
+        return True
+
+    res = False
+    openssl = '/usr/local/openssl/bin/openssl'
+    if not os.path.exists(openssl): openssl = 'openssl'
+    certPem = readFile(certPath)
+    if "-----BEGIN CERTIFICATE-----" in certPem and "Certificate" in certPem:
+        result = ExecShell(openssl + " x509 -in "+certPath+" -noout -subject")
+        res = True
+        if len(result[1]) > 2: res = False
+        if result[0].find('error:') != -1: res = False
+    return res
+
+def is_write_file():
+    '''
+        @name 测试是否能写入文件
+        @return void
+    '''
+    test_file = '/etc/init.d/bt_10000100.pl'
+    writeFile(test_file, 'True')
+    if os.path.exists(test_file):
+        if readFile(test_file) == 'True':
+            os.remove(test_file)
+            return True
+        os.remove(test_file)
+    return False
+
+def stop_syssafe():
+        '''
+            @name 临时停用系统加固
+            @return bool
+        '''
+        # 检测是否可写
+        ret = is_write_file()
+        is_stop_syssafe_file = '{}/data/is_stop_syssafe.pl'.format(get_panel_path())
+        # 如果不可写，则尝试停用系统加固
+        if not ret:
+            syssafe_path = get_plugin_path('syssafe')
+            if os.path.exists(syssafe_path):
+                writeFile(is_stop_syssafe_file, 'True')
+                ExecShell("/etc/init.d/bt_syssafe stop")
+
+                # 停用系统加固后再检测一次
+                ret = is_write_file()
+                return ret
+
+        return ret
+
+def start_syssafe():
+    '''
+        @name 恢复系统加固的运行状态
+        @return void
+    '''
+    is_stop_syssafe_file = '{}/data/is_stop_syssafe.pl'.format(get_panel_path())
+    if os.path.exists(is_stop_syssafe_file):
+        ExecShell("/etc/init.d/bt_syssafe start")
+        if os.path.exists(is_stop_syssafe_file):
+            os.remove(is_stop_syssafe_file)
+
+
+def check_sys_write():
+    '''
+        @name 检查关键目录是否可写
+        @return bool
+    '''
+    return stop_syssafe()
