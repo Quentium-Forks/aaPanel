@@ -562,7 +562,7 @@
 	"CHANGE_PANEL_PASS": "Change panel password",
 	"CANCEL_DOMAIN_BIND": "Cancel domain binding limit",
 	"CHANGE_PANEL_USER": "Change panel username",
-	"CANCEL_IP_LIMIT": "Cacel IP access limit",
+	"CANCEL_IP_LIMIT": "Cancel IP access limit",
 	"CHANGE_MYSQL_PASS_FORCE": "Forcibly change MySQL root password",
 	"GET_PANEL_DEFAULT_MSG": "View panel default info",
 	"CANCEL": "Cacel",

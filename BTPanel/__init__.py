@@ -23,7 +23,7 @@ if not 'class/' in sys.path:
 
 from flask import Flask, session, render_template, send_file, request, redirect, g, make_response, \
     render_template_string, abort,stream_with_context, Response as Resp
-from cachelib import SimpleCache
+from cachelib import SimpleCache,SimpleCacheSession
 from werkzeug.wrappers import Response
 from flask_session import Session
 from flask_compress import Compress
@@ -65,7 +65,7 @@ if os.path.exists(basic_auth_conf):
 app.secret_key = public.md5(str(os.uname()) + str(psutil.boot_time())) # uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
 my_terms = {}
-app.config['SESSION_MEMCACHED'] = SimpleCache(1000,86400)
+app.config['SESSION_MEMCACHED'] = SimpleCacheSession(1000, 86400)
 app.config['SESSION_TYPE'] = 'memcached'
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
@@ -141,6 +141,7 @@ admin_path_checks = [
     '/warning'
 ]
 if admin_path in admin_path_checks: admin_path = '/bt'
+if admin_path[-1] == '/': admin_path = admin_path[:-1]
 uri_match = re.compile(r"(^/static/[\w_\./\-]+\.(js|css|png|jpg|gif|ico|svg|woff|woff2|ttf|otf|eot|map)$|^/[\w_\./\-]*$)")
 session_id_match = re.compile(r"^[\w\.\-]+$")
 
@@ -572,23 +573,23 @@ def panel_warning(pdata=None):
         if not check_csrf(): return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
     get = get_input()
     ikey = 'warning_list'
+    import panelWarning
+    dataObject = panelWarning.panelWarning()
     if get.action == 'get_list':
         result = cache.get(ikey)
         if not result or 'force' in get:
-            if 'force' in get:
-                public.set_module_logs('panelWarning', 'get_list', 1)
-            result = public.ExecShell("{} {}/script/warning_list.py".format(public.get_python_bin(),public.get_panel_path()))[0]
+            result = json.loads('{"ignore":[],"risk":[],"security":[]}')
             try:
-                json.loads(result)
+                defs = ("get_list",)
+                result = publicObject(dataObject, defs, None, pdata)
                 cache.set(ikey, result, 3600)
+                return result
             except:
-                result = '{"ignore":[],"risk":[],"security":[]}'
-        return result,json_header
+                pass
+        return result
 
-    import panelWarning
-    dataObject = panelWarning.panelWarning()
     defs = ('get_list', 'set_ignore', 'check_find')
-    if get.action in ['set_ignore','check_find']:
+    if get.action in ['set_ignore', 'check_find']:
         cache.delete(ikey)
     return publicObject(dataObject, defs, None, pdata)
 
@@ -951,6 +952,7 @@ def download():
         mimetype = "application/octet-stream"
         extName = filename.split('.')[-1]
         if extName in ['png', 'gif', 'jpeg', 'jpg']: mimetype = None
+        public.WriteLog("TYPE_FILE", 'FILE_DOWNLOAD', (filename, public.GetClientIp()))
         return send_file(filename, mimetype=mimetype,
                          as_attachment=True,
                          etag=True,

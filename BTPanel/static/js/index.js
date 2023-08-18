@@ -1816,7 +1816,7 @@ var index = {
                 that.warning_list = res;
                 that.warning_num = res.risk.length;
                 $('.warning_num').css('color',(that.warning_num > 0?'red':'#20a53a')).html(that.warning_num);
-                $('.warning_scan_ps').html(that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, please repair them in time!'):'There is no risk item detected in this scan, please keep it!');
+                $('.warning_scan_ps').html(that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, Suggested repair!'):'There is no risk item detected in this scan, please keep it!');
                 if(callback) callback(res);
             }
         });
@@ -1905,7 +1905,7 @@ var index = {
             skin:'warning_scan_view',
             content:'<div class="warning_scan_view">'+
                 '<div class="warning_scan_head">'+
-                    '<span class="warning_scan_ps">'+ (that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, please repair them in time!'):'This scan check no risks, please keep it!') +'</span>'+
+                    '<span class="warning_scan_ps">'+ (that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, Suggested repair!'):'This scan check no risks, please keep it!') +'</span>'+
                     '<span class="warning_scan_time"></span>'+
                     '<button class="warning_again_scan">Retest</button>'+
                 '</div>'+
