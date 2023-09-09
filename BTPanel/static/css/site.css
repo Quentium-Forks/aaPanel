@@ -12223,3 +12223,51 @@ html .menu .menu_logs:hover {
 }
 /* 首页磁盘分析 end */
 
+/*消息通道安装模块样式 start*/
+.alarm-view .plugin_body {
+  position: relative;
+  height: 525px;
+}
+
+.alarm-view .plugin_user_info {
+  padding: 15px 30px;
+  line-height: 26px;
+  background: #f5f6fa;
+  border-radius: 5px;
+  border: 1px solid #efefef;
+}
+
+.alarm-view .plugin_user_info p {
+  font-size: 14px;
+}
+
+.alarm-view .plugin_update {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.alarm-view .update_list {
+  position:absolute;
+  bottom: 0;
+  line-height: 40px;
+  width: 170px;
+  text-align: center;
+}
+
+.alarm-view .plugin_update .box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 45px;
+  padding: 0 15px;
+  background-color: #f7f7f7;
+}
+
+.alarm-view .plugin_update .btn {
+  margin-left: 4px;
+}
+/*消息通道安装模块样式  end*/
+

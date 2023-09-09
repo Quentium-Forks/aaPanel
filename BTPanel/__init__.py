@@ -725,7 +725,7 @@ def crontab(pdata=None):
     import crontab
     crontabObject = crontab.crontab()
     defs = ('GetCrontab', 'AddCrontab', 'GetDataList', 'GetLogs', 'DelLogs', 'DelCrontab',
-            'StartTask', 'set_cron_status', 'get_crond_find', 'modify_crond'
+            'StartTask', 'set_cron_status', 'get_crond_find', 'modify_crond', 'get_backup_list'
             )
     return publicObject(crontabObject, defs, None, pdata)
 
@@ -798,7 +798,7 @@ def config(pdata=None):
         'getFpmConfig','setFpmConfig','setPHPMaxTime','syncDate','setPHPDisable','SetControl','get_settings2','del_tg_info','set_tg_bot',
         'ClosePanel','AutoUpdatePanel','SetPanelLock','return_mail_list','del_mail_list','add_mail_address','user_mail_send','get_user_mail','set_dingding','get_dingding',
         'get_settings','user_stmp_mail_send','user_dingding_send','get_login_send','set_login_send','clear_login_send','get_login_log','login_ipwhite',
-        'set_ssl_verify', 'get_ssl_verify', 'get_password_config', 'set_password_expire', 'set_password_safe'
+        'set_ssl_verify', 'get_ssl_verify', 'get_password_config', 'set_password_expire', 'set_password_safe', 'get_module_template'
         )
     return publicObject(config.config(),defs,None,pdata)
 
@@ -1614,7 +1614,7 @@ def panel_other(name=None, fun=None, stype=None):
             t_body = public.readFile(t_path)
 
             #处理模板包含
-            rep = '{%\s?include\s"(.+)"\s?%}'
+            rep = r'{%\s?include\s"(.+)"\s?%}'
             includes = re.findall(rep,t_body)
             for i_file in includes:
                 filename = p_path + '/templates/' + i_file

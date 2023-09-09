@@ -5709,3 +5709,214 @@ function renderTelegramConfigView(data) {
 		},
 	});
 }
+
+// true: 消息推送 false: 消息通道
+var ConfigIsPush = false;
+// 消息推送弹框
+var ConfigIndex = -1;
+
+// 打开消息通道/消息推送
+function open_three_channel_auth (stype) {
+  var _title = 'Set Notification';
+  var _area = '650px';
+  var isPush = false;
+  var assign = '';
+
+  if (stype === 'MsgPush') { // 类型为消息推送
+    _title = 'Set message push'
+    _area = ['900px', '603px']
+    isPush = true
+  } else if (typeof stype != 'undefined' && stype) { // 指定选择消息通道的某个菜单
+    assign = stype
+  }
+
+  ConfigIsPush = isPush
+
+  ConfigIndex = layer.open({
+    type: 1,
+    area: _area,
+    title: _title,
+    closeBtn: 2,
+    shift: 5,
+    shadeClose: false,
+    content: '\
+		<div class="bt-form alarm-view">\
+			<div class="bt-w-main" style="height: 560px;">\
+				<div class="bt-w-menu" ' + (isPush ? 'style="width: 160px;"' : '') + '></div>\
+				<div class="bt-w-con pd15" ' + (isPush ? 'style="margin-left: 160px;"' : '') + '>\
+					<div class="plugin_body"></div>\
+					<div class="plugin_update"></div>\
+				</div>\
+			</div>\
+		</div>',
+    success: function () {
+      // 获取菜单配置
+      getMsgConfig(assign ? assign : '');
+
+      // 卸载/禁用模块
+      $('.alarm-view').on('click', '.btn-uninstall', function () {
+        uninstallMsgModuleConfig();
+      });
+
+      // 立即更新
+      $('.alarm-view').on('click', '.btn-update', function () {
+        installMsgModuleConfig();
+      });
+    }
+  })
+}
+
+// 获取模板配置
+function getTemplateMsgConfig (item, shtml) {
+  $.post('/'+(ConfigIsPush?'push':'config') + '?action=get_module_template', {
+    module_name: item.name
+  }, function (res) {
+    if (res.status) {
+      // 添加菜单内容
+      $(".bt-w-main .plugin_body").html(res.msg.trim());
+      // 添加底部内容
+      var updateInfo = '';
+      // 是否更新
+      if (item.version !== item.info.version) {
+        updateInfo = '【' + item['title'] + '】模块存在新的版本，为了不影响使用，请更新。<button class="btn btn-success btn-sm btn-update">立即更新</button>';
+      }
+      // $(".bt-w-main .plugin_update").html('\
+      // <div class="box">\
+      //   <div class="info">' + updateInfo + '</div>\
+      //   <div><button class="btn btn-danger btn-sm btn-uninstall">卸载/禁用模块</button></div>\
+      // </div>');
+    } else {
+      $(".bt-w-main .plugin_body").html(shtml);
+    }
+    new Function(item.name + '.init()')()
+  })
+}
+
+// 获取消息配置
+function getMsgConfig (openType) {
+  var _api = '/config?action=get_msg_configs'
+  if(ConfigIsPush) _api = '/push?action=get_modules_list'
+
+  $.post(_api, function(rdata) {
+    var _menu = '';
+    var menu_data = $(".alarm-view .bt-w-menu p.bgw").data('data');
+    $('.alarm-view .bt-w-menu').html('');
+    $.each(rdata, function(index, item) {
+			var _default = item.data && item.data.default;
+			var _flag = '';
+			if (_default) {
+				_flag = '<span class="show-default"></span>'
+			}
+      _menu = $('<p class=\'men_' + item['name'] + '\'>' + item['title'] + _flag + '</p>').data('data', item)
+      $('.alarm-view .bt-w-menu').append(_menu)
+    });
+    // $('.alarm-view .bt-w-menu').append('<a class="btlink update_list" onclick="refreshThreeChannelAuth()">更新列表</a>');
+    $(".alarm-view .bt-w-menu p").click( function() {
+      $(this).addClass('bgw').siblings().removeClass('bgw')
+      var _item = $(this).data('data');
+
+      var shtml = '<div class="plugin_user_info c7">\
+        <p><b>名称：</b>' + _item.title + '</p>\
+        <p><b>版本：</b>' + _item.version + '</p>\
+        <p><b>时间：</b>' + _item.date + '</p>\
+        <p><b>描述：</b>' + _item.ps + '</p>\
+        <p><b>说明：</b><a class="btlink" href="' + _item.help + '" target=" _blank">' + _item.help + '</a></p>\
+        <p><button class="btn btn-success btn-sm mt1" onclick="installMsgModuleConfig(\''+ _item.name +'\')">安装模块</button></p>\
+      </div>';
+      if (_item['setup']) {
+        getTemplateMsgConfig(_item, shtml)
+      } else {
+        $(".bt-w-main .plugin_body").html(shtml);
+        $(".bt-w-main .plugin_update").html('');
+      }
+    });
+    if (menu_data) {
+      $('.men_' + menu_data['name']).click();
+    } else {
+      if(typeof openType != 'undefined' && openType){
+        $('.alarm-view .bt-w-menu p.men_'+openType).trigger('click')
+      }else{
+        $('.alarm-view .bt-w-menu p').eq(0).trigger('click')
+      }
+    }
+  })
+}
+
+function installMsgModuleConfig (name) {
+  var _api = '/config?action=install_msg_module'
+  if(ConfigIsPush) _api = '/push?action=install_module'
+	name = name ? '.men_' + name : '';
+  var _item = $(".alarm-view .bt-w-menu p.bgw" +  name ).data('data');
+  var spt = '安装'
+  if (_item.setup) spt = '更新'
+
+  layer.confirm('是否要' + spt + '【' + _item.title + '】模块', {
+    title: '安装模块',
+    closeBtn: 2,
+    icon: 0
+  }, function() {
+    var loadT = layer.msg('正在' + spt + _item.title + '模块中,请稍候...', {
+      icon: 16,
+      time: 0,
+      shade: [0.3, '#000']
+    });
+    $.post(_api+'&name=' + _item.name + '', function(res) {
+      getMsgConfig()
+      layer.close(loadT)
+      layer.msg(res.msg, {
+        icon: res.status ? 1 : 2
+      })
+    })
+  })
+}
+
+function uninstallMsgModuleConfig () {
+  var _api = '/config?action=uninstall_msg_module'
+  if(ConfigIsPush) _api = '/push?action=uninstall_module'
+
+  var _item = $(".alarm-view .bt-w-menu p.bgw").data('data');
+
+  layer.confirm('是否确定要卸载【' + _item.title + '】模块', {
+    title: '卸载模块',
+    closeBtn: 2,
+    icon: 0
+  }, function() {
+    var loadT = layer.msg('正在卸载' + _item.title + '模块中,请稍候...', {
+      icon: 16,
+      time: 0,
+      shade: [0.3, '#000']
+    });
+    $.post(_api+'&name=' + _item.name + '', function(res) {
+      layer.close(loadT)
+      getMsgConfig()
+      layer.msg(res.msg, {
+        icon: res.status ? 1 : 2
+      })
+    })
+  })
+}
+
+function refreshThreeChannelAuth () {
+  var _api = '/config?action=get_msg_configs'
+  if(ConfigIsPush) _api = '/push?action=get_modules_list'
+
+  var loadT = layer.msg('正在更新模块列表中,请稍候...', {
+    icon: 16,
+    time: 0,
+    shade: [0.3, '#000']
+  });
+  layer.confirm('是否确定获取最新的模块列表', {
+    title: '刷新列表',
+    closeBtn: 2,
+    icon: 0
+  }, function(index) {
+    layer.close(index);
+    layer.close(ConfigIndex);
+    $.post(_api, {
+      force: 1
+    }, function(rdata) {
+      layer.close(loadT)
+      open_three_channel_auth(ConfigIsPush?'MsgPush':'');
+    })
+  })
+}
