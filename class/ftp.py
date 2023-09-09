@@ -57,6 +57,8 @@ class ftp:
         try:
             username = get['username']
             id = get['id']
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             public.ExecShell(self.__runPath + '/pure-pw userdel "' + username + '"')
             self.FtpReload()
             public.M('ftps').where("id=?",(id,)).delete()
@@ -73,6 +75,8 @@ class ftp:
             id = get['id']
             username = get['ftp_username'].strip()
             password = get['new_password'].strip()
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             if len(password) < 6: return public.return_msg_gettext(False,'Password must be at least [{}] characters',("6",))
             public.ExecShell(self.__runPath + '/pure-pw passwd "' + username + '"<<EOF \n' + password + '\n' + password + '\nEOF')
             self.FtpReload()
@@ -92,6 +96,8 @@ class ftp:
             id = get['id']
             username = get['username']
             status = get['status']
+            if public.M('ftps').where("id=? and name=?", (id,username, )).count()==0:
+                return public.return_msg_gettext(False, 'DEL_ERROR')
             if int(status)==0:
                 public.ExecShell(self.__runPath + '/pure-pw usermod "' + username + '" -r 1')
             else:
