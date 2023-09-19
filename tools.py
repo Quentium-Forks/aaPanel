@@ -37,7 +37,7 @@ if [ "$m_version" != "" ];then
 elif [ "$m2_version" != "" ];then
     mysql -uroot -e "FLUSH PRIVILEGES;alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
 else
-    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5.7.|8.0.)")
+    m_version=$(cat /www/server/mysql/version.pl|grep -E "(5\.7\.|8\.[0-9]+\..*)")
     if [ "$m_version" != "" ];then
         mysql -uroot -e "FLUSH PRIVILEGES;update mysql.user set authentication_string='' where user='root' and (host='127.0.0.1' or host='localhost');alter user 'root'@'localhost' identified by '${pwd}';alter user 'root'@'127.0.0.1' identified by '${pwd}';FLUSH PRIVILEGES;";
     else
