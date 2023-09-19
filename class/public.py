@@ -959,7 +959,10 @@ def writeSpeed(title,used,total,speed = 0):
     if not title:
         data = {'title': None, 'progress': 0, 'total': 0, 'used': 0, 'speed': 0}
     else:
-        progress = int((100.0 * used / total))
+        try:
+            progress = int((100.0 * used / total))
+        except:
+            progress = 0
         data = {'title': title, 'progress': progress, 'total': total, 'used': used, 'speed': speed}
     writeFile('/tmp/panelSpeed.pl', json.dumps(data))
     return True
@@ -2337,13 +2340,13 @@ def auto_backup_panel():
         ExecShell("chmod -R 600 {path};chown -R root.root {path}".format(path=backup_file))
         if os.path.exists(backup_path): shutil.rmtree(backup_path)
 
-        time_now = time.time() - (86400 * 15)
+        time_now = time.time() - (86400 * 30)
         for f in os.listdir(b_path):
-            if time.mktime(time.strptime(f, "%Y-%m-%d")) < time_now:
+            if f.endswith(".zip") and time.mktime(time.strptime(f, "%Y-%m-%d.zip")) < time_now:
                 path = b_path + '/' + f
-                b_file = path + '.zip'
-                if os.path.exists(path):
-                    shutil.rmtree(path)
+                b_file = path #+ '.zip'
+                #if os.path.exists(path):
+                    #shutil.rmtree(path)
                 if os.path.exists(b_file):
                     os.remove(b_file)
         set_php_cli_env()

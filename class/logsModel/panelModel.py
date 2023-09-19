@@ -52,7 +52,7 @@ class main(logsBase):
         if 'limit' in args: limit = int(args.limit)
 
         stype = args.stype
-        search = args.search
+        search = '[' + str(args.search) + ']'
 
         where = "type=? and log like ? "
 

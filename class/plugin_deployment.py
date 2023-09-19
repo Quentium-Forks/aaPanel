@@ -77,7 +77,7 @@ class plugin_deployment:
         if sys.version_info[0] == 2: filename = filename.encode('utf-8')
         if os.path.exists(filename): 
             if os.path.getsize(filename) > 100: return pinfo
-        public.ExecShell("wget -O " + filename + ' http://www.bt.cn' + m_uri + " &")
+        public.ExecShell("wget -O " + filename + ' https://www.bt.cn' + m_uri + " &")
         return pinfo
 
     #获取插件列表

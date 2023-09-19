@@ -267,7 +267,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             args.f_name = args.f_name.encode('utf-8')
             args.f_path = args.f_path.encode('utf-8')
         try:
-            if self.get_real_len(args.f_name) > 128: return public.return_msg_gettext(False,'The file name contains more than 128 bytes')
+            if self.get_real_len(args.f_name) > 256: return public.return_msg_gettext(False,'The file name contains more than 256 bytes')
         except:
             pass
         if not self.f_name_check(args.f_name): return public.return_msg_gettext(False,'No special characters can be included in the file name!')
@@ -373,6 +373,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         @name 检测文件或者目录是否置顶
         @param filepath: 文件路径
         """
+        if filepath in top_info:
+            return '1'
+        import html
+        filepath = html.unescape(filepath)
         if filepath in top_info:
             return '1'
         return '0'
@@ -483,7 +487,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 break
             if i < page.SHIFT:
                 continue
-            if not os.path.exists(filename): continue
+            if not os.path.exists(filename) and not os.path.islink(filename): continue
             file_info = self.__format_stat(filename, get.path)
             if not file_info: continue
             favorite = self.__check_favorite(filename, data['STORE'])
@@ -670,19 +674,19 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 filename = "/".join((path,f_name))
                 sort_key = 1
                 sort_val = None
-
-                #此处直接做异常处理比先判断文件是否存在更高效
-                if my_sort == 'name':
-                    sort_key = 0
-                elif my_sort == 'size':
-                    sort_val = os.stat(filename).st_size
-                elif my_sort == 'mtime':
-                    sort_val =  os.stat(filename).st_mtime
-                elif my_sort == 'accept':
-                    sort_val = os.stat(filename).st_mode
-                elif my_sort == 'user':
-                    sort_val =  os.stat(filename).st_uid
-            except:
+                if not os.path.islink(filename):
+                    #此处直接做异常处理比先判断文件是否存在更高效
+                    if my_sort == 'name':
+                        sort_key = 0
+                    elif my_sort == 'size':
+                        sort_val = os.stat(filename).st_size
+                    elif my_sort == 'mtime':
+                        sort_val =  os.stat(filename).st_mtime
+                    elif my_sort == 'accept':
+                        sort_val = os.stat(filename).st_mode
+                    elif my_sort == 'user':
+                        sort_val =  os.stat(filename).st_uid
+            except Exception as err:
                 continue
             #使用list[tuple]排序效率更高
             tmp_files.append((f_name,sort_val))
@@ -749,14 +753,20 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         return data
 
     def __get_stat(self, filename, path=None):
-        stat = os.stat(filename)
-        accept = str(oct(stat.st_mode)[-3:])
-        mtime = str(int(stat.st_mtime))
-        user = ''
-        try:
-            user = pwd.getpwuid(stat.st_uid).pw_name
-        except:
-            user = str(stat.st_uid)
+        if os.path.islink(filename) and not os.path.exists(filename):
+            accept = "0"
+            mtime = "0"
+            user = "0"
+            size = "0"
+        else:
+            stat = os.stat(filename)
+            accept = str(oct(stat.st_mode)[-3:])
+            mtime = str(int(stat.st_mtime))
+            user = ''
+            try:
+                user = pwd.getpwuid(stat.st_uid).pw_name
+            except:
+                user = str(stat.st_uid)
         size = str(stat.st_size)
         link = ''
         down_url = self.get_download_id(filename)
@@ -935,7 +945,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def DeleteFile(self, get):
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
-        if not os.path.exists(get.path):
+        if not os.path.exists(get.path)and not os.path.islink(get.path):
             return public.return_msg_gettext(False, 'Configuration file not exist')
 
         # 检查是否为.user.ini

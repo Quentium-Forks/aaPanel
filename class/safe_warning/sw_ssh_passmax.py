@@ -19,7 +19,7 @@ import os, sys, re, public
 _title = 'Check SSH password expiration time'
 _version = 1.0  # 版本
 _ps = "Check SSH password expiration time"  # 描述
-_level = 2  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
+_level = 0  # 风险级别： 1.提示(低)  2.警告(中)  3.危险(高)
 _date = '2022-08-10'  # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_ssh_passmax.pl")
 _tips = [

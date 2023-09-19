@@ -345,6 +345,7 @@ class bt_task:
 
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)
+        public.write_log_gettext("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
         return public.return_msg_gettext(True, 'Compression succeeded!')
 
     # 文件解压
@@ -408,6 +409,8 @@ class bt_task:
             elif log_msg.find("is not RAR archive") != -1:
                 err_msg = "It is not a rar archive, check whether to modify the file with the extension rar for other compression formats!"
                 public.WriteLog("File manager","Unzip file failed, reason: {}, file: {}".format(err_msg,sfile))
+            elif log_msg.find("gzip: stdin") != -1:
+                public.ExecShell("tar xvf '" + sfile + "' -C '" + dfile + "' &> " + log_file)
 
         if err_msg: return public.returnMsg(False, err_msg)
 
@@ -423,6 +426,7 @@ class bt_task:
                 public.ExecShell("chown %s:%s %s" % (user, user, dfile))
 
         #public.WriteLog("TYPE_FILE", 'Uncompression succeeded!', (sfile, dfile),not_web = self.not_web)
+        public.write_log_gettext("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
         return public.return_msg_gettext(True, 'Uncompression succeeded!')
 
     def get_7z_bin(self):

@@ -347,7 +347,10 @@ class process_task:
     def __init__(self):
 
         tip_file = '{}/data/process_index.pl'.format(public.get_panel_path())
-        if not os.path.exists(tip_file):
+        if not public.M('sqlite_master').dbfile('system').where(
+                'type=? AND name=?', ('table', 'process_top_list')).count():
+            public.ExecShell('rm -f {}'.format(tip_file))
+        if not os.path.isfile(tip_file):
             _sql = db.Sql().dbfile('system')
             csql = '''CREATE TABLE IF NOT EXISTS `process_top_list` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
