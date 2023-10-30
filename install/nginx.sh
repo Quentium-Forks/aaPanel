@@ -31,7 +31,7 @@ nginx_121='1.21.4'
 nginx_122='1.22.1'
 nginx_123='1.23.4'
 nginx_124='1.24.0'
-nginx_125='1.25.2'
+nginx_125='1.25.3'
 openresty='1.21.4.2'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
