@@ -366,7 +366,7 @@ class data:
     '''
     def GetSql(self,get,result = '1,2,3,4,5,8'):
         #判断前端是否传入参数
-        order = "id desc"
+        order = 'id desc'
         if hasattr(get,'order'):
             # 验证参数格式
             if re.match(r"^[\w\s\-\.]+$",get.order):
@@ -397,7 +397,17 @@ class data:
                 where += " and type='{}'".format(int(get.type))
 
             if get.table == 'sites' and get.search:
-                pid = SQL.table('domain').where("name LIKE ?",("%{}%".format(get.search),)).getField('pid')
+                conditions = ''
+                if '_' in get.search:
+                    cs = ''
+                    for i in get.search:
+                        if i == '_':
+                            cs += '/_'
+                        else:
+                            cs += i
+                    get.search = cs
+                    conditions = " escape '/'"
+                pid = SQL.table('domain').where("name LIKE ?{}".format(conditions),("%{}%".format(get.search),)).getField('pid')
                 if pid:
                     if where:
                         where += " or id=" + str(pid)
@@ -407,7 +417,7 @@ class data:
         if get.table == 'sites':
             search_key = 'php'
             if where:
-                where = "({}) AND project_type='PHP'".format(where)
+                where = "({}) AND (project_type='PHP' OR project_type='WP')".format(where)
             else:
                 where = "(project_type='PHP' OR project_type='WP')"
 
@@ -428,7 +438,7 @@ class data:
                     where = "sid='{}'".format(int(get.sid))
 
             if where:
-                where += ' and type="MySQL"'
+                where += " and type='MySQL'"
             else:
                 where = 'type = "MySQL"'
 
@@ -510,7 +520,7 @@ class data:
             'sites': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
             'ftps': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
             'databases': (
-                "name LIKE ? {} OR ps LIKE ?{}".format(conditions, conditions),
+                "(name LIKE ? {} OR ps LIKE ?{})".format(conditions, conditions),
                 ("%" + search + "%", "%" + search + "%")),
             'crontab': ("name LIKE ?{}".format(conditions), ('%' + (search) + '%')),
             'logs': ("username=? OR type LIKE ?{} OR log LIKE ?{}".format(conditions, conditions),

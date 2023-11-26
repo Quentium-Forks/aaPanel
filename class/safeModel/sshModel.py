@@ -9,9 +9,13 @@
 
 # ssh信息
 #------------------------------
-import os,re,json,time
-from safeModel.base import safeBase
+import json
+import os
+import re
+import time
+
 import public
+from safeModel.base import safeBase
 
 
 class main(safeBase):
@@ -26,6 +30,19 @@ class main(safeBase):
         @param get:
         """
         result = {'error':0,'success':0}
+        if os.path.exists("/etc/debian_version"):
+            version = public.readFile('/etc/debian_version').strip()
+            if 'bookworm' in version or 'jammy' in version or 'impish' in version:
+                version = 12
+            else:
+                try:
+                    version = float(version)
+                except:
+                    version = 11
+            if version >= 12:
+                result['error'] = int(public.ExecShell("journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0]) + int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[0])
+                result['success'] = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
+                return result
         data = self.get_ssh_cache()
         for sfile in self.get_ssh_log_files(None):
             for stype in result.keys():

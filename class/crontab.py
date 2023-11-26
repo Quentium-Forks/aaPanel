@@ -382,7 +382,7 @@ class crontab:
         logFile = public.GetConfigValue('setup_path')+'/cron/'+echo['echo']+'.log'
         if not os.path.exists(logFile):return public.return_msg_gettext(False, 'log is empty')
         log = public.GetNumLines(logFile,2000)
-        return public.return_msg_gettext(True, public.xsssec(log))
+        return public.return_msg_gettext(True, log)
     
     #清理任务日志
     def DelLogs(self,get):

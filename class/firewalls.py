@@ -296,10 +296,9 @@ class firewalls:
         conf = public.readFile(filename)
         if conf.find('net.ipv4.icmp_echo') != -1:
             rep = r"net\.ipv4\.icmp_echo.*"
-            conf = re.sub(rep,'net.ipv4.icmp_echo_ignore_all='+get.status,conf)
+            conf = re.sub(rep, 'net.ipv4.icmp_echo_ignore_all=' + get.status + "\n", conf)
         else:
-            conf += "\nnet.ipv4.icmp_echo_ignore_all="+get.status
-
+            conf += "\nnet.ipv4.icmp_echo_ignore_all=" + get.status + "\n"
 
         if public.writeFile(filename,conf):
             public.ExecShell('sysctl -p')

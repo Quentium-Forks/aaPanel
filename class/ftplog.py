@@ -203,14 +203,18 @@ $IncludeConfig /etc/rsyslog.d/*.conf
         """
         @name 时间英文转换
         """
-        for i in month_list.keys():
-            if i in englist_time:
-                tmp_time = englist_time.replace(i, month_list[i])
-                tmp_time = tmp_time.split()
-                chinanese_time = '{}-{} {}'.format(tmp_time[0], tmp_time[1],
-                                                   tmp_time[2])
-                break
-        return chinanese_time
+        chinanese_time = ''
+        try:
+            for i in month_list.keys():
+                if i in englist_time:
+                    tmp_time = englist_time.replace(i, month_list[i])
+                    tmp_time = tmp_time.split()
+                    chinanese_time = '{}-{} {}'.format(tmp_time[0], tmp_time[1],
+                                                       tmp_time[2])
+                    break
+            return chinanese_time
+        except:
+            return chinanese_time
 
     def get_login_log(self, get):
         """

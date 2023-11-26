@@ -226,14 +226,14 @@ class panelSite(panelRedirect):
     {{
         expires      30d;
         error_log /dev/null;
-        access_log off;
+        access_log /dev/null;
     }}
 
     location ~ .*\\.(js|css)?$
     {{
         expires      12h;
         error_log /dev/null;
-        access_log off; 
+        access_log /dev/null; 
     }}
     access_log  {log_path}/{site_name}.log;
     error_log  {log_path}/{site_name}.error.log;
@@ -2833,13 +2833,13 @@ server
     {
         expires      30d;
         error_log /dev/null;
-        access_log off; 
+        access_log /dev/null; 
     }
     location ~ .*\\.(js|css)?$
     {
         expires      12h;
         error_log /dev/null;
-        access_log off; 
+        access_log /dev/null; 
     }
     access_log %s.log;
     error_log  %s.error.log;
@@ -3755,13 +3755,13 @@ server
     {
         expires      30d;
         error_log /dev/null;
-        access_log off;
+        access_log /dev/null;
     }
     location ~ .*\\.(js|css)?$
     {
         expires      12h;
         error_log /dev/null;
-        access_log off;
+        access_log /dev/null;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
                     ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log /www",ng_conf)
@@ -3791,13 +3791,13 @@ server
     {
         expires      30d;
         error_log /dev/null;
-        access_log off;
+        access_log /dev/null;
     }
     location ~ .*\\.(js|css)?$
     {
         expires      12h;
         error_log /dev/null;
-        access_log off;
+        access_log /dev/null;
     }'''
                 if "(gif|jpg|jpeg|png|bmp|swf)$" not in ng_conf:
                     ng_conf = re.sub('access_log\s*/www', oldconf + "\n\taccess_log  /www",ng_conf)
@@ -4604,9 +4604,10 @@ location %s
             conf = public.readFile(filename)
             rep = public.GetConfigValue('logs_path') + "/" + get.name + ".log"
             if conf.find(rep) != -1:
-                conf = conf.replace(rep, "off")
+                conf = conf.replace(rep, "/dev/null")
             else:
-                conf = re.sub('}\n\s+access_log\s+off', '}\n\taccess_log  ' + rep, conf)
+                # conf = re.sub('}\n\s+access_log\s+off', '}\n\taccess_log  ' + rep, conf)
+                conf = conf.replace('access_log  /dev/null', 'access_log  ' + rep)
             public.writeFile(filename, conf)
 
         # OLS
@@ -4645,8 +4646,8 @@ location %s
         conf = public.readFile(filename)
         if not conf: return True
         if conf.find('#ErrorLog') != -1: return False
-        if re.search("}\n*\s*access_log\s+off", conf):
-            return False
+        #if re.search("}\n*\s*access_log\s+off", conf):
+        if conf.find("access_log  /dev/null") != -1: return False
         if re.search('\n#accesslog', conf):
             return False
         return True
@@ -5200,7 +5201,7 @@ location %s
     location ~ .*\.(%s)$
     {
         expires      30d;
-        access_log off;
+        access_log /dev/null;
         valid_referers %s;
         if ($invalid_referer){
            %s;

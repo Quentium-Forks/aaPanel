@@ -6258,7 +6258,9 @@ def check_client_hash():
     # 是否关闭验证
     not_tip = '{}/data/not_check_ip.pl'.format(get_panel_path())
     if os.path.exists(not_tip): return True
-    from BTPanel import session
+    from BTPanel import session,request
+    # 如果未开启SSL，不验证
+    if request.scheme == 'https': return True
     skey = 'client_hash'
     client_hash = get_client_hash()
     if not skey in session:

@@ -1893,20 +1893,21 @@ fullchain.pem       Paste into certificate input box
                     # 已删除的网站直接跳过续签
                     if self._config['orders'][i]['auth_to'].find('|') == -1 and self._config['orders'][i][
                         'auth_to'].find('/') != -1:
-                        if not os.path.exists(self._config['orders'][i]['auth_to']):
-                            auth_to = self.get_ssl_used_site(self._config['orders'][i]['save_path'])
-                            if not auth_to: continue
+                        #if not os.path.exists(self._config['orders'][i]['auth_to']):
+                        #  ^——这个不能判断网站已被删除，但文件夹未删除的问题
+                        _auth_to = self.get_ssl_used_site(self._config['orders'][i]['save_path'])
+                        if not _auth_to: continue
 
-                            # 域名不存在？
-                            for domain in self._config['orders'][i]['domains']:
-                                if domain.find('*') != -1: break
-                                if not public.M('domain').where("name=?", (domain,)).count() and not public.M(
-                                        'binding').where("domain=?", domain).count():
-                                    auth_to = None
-                                    write_log("|-Skip deleted domains:{}".format(self._config['orders'][i]['domains']))
-                            if not auth_to: continue
+                        # 域名不存在？
+                        for domain in self._config['orders'][i]['domains']:
+                            if domain.find('*') != -1: break
+                            if not public.M('domain').where("name=?", (domain,)).count() and not public.M(
+                                    'binding').where("domain=?", domain).count():
+                                _auth_to = None
+                                write_log("|-Skip deleted domains:{}".format(self._config['orders'][i]['domains']))
+                        if not _auth_to: continue
 
-                            self._config['orders'][i]['auth_to'] = auth_to
+                        self._config['orders'][i]['auth_to'] = _auth_to
 
                     # 是否到了允许重试的时间
                     if 'next_retry_time' in self._config['orders'][i]:
@@ -1948,14 +1949,34 @@ fullchain.pem       Paste into certificate input box
                 write_log('|-Renew the visa certificate and start checking the environment')
                 self.check_auth_env(args, check=True)
                 n += 1
-                write_log(public.get_msg_gettext('|-Renewing certificate number of {}，domain: {}..',
-                                                 (str(n), str(self._config['orders'][index]['domains']))))
-                write_log(public.get_msg_gettext('|-Creating order..'))
-                cert = self.renew_cert_to(self._config['orders'][index]['domains'],
-                                          self._config['orders'][index]['auth_type'],
-                                          self._config['orders'][index]['auth_to'], index)
+
+                domains = _test_domains(self._config['orders'][index]['domains'], self._config['orders'][index]['auth_to'],self._config['orders'][index]['auth_type'])
+                if len(domains) == 0:
+                    write_log("|-The domain name under the {} certificate is not used (the domain name is: [%s]) and has been skipped.".format(n, ",".join(self._config['orders'][index]['domains'])))
+                    continue
+                else:
+                    self._config['orders'][index]['domains'] = domains
+                    write_log(public.get_msg_gettext('|-Renewing certificate number of {}，domain: {}..',
+                                                     (str(n), str(self._config['orders'][index]['domains']))))
+                    write_log(public.get_msg_gettext('|-Creating order..'))
+
+                    cert = self.renew_cert_to(self._config['orders'][index]['domains'],
+                                              self._config['orders'][index]['auth_type'],
+                                              self._config['orders'][index]['auth_to'], index)
+
+                # write_log(public.get_msg_gettext('|-Renewing certificate number of {}，domain: {}..',
+                #                                  (str(n), str(self._config['orders'][index]['domains']))))
+                # write_log(public.get_msg_gettext('|-Creating order..'))
+                # cert = self.renew_cert_to(self._config['orders'][index]['domains'],
+                #                           self._config['orders'][index]['auth_type'],
+                #                           self._config['orders'][index]['auth_to'], index)
+
                 # aapanel 用
-                self.turnon_redirect_proxy_httptohttps(args)
+                try:
+                    self.turnon_redirect_proxy_httptohttps(args)
+                except:
+                    pass
+
             return cert
         except Exception as ex:
             self.remove_dns_record()
@@ -1967,6 +1988,35 @@ fullchain.pem       Paste into certificate input box
                 msg = ex
                 write_log(public.get_error_info())
             return public.return_msg_gettext(False, msg)
+
+
+def _test_domains(domains, auth_to, auth_type):
+    # 检查站点域名变更情况， 若有删除域名，则在续签时，删除已经不使用的域名，再执行续签任务
+    # 是dns验证的跳过
+    if auth_to.find("|") != -1:
+        return domains
+    # 是泛域名的跳过
+    for domain in domains:
+        if domain.find("*.") != -1:
+            return domains
+    sql = public.M('domain')
+    site_sql = public.M('sites')
+    for domain in domains:
+        pid = sql.where('name=?', domain).getField('pid')
+        if pid and site_sql.where('id=?',pid).find():
+            site_domains = [i["name"] for i in sql.where('pid=?',(pid,)).field("name").select()]
+            break
+    else:
+        site_id = site_sql.where('path=?', auth_to).getField('id')
+        if bool(site_id) and str(site_id).isdigit():
+            site_domains = [i["name"] for i in sql.where('pid=?',(site_id,)).field("name").select()]
+        else:
+            return []
+
+    del_domains = list(set(domains) - set(site_domains))
+    for i in del_domains:
+        domains.remove(i)
+    return domains
 
 
 def echo_err(msg):

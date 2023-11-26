@@ -421,7 +421,8 @@ class ssh_security:
     #监控状态
     def get_jian(self,get):
         data = public.ReadFile(self.return_profile())
-        if re.search('{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(".*python\s+"), data):
+        #if re.search('{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(".*python\s+"), data):
+        if re.search('/www/server/panel/class/ssh_security.py login', data):
             return public.returnMsg(True, '1')
         else:
             return public.returnMsg(False, '1')

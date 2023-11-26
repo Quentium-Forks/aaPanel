@@ -261,3 +261,61 @@ class main(logsBase):
         #         except:pass
         # return log_list
 
+    def IP_geolocation(self, get):
+        '''
+            @name 列出所有IP及其归属地
+            @return list {ip: {ip: ip_address, operation_num: 12 ,info: 归属地}, ...]
+        '''
+
+        result = dict()
+
+        data = public.M('logs').query('''
+            select * from logs
+        ''')
+        for arrs in data:
+            if not arrs: continue
+            end = 0
+            # 获得IP的尾后索引
+            for ch in arrs[2]:
+                if ch.isnumeric() or ch == '.':
+                    end += 1
+                else:
+                    break
+
+            ip_addr = arrs[2][0:end]
+
+            if ip_addr:
+                if result.get(ip_addr) != None:
+                    result[ip_addr]["operation_num"] = result[ip_addr]["operation_num"] + 1
+                else:
+                    result[ip_addr] = {"ip":ip_addr,"operation_num":1, "info":None}
+
+        return_list = []
+
+        for k in result:
+            info = public.get_free_ip_info(k)
+            result[k]["info"] = info["info"]
+            return_list.append(result[k])
+
+        return return_list
+
+    def get_error_logs_by_search(self, args):
+         '''
+             @name 根据搜索内容, 获取运行日志中的内容
+             @args.search 匹配内容
+             @return 匹配该内容的所有日志
+         '''
+         log_file_path = "{}/logs/error.log".format(public.get_panel_path())
+         #return log_file_path
+         data = public.readFile(log_file_path)
+         if not data:
+             return None
+         data = data.split('\n')
+         result = []
+         for line in data:
+            if args.search == None:
+                result.append(line)
+            elif args.search in line:
+                result.append(line)
+
+         return result
