@@ -255,7 +255,11 @@ if __name__ == '__main__':
 
     is_process = os.path.exists('data/is_process.pl')
     if not is_process:
-        http_server.serve_forever()
+        try:
+            http_server.serve_forever()
+        except:
+            pass
+        app.run(host=HOST, port=PORT, threaded=True)
     else:
         http_server.start()
         from multiprocessing import Process
