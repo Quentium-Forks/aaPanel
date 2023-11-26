@@ -64,6 +64,16 @@ function check_os
                         OSNAME=ubuntu
                         OSVER=focal
                         MARIADBCPUARCH="arch=amd64"
+                
+                    else
+                        cat /etc/lsb-release | grep "DISTRIB_RELEASE=22." >/dev/null
+                        if [ $? = 0 ] ; then
+                            OSNAMEVER=UBUNTU22
+                            OSNAME=ubuntu
+                            OSVER=jammy
+                            MARIADBCPUARCH="arch=amd64" 
+
+                      fi
                     fi
                 fi
             fi
@@ -96,6 +106,16 @@ function check_os
                         OSNAME=debian
                         OSVER=buster
                         MARIADBCPUARCH="arch=amd64,i386"
+                        
+                    else
+                        cat /etc/debian_version | grep "^11." >/dev/null
+                        if [ $? = 0 ] ; then
+                            OSNAMEVER=DEBIAN11
+                            OSNAME=debian
+                            OSVER=bullseye
+                            MARIADBCPUARCH="arch=amd64,i386"
+
+                        fi
                     fi
                 fi
             fi
@@ -175,7 +195,7 @@ init_OLS() {
     fi
     wget -O openlitespeed-${ols_version}.tgz --no-check-certificate $download_Url/src/openlitespeed-${ols_version}.tgz
   else
-    wget -O openlitespeed-${ols_version}.tgz --no-check-certificate https://openlitespeed.org/packages/openlitespeed-${ols_version}.tgz
+     wget -O openlitespeed-${ols_version}.tgz --no-check-certificate https://openlitespeed.org/packages/openlitespeed-${ols_version}.tgz
   fi
   tar -zxvf openlitespeed-${ols_version}.tgz
   chown -R root.root /tmp/openlitespeed
@@ -324,14 +344,14 @@ centos_install_ols(){
       if [ "$v" = "70" ] || [ "$v" = "71" ] || [ "$v" = "72" ] || [ "$v" = "73" ] || [ "$v" = "74" ] ; then
         JSON=lsphp$v-json
       fi
-      for i in lsphp$v lsphp$v-common lsphp$v-gd lsphp$v-process lsphp$v-mbstring lsphp$v-xml lsphp$v-mcrypt lsphp$v-pdo lsphp$v-imap lsphp$v-mysqlnd lsphp$v-sqlite3 lsphp$v-zip lsphp$v-curl $JSON
+      for i in lsphp$v lsphp$v-common lsphp$v-gd lsphp$v-process lsphp$v-mbstring lsphp$v-xml lsphp$v-mcrypt lsphp$v-pdo lsphp$v-imap lsphp$v-mysqlnd lsphp$v-sqlite3 lsphp$v-zip lsphp$v-curl  $JSON lsphp$v-intl
       do
       yum -y install $i
       done
 }
 
 debian_install_ols(){
-      for i in lsphp$v lsphp$v-mysql lsphp$v-imap lsphp$v-curl lsphp$v-sqlite3 lsphp$v-zip
+      for i in lsphp$v lsphp$v-mysql lsphp$v-imap lsphp$v-curl lsphp$v-sqlite3 lsphp$v-zip lsphp$v-intl
       do
       apt-get -y install $i
       done
@@ -543,10 +563,10 @@ Uninstall_OLS () {
 
 actionType=$1
 ols_version=$2
-if [ "$ols_version" == "1.6" ];then
-  ols_version=1.7.16
+if [ "$ols_version" == "1.7" ];then
+  ols_version=1.7.17
 else
-  ols_version=1.7.16
+  ols_version=1.7.17
 fi
 
 if [ "${actionType}" == "uninstall" ]; then

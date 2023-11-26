@@ -24,8 +24,8 @@ run_path='/root'
 mysql_51='5.1.73'
 mysql_55='5.5.62'
 mysql_56='5.6.50'
-mysql_57='5.7.42'
-mysql_80='8.0.32'
+mysql_57='5.7.43'
+mysql_80='8.0.34'
 mariadb_55='5.5.55'
 mysql_mariadb_100='10.0.38'
 mysql_mariadb_101='10.1.47'
@@ -126,9 +126,9 @@ Install_Rpcgen(){
 Install_Openssl111(){
     opensslCheck=$(/usr/local/openssl111/bin/openssl version|grep 1.1.1)
     if [ -z "${opensslCheck}" ]; then
-        opensslVersion="1.1.1t"
+        opensslVersion="1.1.1o"
         cd ${run_path}
-        wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz -T 20
+        wget ${download_Url}/src/openssl-${opensslVersion}.tar.gz -T 20
         tar -zxf openssl-${opensslVersion}.tar.gz
         rm -f openssl-${opensslVersion}.tar.gz
         cd openssl-${opensslVersion}
@@ -484,7 +484,7 @@ Download_Src(){
     if [ "${version}" == "8.0" ] && [ "${actionType}" == "update" ];then
     	echo "======================================================================="
     	echo "当前Mysql-8.0版本不支持升级操作"
-    	echo "如需升级使用最新的8.0.32版本,需备份好数据重装mysql-8.0(编译方式)才可使用"
+    	echo "如需升级使用最新的8.0.34版本,需备份好数据重装mysql-8.0(编译方式)才可使用"
     	echo "注：备份后数据可能无法兼容最新版本的Mysql，请谨慎更新"
     	echo "未作升级变更 不影响当前Mysql运行"
     	exit 0

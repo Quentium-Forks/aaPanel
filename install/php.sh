@@ -38,10 +38,10 @@ php_72='7.2.33'
 php_73='7.3.32'
 php_74='7.4.33'
 php_80='8.0.26'
-php_81='8.1.17'
-php_82='8.2.4'
+php_81='8.1.21'
+php_82='8.2.8'
 opensslVersion="1.0.2u"
-openssl111Version="1.1.1t"
+openssl111Version="1.1.1o"
 nghttp2Version="1.42.0"
 curlVersion="7.70.0"
 
@@ -98,12 +98,20 @@ Error_Msg(){
 	fi
 	exit 1;
 }
-
+MD5_check(){
+    \cp -rpa /www/server/php/${php_version}/bin/php /www/backup/php${php_version}.Bak
+    \cp -rpa /www/server/php/${php_version}/sbin/php-fpm /www/backup/php-fpm${php_version}.Bak
+    chmod -x /www/backup/php${php_version}.Bak
+    chmod -x /www/backup/php-fpm${php_version}.Bak
+    md5sum /www/server/php/${php_version}/bin/php > /www/server/panel/data/php${php_version}_md5.pl
+    md5sum /www/server/php/${php_version}/sbin/php-fpm > /www/server/panel/data/php-fpm${php_version}_md5.pl
+}
 System_Lib(){
 	if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ] ; then
 		Centos8Check=$(cat /etc/redhat-release|grep ' 8.'|grep -i centos)
 		CentosStream8Check=$(cat /etc/redhat-release |grep -i "Centos Stream"|grep 8)
-		if [ "${Centos8Check}" ] || [ "${CentosStream8Check}" ];then
+		Opencloud8Check=$(cat /etc/redhat-release |grep -i 'OpenCloudOS'|grep '8.6')
+		if [ "${Centos8Check}" ] || [ "${CentosStream8Check}" ] || [ "${Opencloud8Check}" ]; then
 			yum config-manager --set-enabled PowerTools
 			yum config-manager --set-enabled powertools
 		fi
@@ -607,6 +615,7 @@ Install_PHP(){
 		rm -f ${php_setup_path}/version_check.pl
 		rm -f ${Setup_Path}/src.tar.gz 
 		rm -rf ${php_setup_path}/src/Zend 
+		MD5_check
 		exit 0;
 	fi
 	make install
@@ -615,6 +624,7 @@ Install_PHP(){
 	
 	mkdir -p ${php_setup_path}/etc
 	\cp php.ini-production ${php_setup_path}/etc/php.ini
+	MD5_check
 }
 
 Install_Zip_ext(){
