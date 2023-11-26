@@ -183,11 +183,7 @@ Download_Src() {
 
     if [ -z "${GMSSL}" ]; then
         TLSv13_NGINX=$(echo ${nginxVersion} | tr -d '.' | cut -c 1-3)
-        if [ "${TLSv13_NGINX}" -ge "115" ] && [ "${TLSv13_NGINX}" != "181" ]; then
-            opensslVersion="1.1.1t"
-        else
-            opensslVersion="1.0.2u"
-        fi
+        opensslVersion="1.1.1w"
         wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
         tar -xzf openssl-${opensslVersion}.tar.gz
         mv openssl-${opensslVersion} openssl

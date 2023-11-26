@@ -40,8 +40,8 @@ php_74='7.4.33'
 php_80='8.0.26'
 php_81='8.1.21'
 php_82='8.2.8'
-opensslVersion="1.0.2u"
-openssl111Version="1.1.1o"
+opensslVersion="1.1.1w"
+openssl111Version="1.1.1w"
 nghttp2Version="1.42.0"
 curlVersion="7.70.0"
 

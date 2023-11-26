@@ -459,7 +459,7 @@ Install_Python_Lib(){
 Other_Openssl(){
 	openssl_version=$(openssl version|grep -Eo '[0-9]\.[0-9]\.[0-9]')
 	if [ "$openssl_version" = '1.0.1' ] || [ "$openssl_version" = '1.0.0' ];then	
-		opensslVersion="1.1.1t"
+		opensslVersion="1.1.1w"
 		if [ ! -f "/usr/local/openssl/lib/libssl.so" ];then
 			cd /www
 			openssl_src_file=/www/openssl.tar.gz
