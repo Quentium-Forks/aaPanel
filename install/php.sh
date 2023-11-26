@@ -40,6 +40,7 @@ php_74='7.4.33'
 php_80='8.0.26'
 php_81='8.1.21'
 php_82='8.2.8'
+php_83='8.3.0'
 opensslVersion="1.1.1w"
 openssl111Version="1.1.1w"
 nghttp2Version="1.42.0"
@@ -696,7 +697,7 @@ SetPHPMyAdmin()
 		webserver="nginx"
 	fi
 	PHPVersion=""
-	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82
+	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82 83;
 	do
 		if [ -f "/www/server/php/${phpV}/bin/php" ]; then
 			PHPVersion=${phpV}
@@ -741,7 +742,7 @@ Uninstall_PHP()
 		SetPHPMyAdmin
 	fi
 
-	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82
+	for phpV in 52 53 54 55 56 70 71 72 73 74 80 81 82 83;
 	do
 		if [ -f "/www/server/php/${phpV}/bin/php" ]; then
 			rm -f /usr/bin/php

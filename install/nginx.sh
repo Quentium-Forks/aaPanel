@@ -448,7 +448,7 @@ server {
     }
 EOF
     echo "" >/www/server/nginx/conf/enable-php-00.conf
-    for phpV in 52 53 54 55 56 70 71 72 73 74 75 80 81 82; do
+    for phpV in 52 53 54 55 56 70 71 72 73 74 75 80 81 82 83; do
         cat >${Setup_Path}/conf/enable-php-${phpV}.conf <<EOF
     location ~ [^/]\.php(/|$)
     {
@@ -511,7 +511,7 @@ EOF
     #fi
 
     PHPVersion=""
-    for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81 82; do
+    for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81 82 83; do
         if [ -d "/www/server/php/${phpVer}/bin" ]; then
             PHPVersion=${phpVer}
         fi
@@ -527,7 +527,7 @@ EOF
         wget -O /www/server/nginx/html/index.html ${download_Url}/error/index_en_nginx.html -T 5
         chmod 644 /www/server/nginx/html/index.html
         wget -O /www/server/panel/vhost/nginx/0.default.conf ${download_Url}/conf/nginx/en.0.default.conf
-        for phpV in 52 53 54 55 56 70 71 72 73 74 75 80 81 82; do
+        for phpV in 52 53 54 55 56 70 71 72 73 74 75 80 81 82 83; do
             wget -O ${Setup_Path}/conf/enable-php-${phpV}-wpfastcgi.conf ${download_Url}/install/wordpress_conf/nginx/enable-php-${phpV}-wpfastcgi.conf
         done
     fi

@@ -50,7 +50,7 @@ Install_phpMyAdmin()
 	echo $1 > $Setup_Path/version.pl
 	
 	PHPVersion=""
-	for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81 82;
+	for phpVer in 52 53 54 55 56 70 71 72 73 74 80 81 82 83;
 	do
 		if [ -d "/www/server/php/${phpVer}/bin" ]; then
 			PHPVersion=${phpVer}
