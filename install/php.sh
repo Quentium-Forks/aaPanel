@@ -82,30 +82,30 @@ Error_Msg(){
 	if [ "${EN_CHECK}" ];then
 		echo -e "Please submit to https://forum.aapanel.com for help"
 	else
-	    if [ -z "${SYS_VERSION}" ];then
-            echo -e "============================================"
-            echo -e "检测到为非常用系统安装,请尝试安装其他Mysql版本看是否正常"
-            echo -e "如无法正常安装，建议更换至Centos-7或Debian-10+或Ubuntu-20+系统安装宝塔面板"
-            echo -e "详情请查看系统兼容表：https://docs.qq.com/sheet/DUm54VUtyTVNlc21H?tab=BB08J2"
-            echo -e "特殊情况可通过以下联系方式寻求安装协助情况"
-            echo -e "============================================"
-        fi 
+		if [ -z "${SYS_VERSION}" ];then
+			echo -e "============================================"
+			echo -e "检测到为非常用系统安装,请尝试安装其他Mysql版本看是否正常"
+			echo -e "如无法正常安装，建议更换至Centos-7或Debian-10+或Ubuntu-20+系统安装宝塔面板"
+			echo -e "详情请查看系统兼容表：https://docs.qq.com/sheet/DUm54VUtyTVNlc21H?tab=BB08J2"
+			echo -e "特殊情况可通过以下联系方式寻求安装协助情况"
+			echo -e "============================================"
+		fi 
 		echo -e "${AC_TYPE}失败，请截图以上报错信息发帖至论坛www.bt.cn/bbs求助"
-        echo -e "或手机访问以下链接、扫码联系企业微信技术求助"
-        echo -e "帖子或企业微信注明企业版用户，将获得极速响应技术支持"
+		echo -e "或手机访问以下链接、扫码联系企业微信技术求助"
+		echo -e "帖子或企业微信注明企业版用户，将获得极速响应技术支持"
 		echo -e "============================================"
-        echo -e "联系链接:https://work.weixin.qq.com/kfid/kfc9072f0e29a53bd52"
-        echo -e "============================================"
+		echo -e "联系链接:https://work.weixin.qq.com/kfid/kfc9072f0e29a53bd52"
+		echo -e "============================================"
 	fi
 	exit 1;
 }
 MD5_check(){
-    \cp -rpa /www/server/php/${php_version}/bin/php /www/backup/php${php_version}.Bak
-    \cp -rpa /www/server/php/${php_version}/sbin/php-fpm /www/backup/php-fpm${php_version}.Bak
-    chmod -x /www/backup/php${php_version}.Bak
-    chmod -x /www/backup/php-fpm${php_version}.Bak
-    md5sum /www/server/php/${php_version}/bin/php > /www/server/panel/data/php${php_version}_md5.pl
-    md5sum /www/server/php/${php_version}/sbin/php-fpm > /www/server/panel/data/php-fpm${php_version}_md5.pl
+	\cp -rpa /www/server/php/${php_version}/bin/php /www/backup/php${php_version}.Bak
+	\cp -rpa /www/server/php/${php_version}/sbin/php-fpm /www/backup/php-fpm${php_version}.Bak
+	chmod -x /www/backup/php${php_version}.Bak
+	chmod -x /www/backup/php-fpm${php_version}.Bak
+	md5sum /www/server/php/${php_version}/bin/php > /www/server/panel/data/php${php_version}_md5.pl
+	md5sum /www/server/php/${php_version}/sbin/php-fpm > /www/server/panel/data/php-fpm${php_version}_md5.pl
 }
 System_Lib(){
 	if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ] ; then
@@ -125,7 +125,7 @@ System_Lib(){
 
 Service_Add(){
 	\cp ${php_setup_path}/src/sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm-${php_version}
-	sed -i "s/# Provides:          php-fpm/# Provides:          php-fpm-"${php_version}"/g" /etc/init.d/php-fpm-${php_version}
+	sed -i "s/# Provides:		  php-fpm/# Provides:		  php-fpm-"${php_version}"/g" /etc/init.d/php-fpm-${php_version}
 	chmod +x /etc/init.d/php-fpm-${php_version}
 	if [ "${PM}" == "yum" ] || [ "${PM}" == "dnf" ]; then
 		chkconfig --add php-fpm-${php_version}
@@ -289,7 +289,7 @@ Install_Libzip(){
 	if [ "${PM}" == "yum" ];then
 		el=$(cat /etc/redhat-release|grep -iE 'CentOS|Red Hat'|grep -Eo '([0-9]+\.)+[0-9]+'|grep -Eo '^[0-9]')
 		if [ "${el}" == "7" ];then
-		    yum install cmake3 -y
+			yum install cmake3 -y
 			rpm -q libzip5-devel > /dev/null
 			if [ "$?" -ne "0" ];then
 				mkdir libzip
@@ -483,11 +483,11 @@ Ln_PHP_Bin()
 	rm -f /usr/bin/pear
 	rm -f /usr/bin/pecl
 
-    ln -sf ${php_setup_path}/bin/php /usr/bin/php
-    ln -sf ${php_setup_path}/bin/phpize /usr/bin/phpize
-    ln -sf ${php_setup_path}/bin/pear /usr/bin/pear
-    ln -sf ${php_setup_path}/bin/pecl /usr/bin/pecl
-    ln -sf ${php_setup_path}/sbin/php-fpm /usr/bin/php-fpm
+	ln -sf ${php_setup_path}/bin/php /usr/bin/php
+	ln -sf ${php_setup_path}/bin/phpize /usr/bin/phpize
+	ln -sf ${php_setup_path}/bin/pear /usr/bin/pear
+	ln -sf ${php_setup_path}/bin/pecl /usr/bin/pecl
+	ln -sf ${php_setup_path}/sbin/php-fpm /usr/bin/php-fpm
 }
 
 Pear_Pecl_Set()
@@ -549,8 +549,8 @@ Install_Configure(){
 		export CC="gcc -DTRUE=1 -DFALSE=0"
 		DEBIAN_12_C=$(cat /etc/issue|grep Debian|grep 12)
 		if [ "${DEBIAN_12_C}" ];then
-		    wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.cpp https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.cpp
-            wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.h https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.h
+			wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.cpp https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.cpp
+			wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.h https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.h
 		fi
 	fi
 
@@ -597,19 +597,19 @@ Install_Configure(){
 	fi
 
 	UBUNTU_22=$(cat /etc/issue|grep Ubuntu|grep 22)
-	[ "${UBUNTU_22}" ] && WITH_ICU_DIR="--with-icu-dir=/usr/local/icu"
+	[ "${UBUNTU_22}" ] && WITH_ICU_DIR="--with-icu=/usr/local/icu"
 
 	cd ${php_setup_path}/src
 	if [ "${php_version}" == "53" ]; then
-		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype-dir=/usr/local/freetype --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-magic-quotes --enable-safe-mode --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --with-mcrypt --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo ${CONFIGURE_BUILD_TYPE} ${i_make_args}
+		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv=/usr/local --with-freetype=/usr/local/freetype --with-jpeg --with-png --with-zlib --with-libxml --enable-xml --disable-rpath --enable-magic-quotes --enable-safe-mode --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --with-mcrypt --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo ${CONFIGURE_BUILD_TYPE} ${i_make_args}
 	elif [ "${php_version}" -le "56" ];then
-		[ "${php_version}" -gt "54" ] && ENABLE_OPCACHE="--enable-opcache" ENABLE_WEBP="--with-vpx-dir"
-		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype-dir=/usr/local/freetype --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --with-mcrypt --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo --enable-intl ${ENABLE_WEBP} ${ENABLE_OPCACHE} ${CONFIGURE_BUILD_TYPE} ${i_make_args}
+		[ "${php_version}" -gt "54" ] && ENABLE_OPCACHE="--enable-opcache" ENABLE_WEBP="--with-vpx"
+		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv=/usr/local --with-freetype=/usr/local/freetype --with-jpeg --with-png --with-zlib --with-libxml --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --with-mcrypt --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo --enable-intl ${ENABLE_WEBP} ${ENABLE_OPCACHE} ${CONFIGURE_BUILD_TYPE} ${i_make_args}
 	elif [ "${php_version}" -le "72" ]; then
 		[ "${php_version}" -ge "72" ] && ENABLE_MCRYPT="--with-mcrypt"
-		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype-dir=/usr/local/freetype --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-webp-dir=/usr ${ENABLE_MCRYPT} ${WITH_ICU_DIR} ${i_make_args}
+		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv=/usr/local --with-freetype=/usr/local/freetype --with-jpeg --with-png --with-zlib --with-libxml --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=/usr/local/curl --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl=/usr/local/openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-webp ${ENABLE_MCRYPT} ${WITH_ICU_DIR} ${i_make_args}
 	elif [ "${php_version}" == "73" ]; then
-		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype-dir=/usr/local/freetype --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=${withCurl} --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --with-gd --with-openssl=${withOpenssl} --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc  --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-sodium=/usr/local/libsodium --with-webp-dir=/usr ${WITH_ICU_DIR} ${i_make_args}
+		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv=/usr/local --with-freetype=/usr/local/freetype --with-jpeg --with-png --with-zlib --with-libxml --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl=${withCurl} --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --with-gd --with-openssl=${withOpenssl} --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc  --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-sodium=/usr/local/libsodium --with-webp ${WITH_ICU_DIR} ${i_make_args}
 	elif [ "${php_version}" == "74" ] || [ "${php_version}" -ge "80" ]; then
 		ALI_OS=$(cat /etc/redhat-release |grep "Alibaba Cloud Linux release 3")
 		if [ -z "${onigCheck}" ] || [ -z "${sodiumCheck}" ] || [ "${ALI_OS}" ];then
@@ -628,7 +628,7 @@ Install_Configure(){
 			fi
 		fi
 
-		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype --with-jpeg --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --enable-gd --with-openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc  --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-sodium=/usr/local/libsodium --with-webp ${i_make_args}
+		./configure --prefix=${php_setup_path} --with-config-file-path=${php_setup_path}/etc --enable-fpm --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv=/usr/local --with-freetype --with-jpeg --with-zlib --with-libxml --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl --enable-mbregex --enable-mbstring --enable-intl --enable-pcntl --enable-ftp --enable-gd --with-openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc  --enable-soap --with-gettext --disable-fileinfo --enable-opcache --with-sodium=/usr/local/libsodium --with-webp ${i_make_args}
 	fi
 
 	if [ "${Is_64bit}" = "32" ];then
@@ -663,7 +663,7 @@ Install_PHP(){
 }
 
 Install_Zip_ext(){
-    if [ -f "/usr/local/libzip/lib64/libzip.so" ];then
+	if [ -f "/usr/local/libzip/lib64/libzip.so" ];then
 		export PKG_CONFIG_PATH="/usr/local/libzip/lib64/pkgconfig:$PKG_CONFIG_PATH"
 	fi
 	cd ${php_setup_path}/src/ext/zip
