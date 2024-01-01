@@ -49,6 +49,9 @@ extPath(){
 		'82')
 		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/imagick.so'
 		;;
+		'83')
+		extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/imagick.so'
+		;;
 	esac
 }
 Install_imagemagick()

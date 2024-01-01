@@ -122,6 +122,9 @@ ext_Path(){
 		'82')
 		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/redis.so'
 		;;
+		'83')
+		extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/redis.so'
+		;;
 	esac
 }
 Install_Redis()
@@ -136,7 +139,8 @@ Install_Redis()
 		tar zxvf redis-$redis_version.tar.gz
 		mv redis-$redis_version redis
 		cd redis
-		make -j ${cpuCore}
+		make BUILD_TLS=yes -j ${cpuCore}
+		./utils/gen-test-certs.sh
 
 		[ ! -f "/www/server/redis/src/redis-server" ] && Error_Msg
 		
@@ -209,11 +213,19 @@ Install_Redis()
 	fi
 	
 
+
+
 	if [ ! -f "${extFile}" ];then		
 		if [ "${version}" == "52" ];then
 			rVersion='2.2.7'
 		elif [ "${version}" -ge "70" ];then
 			rVersion='5.3.7'
+			 wget -O igbinary.sh https://download.bt.cn/install/1/igbinary.sh
+			 bash igbinary.sh install ${version}
+			 IGBINARY_CHECK=$(cat /www/server/php/$version/etc/php.ini|grep 'igbinary.so')
+			 if [ "${IGBINARY_CHECK}" ];then
+			 	ENABLE_IGBINARY="--enable-redis-igbinary"
+			 fi
 		else
 			rVersion='4.3.0'
 		fi
@@ -223,7 +235,7 @@ Install_Redis()
 		rm -f redis-$rVersion.tgz
 		cd redis-$rVersion
 		/www/server/php/$version/bin/phpize
-		./configure --with-php-config=/www/server/php/$version/bin/php-config
+		./configure --with-php-config=/www/server/php/$version/bin/php-config ${ENABLE_IGBINARY}
 		make && make install
 		cd ../
 		rm -rf redis-$rVersion*
@@ -309,7 +321,7 @@ Update_redis()
 	rm -f redis-$redis_version.tar.gz
 	mv redis-$redis_version redis2
 	cd redis2
-	make -j ${cpuCore}
+	make BUILD_TLS=yes -j ${cpuCore}
 	
 	[ ! -f "/www/server/redis2/src/redis-server" ] && Error_Msg
 

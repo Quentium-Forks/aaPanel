@@ -4,7 +4,7 @@ export PATH
 
 public_file=/www/server/panel/install/public.sh
 publicFileMd5=$(md5sum ${public_file} 2>/dev/null|awk '{print $1}')
-md5check="8e49712d1fd332801443f8b6fd7f9208"
+md5check="cf6ab18fcbc20745710c5fcd4103329a"
 if [ "${publicFileMd5}" != "${md5check}"  ]; then
     wget -O Tpublic.sh https://download.bt.cn/install/public.sh -T 20;
     publicFileMd5=$(md5sum Tpublic.sh 2>/dev/null|awk '{print $1}')
@@ -24,8 +24,8 @@ run_path='/root'
 mysql_51='5.1.73'
 mysql_55='5.5.62'
 mysql_56='5.6.50'
-mysql_57='5.7.43'
-mysql_80='8.0.34'
+mysql_57='5.7.44'
+mysql_80='8.0.35'
 mariadb_55='5.5.55'
 mysql_mariadb_100='10.0.38'
 mysql_mariadb_101='10.1.47'
@@ -36,6 +36,7 @@ mysql_mariadb_105='10.5.10'
 mysql_mariadb_106='10.6.7'
 mysql_mariadb_107='10.7.3'
 mysql_mariadb_108='10.8.2'
+mysql_mariadb_1011='10.11.6'
 alisql_version='AliSQL-5.6.32'
 Centos7Check=$(cat /etc/redhat-release | grep ' 7.' | grep -iE 'centos')
 Centos8Check=$(cat /etc/redhat-release | grep ' 8.' | grep -iE 'centos|Red Hat')
@@ -47,6 +48,24 @@ fi
 
 if [ -z "${cpuCore}" ]; then
     cpuCore="1"
+fi
+
+DEBIAN_12_C=$(cat /etc/issue|grep Debian|grep 12)
+UBUNTU_22_C=$(cat /etc/issue|grep Ubuntu|grep 22)
+if [ "${DEBIAN_12_C}" ] || [ "${UBUNTU_22_C}" ];then
+    if [ "${2}" == "5.1" ] || [ "${2}" == "5.6" ] || [ "${2}" == "alisql" ];then
+        echo "============================================================================"
+        echo "${DEBIAN_12_C}${UBUNTU_22_C}系统不支持安装mysql-${2}"
+        echo "请选择安装mysql-5.5/5.7/8.0!"
+        exit 1
+    fi
+    MARADB_V=$(echo $2|grep mariadb)
+    if [ "${MARADB_V}" ];then
+        echo "============================================================================"
+        echo "${DEBIAN_12_C}系统不支持安装mariadb!"
+        echo "请选择安装mysql-5.5/5.7/8.0!"
+        exit 1
+    fi
 fi
 
 MEM_INFO=$(free -m|grep Mem|awk '{printf("%.f",($2)/1024)}')
@@ -628,7 +647,7 @@ Install_Configure(){
         else
             cmake -DCMAKE_INSTALL_PREFIX=${Setup_Path} -DWITH_ARIA_STORAGE_ENGINE=1 -DWITH_XTRADB_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_PARTITION_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_FEDERATED_STORAGE_ENGINE=1 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8mb4 -DDEFAULT_COLLATION=utf8mb4_general_ci -DWITH_READLINE=1 -DWITH_EMBEDDED_SERVER=1 -DENABLED_LOCAL_INFILE=1 -DWITHOUT_TOKUDB=1 ${i_make_args}
         fi
-    elif [ "${version}" == "mariadb_10.7" ] || [ "${version}" == "mariadb_10.8" ]; then
+    elif [ "${version}" == "mariadb_10.7" ] || [ "${version}" == "mariadb_10.8" ] || [ "${version}" == "mariadb_10.11" ]; then
         cmakeV="cmake"
         if [ "${PM}" = "yum" ]; then
             if [ "${Centos7Check}" ];then
@@ -826,6 +845,9 @@ if [ "${actionType}" == 'install' ] || [ "${actionType}" == "update" ];then
             ;;
         'mariadb_10.8')
             sqlVersion=${mysql_mariadb_108}
+            ;;
+        'mariadb_10.11')
+            sqlVersion=${mysql_mariadb_1011}
             ;;
     esac
     System_Lib

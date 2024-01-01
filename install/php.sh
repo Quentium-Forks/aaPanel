@@ -4,7 +4,7 @@ export PATH
 
 public_file=/www/server/panel/install/public.sh
 publicFileMd5=$(md5sum ${public_file} 2>/dev/null|awk '{print $1}')
-md5check="8e49712d1fd332801443f8b6fd7f9208"
+md5check="825a9d94d79165b4f472baa0d2c95e86"
 if [ "${publicFileMd5}" != "${md5check}"  ]; then
 	wget -O Tpublic.sh https://download.bt.cn/install/public.sh -T 20;
 	publicFileMd5=$(md5sum Tpublic.sh 2>/dev/null|awk '{print $1}')
@@ -38,11 +38,11 @@ php_72='7.2.33'
 php_73='7.3.32'
 php_74='7.4.33'
 php_80='8.0.26'
-php_81='8.1.21'
-php_82='8.2.8'
-php_83='8.3.0'
 opensslVersion="1.1.1w"
 openssl111Version="1.1.1w"
+php_81='8.1.27'
+php_82='8.2.14'
+php_83='8.3.1'
 nghttp2Version="1.42.0"
 curlVersion="7.70.0"
 
@@ -289,6 +289,7 @@ Install_Libzip(){
 	if [ "${PM}" == "yum" ];then
 		el=$(cat /etc/redhat-release|grep -iE 'CentOS|Red Hat'|grep -Eo '([0-9]+\.)+[0-9]+'|grep -Eo '^[0-9]')
 		if [ "${el}" == "7" ];then
+		    yum install cmake3 -y
 			rpm -q libzip5-devel > /dev/null
 			if [ "$?" -ne "0" ];then
 				mkdir libzip
@@ -309,6 +310,24 @@ Install_Libzip(){
 	elif [ "${PM}" == "apt-get" ];then
 		apt-get install libzip-dev -y
 	fi
+	
+	LIBZIP_CHECK=$(pkg-config --list-all|grep libzip)
+	if [ -z "${LIBZIP_CHECK}" ] ;then
+		wget -O libzip-1.10.1.tar.gz ${download_Url}/src/libzip-1.10.1.tar.gz
+		tar -xvf libzip-1.10.1.tar.gz
+		cd libzip-1.10.1
+		if [ "/usr/bin/cmake3" ];then
+			cmake3 -DCMAKE_INSTALL_PREFIX=/usr/local/libzip
+		else
+			cmake -DCMAKE_INSTALL_PREFIX=/usr/local/libzip
+		fi
+		make
+		make install
+		cd ..
+		rm -rf libzip-1.10.1
+		rm -f libzip-1.10.1.tar.gz
+	fi
+	
 	autoconfVer=$(autoconf -V|grep 'GNU Autoconf'|awk '{print $4}'|grep -oE .[0-9]+|grep -oE [0-9]+)
 	if [ "${autoconfVer}" -lt "69" ]; then
 		wget ${download_Url}/src/autoconf-2.69.tar.gz
@@ -518,6 +537,21 @@ Install_Configure(){
 	aarch64Check=$(uname -a|grep aarch64)
 	if [ "${aarch64Check}" ];then
 		CONFIGURE_BUILD_TYPE="--build=arm-linux"
+		if [ "${php_version}"  == "55" ];then 
+			wget -O /www/server/php/55/src/Zend/zend_multiply.h ${download_Url}/patch/php/php_55_zend_multiply.h
+		elif [ "${php_version}"  == "56" ];then
+			wget -O /www/server/php/56/src/Zend/zend_multiply.h ${download_Url}/patch/php/php_56_zend_multiply.h
+		fi
+	fi
+
+	if [ "${php_version}" == "71" ] || [ "${php_version}" == "72" ] || [ "${php_version}" == "73" ];then
+		export CXX="g++ -DTRUE=1 -DFALSE=0"
+		export CC="gcc -DTRUE=1 -DFALSE=0"
+		DEBIAN_12_C=$(cat /etc/issue|grep Debian|grep 12)
+		if [ "${DEBIAN_12_C}" ];then
+		    wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.cpp https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.cpp
+            wget -O /www/server/php/${php_version}/src/ext/intl/breakiterator/codepointiterator_internal.h https://download.bt.cn//patch/php/debian-12-php-71-codepointiterator_internal.h
+		fi
 	fi
 
 	if [ "${php_version}" -ge "73" ];then
@@ -629,6 +663,9 @@ Install_PHP(){
 }
 
 Install_Zip_ext(){
+    if [ -f "/usr/local/libzip/lib64/libzip.so" ];then
+		export PKG_CONFIG_PATH="/usr/local/libzip/lib64/pkgconfig:$PKG_CONFIG_PATH"
+	fi
 	cd ${php_setup_path}/src/ext/zip
 	${php_setup_path}/bin/phpize
 	./configure --with-php-config=${php_setup_path}/bin/php-config
@@ -645,6 +682,8 @@ Install_Zip_ext(){
 		extFile="/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/zip.so"
 	elif [ "${php_version}" == "82" ]; then
 		extFile="/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/zip.so"
+	elif [ "${php_version}" == "83" ];then
+		extFile="/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/zip.so"
 	fi
 
 	if [ -f "${extFile}" ];then

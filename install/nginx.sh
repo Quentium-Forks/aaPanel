@@ -5,7 +5,7 @@ LANG=en_US.UTF-8
 
 public_file=/www/server/panel/install/public.sh
 publicFileMd5=$(md5sum ${public_file} 2>/dev/null | awk '{print $1}')
-md5check="8e49712d1fd332801443f8b6fd7f9208"
+md5check="825a9d94d79165b4f472baa0d2c95e86"
 if [ "${publicFileMd5}" != "${md5check}" ]; then
     wget -O Tpublic.sh https://download.bt.cn/install/public.sh -T 20
     publicFileMd5=$(md5sum Tpublic.sh 2>/dev/null | awk '{print $1}')
@@ -17,7 +17,7 @@ fi
 . $public_file
 download_Url=$NODE_URL
 
-tengine='3.0.0'
+tengine='3.1.0'
 nginx_108='1.8.1'
 nginx_112='1.12.2'
 nginx_114='1.14.2'
@@ -32,7 +32,7 @@ nginx_122='1.22.1'
 nginx_123='1.23.4'
 nginx_124='1.24.0'
 nginx_125='1.25.3'
-openresty='1.21.4.2'
+openresty='1.21.4.3'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
 Setup_Path=$Root_Path/server/nginx

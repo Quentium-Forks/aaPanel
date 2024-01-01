@@ -41,6 +41,9 @@ Install_Intl()
 		'82')
 		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/intl.so'
 		;;
+		'83')
+		extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/intl.so'
+		;;
 	esac
 	
 	isInstall=$(cat /www/server/php/$version/etc/php.ini|grep 'intl.so')

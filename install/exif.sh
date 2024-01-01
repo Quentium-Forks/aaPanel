@@ -6,7 +6,7 @@ Install_Exif()
 {
     public_file=/www/server/panel/install/public.sh
     if [ ! -f $public_file ];then
-        wget -O $public_file https://node.aapanel.com/install/public.sh -T 5;
+        wget -O $public_file https://download.bt.cn/install/public.sh -T 5;
     fi
     . $public_file
 
@@ -62,6 +62,9 @@ Install_Exif()
         ;;
         '82')
 		extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/exif.so'
+		;;
+		'83')
+		extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/exif.so'
 		;;
     esac
 

@@ -69,8 +69,11 @@ Install_Fileinfo()
         '81')
             extFile='/www/server/php/81/lib/php/extensions/no-debug-non-zts-20210902/fileinfo.so'
         ;;
-       '82')
+        '82')
             extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/fileinfo.so'
+        ;;
+        '83')
+            extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/fileinfo.so'
         ;;
     esac
     

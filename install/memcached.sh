@@ -91,6 +91,9 @@ Ext_Path(){
 		'82')
         extFile='/www/server/php/82/lib/php/extensions/no-debug-non-zts-20220829/memcached.so'
 		;;
+		'83')
+        extFile='/www/server/php/83/lib/php/extensions/no-debug-non-zts-20230831/memcached.so'
+		;;
 	esac
 }
 
