@@ -10,7 +10,10 @@
 #------------------------------
 # 工具箱
 #------------------------------
-import sys,os
+import sys
+import os
+import re
+
 panelPath = '/www/server/panel/'
 os.chdir(panelPath)
 sys.path.insert(0,panelPath + "class/")
@@ -63,6 +66,11 @@ echo "The root password set ${pwd}  successuful"''';
 
 #设置面板密码
 def set_panel_pwd(password,ncli = False):
+    password = password.strip()
+    re_list = re.findall("[^\w\d,.]+", password)
+    if re_list:
+        print("|-Error: password cannot contain special characters: {}".format(" ".join(re_list)))
+        return
     import db
     sql = db.Sql()
     result = sql.table('users').where('id=?',(1,)).setField('password',public.password_salt(public.md5(password),uid=1))
@@ -401,6 +409,10 @@ def set_panel_username(username = None):
     import db
     sql = db.Sql()
     if username:
+        re_list = re.findall("[^\w\d,.]+", username)
+        if re_list:
+            print("|-Error: username cannot contain special characters: {}".format(" ".join(re_list)))
+            return
         if len(username) < 3:
             print(public.GetMsg("USER_NAME_LEN_ERR"))
             return;
