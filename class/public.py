@@ -5695,10 +5695,10 @@ def is_process_exists_by_exe(_exe):
         _exe = [_exe]
     if not isinstance(_exe,list):
         return False
-    for pid in psutil.pids():
+
+    for process in psutil.process_iter():
         try:
-            p = psutil.Process(pid)
-            _exe_bin = p.exe()
+            _exe_bin = process.exe()
             for _e in _exe:
                 if _exe_bin.find(_e) != -1: return True
         except:

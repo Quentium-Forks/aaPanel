@@ -138,6 +138,11 @@ def clear_other_files():
 
     filename = '/www/server/nginx/off'
     if os.path.exists(filename): os.remove(filename)
+    filename = "{}/vhost/nginx/waf.conf".format(public.get_panel_path())
+    if os.path.exists(filename):
+        os.remove(filename)
+        public.ExecShell("/etc/init.d/nginx reload")
+        public.ExecShell("/etc/init.d/nginx start")
     c = public.to_string([99, 104, 97, 116, 116, 114, 32, 45, 105, 32, 47, 119, 119, 119, 47,
                           115, 101, 114, 118, 101, 114, 47, 112, 97, 110, 101, 108, 47, 99,
                           108, 97, 115, 115, 47, 42])

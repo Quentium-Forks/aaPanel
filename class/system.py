@@ -911,6 +911,13 @@ class system:
             public.write_log_gettext("Software manager", 'Executed successfully [{}]!',(execStr,))
 
         if get.type != 'stop':
+            n = 0
+            num = 5
+            while not self.check_service_status(get.name):
+                time.sleep(0.5)
+                n += 1
+                if n > num: break
+
             if not self.check_service_status(get.name):
                 if len(result[1]) > 1 and get.name != 'pure-ftpd' and get.name != 'redis':
                     return public.returnMsg(False, '<p>failed to activate: <p>' + result[1].replace('\n','<br>'))

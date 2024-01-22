@@ -723,13 +723,18 @@ class panelPlugin:
     #取首页软件列表
     def get_index_list(self,get=None):
         softList = self.get_cloud_list(get)['list']
-        if not softList: 
+        if not softList:
             get.force = 1
             softList = self.get_cloud_list(get)['list']
             if not softList: return public.return_msg_gettext(False,'Failed to get software list ({})',"401")
         softList = self.set_coexist(softList)
         if not os.path.exists(self.__index): public.writeFile(self.__index,'[]')
-        indexList = json.loads(public.ReadFile(self.__index))
+        try:
+            indexList = json.loads(public.ReadFile(self.__index))
+        except Exception:
+            os.remove(self.__index)
+            public.writeFile(self.__index, '[]')
+            indexList = []
         dataList = []
         for index in indexList:
             for softInfo in softList:

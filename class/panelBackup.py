@@ -1073,9 +1073,9 @@ class backup:
                             error_channel.append(msg_channels[ch]["title"])
                             error_count += 1
             if not push_res["status"] or error_count:
-                self.echo_error("消息通道:{} 发送失败！".format(",".join(error_channel)))
+                self.echo_error("Notification:{} Failed send!".format(",".join(error_channel)))
             else:
-                self.echo_info("消息发送成功。")
+                self.echo_info("Message sent successfully.")
             if error_count == len(tongdao):
                 return False
             return True

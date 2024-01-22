@@ -42,6 +42,9 @@ class panelMessage:
     """
     def get_cloud_messages(self,args):
 
+        # aapanel 暂时不用
+        return public.returnMsg(True, '同步成功!')
+
         try:
             ret = cache.get('get_cloud_messages')
             if ret: return public.returnMsg(True,'同步成功1!')

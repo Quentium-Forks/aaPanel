@@ -1550,6 +1550,54 @@ SetLink
         if not os.path.exists(path): return public.return_msg_gettext(False, 'Log file does NOT exist!')
         return public.return_msg_gettext(True, public.GetNumLines(path, 100))
 
+    # 获取binlog文件列表
+    def GetMySQLBinlogs(self, get):
+        data_dir = self.GetMySQLInfo(get)["datadir"]
+        index_file = os.path.join(data_dir, "mysql-bin.index")
+        if not os.path.exists(index_file): return public.return_msg_gettext(False, 'Binlog is not enabled or binlog file does not exist!')
+
+        text = public.readFile(index_file)
+
+        rows = panelMysql.panelMysql().query("show master status")
+
+        current_log = ""
+        if not isinstance(rows, list):
+            return public.return_msg_gettext(False, "Mysql status is abnormal!")
+        if len(rows) != 0:
+            current_log = rows[0][0]
+
+        bin_log = []
+        for item in text.split('\n'):
+            log_file = item.strip()
+            log_name = log_file.lstrip("./")
+            if not log_file: continue  # 空行
+            bin_log_path = os.path.join(data_dir, log_name)
+            if not os.path.isfile(bin_log_path): continue
+            st = os.stat(bin_log_path)
+            bin_log.append({
+                "name": log_name,
+                "path": bin_log_path,
+                "size": st.st_size,
+                "last_modified": int(st.st_mtime),
+                "last_access": int(st.st_atime),
+                "current": current_log == log_name
+            })
+        return {"status": True, "msg": "ok", "data": bin_log}
+
+    def ClearMySQLBinlog(self, get):
+        if not hasattr(get, "days"):
+            return public.returnMsg(False, "Parameters are missing! days")
+        if not str(get.days).isdigit():
+            return public.returnMsg(False, "Parameters are missing! days")
+        days = int(get.days)
+        if days < 7: return public.return_msg_gettext(False, 'To ensure data security, recent binlogs cannot be deleted!')
+
+        rows = panelMysql.panelMysql().query("PURGE BINARY LOGS BEFORE DATE_SUB(NOW(), INTERVAL {days} DAY)".format(days=days))
+        # public.print_log(rows)
+        # if rows: public.print_log(rows[0])
+
+        return public.return_msg_gettext(True, "Cleanup complete!")
+
     # 获取当前数据库信息
     def GetInfo(self, get):
         info = self.GetdataInfo(get)

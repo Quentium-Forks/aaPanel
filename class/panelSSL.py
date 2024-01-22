@@ -604,6 +604,113 @@ class panelSSL:
         result['data'] = self.En_Code(result['data'])
         return result
     
+    def GetSiteDomain(self, get):
+        """
+        @name 获取网站域名对应的站点名
+        @param cert_list 证书域名列表
+        @auther hezhihong
+        return 证书域名对应的站点名字典，如证书域名未绑定则为空
+        """
+        all_site = []  #所有站点名列表
+        cert_list = []  #证书域名列表
+        site_list = []  #证书域名列表对应的站点名列表
+        all_domain = []  #所有域名列表
+        try:
+            cert_list = json.loads(get.cert_list)
+        except:
+            pass
+        result = {}
+        #取所有站点名和所有站点的绑定域名
+        all_sites = public.M('sites').field('name').select()
+        for site in all_sites:
+            all_site.append(site['name'])
+            if not cert_list: continue
+            tmp_dict = {}
+            tmp_dict['name'] = site['name']
+            pid = public.M('sites').where("name=?",
+                                          (site['name'], )).getField('id')
+            domain_list = public.M('domain').where(
+                "pid=?", (pid, )).field('name').select()
+            for domain in domain_list:
+                all_domain.append(domain['name'])
+        #取证书域名所在的所有域名列表
+        site_domain = []  #证书域名对应的站点名列表
+        if cert_list and all_domain:
+            for cert in cert_list:
+                d_cert = ''
+                if re.match("^\*\..*", cert):
+                    d_cert = cert.replace('*.', '')
+                for domain in all_domain:
+                    if cert == domain:
+                        site_domain.append(domain)
+                    else:
+                        replace_str = domain.split('.')[0] + '.'
+                        if d_cert and d_cert == domain.replace(
+                                replace_str, ''):
+                            site_domain.append(domain)
+        #取证书域名对应的站点名
+        for site in site_domain:
+            site_id = public.M('domain').where("name=?",
+                                               (site, )).getField('pid')
+            site_name = public.M('sites').where("id=?",
+                                                (site_id, )).getField('name')
+            site_list.append(site_name)
+        site_list = sorted(set(site_list), key=site_list.index)
+        result['all'] = all_site
+        result['site'] = site_list
+        return result
+
+    def SetBatchCertToSite(self, get):
+        """
+        @name 批量部署证书
+        @auther hezhihong
+        """
+        ssl_list = []
+        if not hasattr(get, 'BatchInfo') or not get.BatchInfo:
+            return public.returnMsg(False, '参数错误')
+        else:
+            ssl_list = json.loads(get.BatchInfo)
+        if isinstance(ssl_list, list):
+            total_num = len(ssl_list)
+            resultinfo = {
+                "total": total_num,
+                "success": 0,
+                "faild": 0,
+                "successList": [],
+                "faildList": []
+            }
+            successList = []
+            faildList = []
+            successnum = 0
+            failnum = 0
+            for Info in ssl_list:
+                set_result = {}
+                set_result['status'] = True
+                get.certName = set_result['certName'] = Info['certName']
+                get.siteName = set_result['siteName'] = str(Info['siteName'])  # 站点名称必定为字符串
+                get.isBatch = True
+                result = self.SetCertToSite(get)
+                if not result:
+                    set_result['status'] = False
+                    failnum += 1
+                    faildList.append(set_result)
+                else:
+                    successnum += 1
+                    successList.append(set_result)
+                public.writeSpeed('setssl', successnum + failnum, total_num)
+            import firewalls
+            get.port = '443'
+            get.ps = 'HTTPS'
+            firewalls.firewalls().AddAcceptPort(get)
+            public.serviceReload()
+            resultinfo['success'] = successnum
+            resultinfo['faild'] = failnum
+            resultinfo['successList'] = successList
+            resultinfo['faildList'] = faildList
+        else:
+            return public.returnMsg(False, 'Parameter type error')
+        return resultinfo
+
     #部署证书夹证书
     def SetCertToSite(self,get):
         try:

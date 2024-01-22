@@ -22,6 +22,7 @@ month_list = {
     "Jul": "7",
     "Aug": "8",
     "Sept": "9",
+    "Sep": "9",
     "Oct": "10",
     "Nov": "11",
     "Dec": "12"

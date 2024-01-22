@@ -506,8 +506,12 @@ class config:
                 isReWeb = True
 
         if get.domain:
+            if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.domain): return public.return_msg_gettext(False, 'Domain cannot bind ip address')
             reg = r"^([\w\-\*]{1,100}\.){1,4}(\w{1,10}|\w{1,10}\.\w{1,10})$"
             if not re.match(reg, get.domain): return public.return_msg_gettext(False,'Format of primary domain is incorrect')
+        if get.address:
+            if not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", get.address):
+                return public.return_msg_gettext(False, 'Please set the correct Server IP')
         oldPort = public.GetHost(True)
         if not 'port' in get:
             get.port = oldPort
@@ -573,7 +577,8 @@ class config:
         if get.admin_path in admin_path_checks: return public.return_msg_gettext(False,'This entrance has been used by the panel, please set another entrances!')
         if not public.path_safe_check(get.admin_path) or get.admin_path[-1] == '.':  return public.returnMsg(False,'Entrance address format is incorrect, e.g. /my_panel')
         if get.admin_path[0] != '/': return public.return_msg_gettext(False,'Entrance address format is incorrect, e.g. /my_panel')
-
+        if get.admin_path.find("//") != -1:
+            return public.return_msg_gettext(False, 'Entrance address format is incorrect, e.g. /my_panel')
         admin_path_file = 'data/admin_path.pl'
         admin_path = '/'
         if os.path.exists(admin_path_file): admin_path = public.readFile(admin_path_file).strip()
@@ -1512,6 +1517,21 @@ class config:
         if os.path.exists(ssl_pl): public.writeFile('data/reload.pl','True')
         return public.return_msg_gettext(True, 'Certificate saved!')
 
+    # 获取ftp端口
+    def get_ftp_port(self):
+        # 获取FTP端口
+        if 'port' in session: return session['port']
+        import re
+        try:
+            file = public.GetConfigValue('setup_path') + '/pure-ftpd/etc/pure-ftpd.conf'
+            conf = public.readFile(file)
+            rep = r"\n#?\s*Bind\s+[0-9]+\.[0-9]+\.[0-9]+\.+[0-9]+,([0-9]+)"
+            port = re.search(rep, conf).groups()[0]
+        except:
+            port = '21'
+        session['port'] = port
+        return port
+
     #获取配置
     def get_config(self,get):
         data = {}
@@ -1905,6 +1925,16 @@ class config:
             session['tmp_login'] = False
         return public.return_msg_gettext(True,'Setup successfully!')
 
+
+    # 是否显示软件推荐
+    def show_recommend(self,get):
+        pfile = 'data/not_recommend.pl'
+        if os.path.exists(pfile):
+            os.remove(pfile)
+        else:
+            public.writeFile(pfile,'True')
+        return public.return_msg_gettext(True,'Setup successfully!')
+
     # 获取菜单列表
     def get_menu_list(self, get):
         '''
@@ -1986,14 +2016,15 @@ class config:
         return data
 
     # 设置临时登录
-    def set_temp_login(self, args):
+    def set_temp_login(self, get):
         '''
             @name 设置临时登录
             @author hwliang<2020-09-2>
             @return dict
         '''
-        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         s_time = int(time.time())
+        expire_time = get.expire_time if "expire_time" in get else s_time + 3600
+        if 'tmp_login_expire' in session: return public.return_msg_gettext(False, 'Permission denied!')
         public.M('temp_login').where('state=? and expire>?', (0, s_time)).delete()
         token = public.GetRandomString(48)
         salt = public.GetRandomString(12)
@@ -2004,7 +2035,7 @@ class config:
             'state': 0,
             'login_time': 0,
             'login_addr': '',
-            'expire': s_time + 3600,
+            'expire': int(expire_time),
             'addtime': s_time
         }
 
@@ -2740,7 +2771,6 @@ class config:
         @name 获取消息通道配置列表
         @auther: cjxin
         @date: 2022-08-16
-        @
         """
         cpath = 'data/msg.json'
         try:

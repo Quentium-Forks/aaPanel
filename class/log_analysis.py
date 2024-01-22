@@ -154,7 +154,8 @@ echo "[*] shut down"
         if serverType == "nginx":
             pass
         elif serverType == 'apache':
-            path = path.strip("-access_log") + '-access_log'
+            #path = path.strip("-access_log") + '-access_log'
+            pass
         elif serverType == 'openlitespeed':
             # path = path.strip("_ols.access_log") + '_ols.access_log'
             return public.ReturnMsg(False, 'openlitespeed is not supported yet')
@@ -247,8 +248,6 @@ echo "[*] shut down"
         result['php'] = self.get_log_count(speed + 'php.log')
         result['ip'] = self.get_log_count(speed + 'ip.log')
         result['url'] = self.get_log_count(speed + 'url.log')
-        # result['ip'] = 'Detail' #self.get_log_count(speed + 'ip.log')
-        # result['url'] = 'Detail'#self.get_log_count(speed + 'url.log')
         return result
 
     def get_detailed(self, get):
