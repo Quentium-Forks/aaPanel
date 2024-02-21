@@ -32,7 +32,7 @@ nginx_122='1.22.1'
 nginx_123='1.23.4'
 nginx_124='1.24.0'
 nginx_125='1.25.4'
-openresty='1.21.4.3'
+openresty='1.25.3.1'
 
 Root_Path=$(cat /var/bt_setupPath.conf)
 Setup_Path=$Root_Path/server/nginx
@@ -169,31 +169,28 @@ Download_Src() {
     mkdir -p ${Setup_Path}
     cd ${Setup_Path}
     rm -rf ${Setup_Path}/src
-    if [ "${version}" == "tengine" ] || [ "${version}" == "openresty" ]; then
-        wget -O ${Setup_Path}/src.tar.gz http://nginx.org/download/${version}-${nginxVersion}.tar.gz -T20
+    if [ "${version}" == "tengine" ]; then
+        wget -O ${Setup_Path}/src.tar.gz https://tengine.taobao.org/download/tengine-${tengine}.tar.gz -T20
         tar -xzf src.tar.gz
-        mv ${version}-${nginxVersion} src
+        mv tengine-${tengine} src
+    elif [ "${version}" == "openresty" ]; then
+        wget -O ${Setup_Path}/src.tar.gz https://openresty.org/download/openresty-${openresty}.tar.gz -T20
+        tar -xzf src.tar.gz
+        mv openresty-${openresty} src
     else
-        wget -O ${Setup_Path}/src.tar.gz http://nginx.org/download/nginx-${nginxVersion}.tar.gz -T20
+        wget -O ${Setup_Path}/src.tar.gz https://freenginx.org/download/freenginx-${nginxVersion}.tar.gz -T20
         tar -xzf src.tar.gz
-        mv nginx-${nginxVersion} src
+        mv freenginx-${nginxVersion} src
     fi
 
     cd src
 
-    if [ -z "${GMSSL}" ]; then
-        TLSv13_NGINX=$(echo ${nginxVersion} | tr -d '.' | cut -c 1-3)
-        opensslVersion="1.1.1w"
-        wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
-        tar -xzf openssl-${opensslVersion}.tar.gz
-        mv openssl-${opensslVersion} openssl
-        rm -f openssl.tar.gz
-    else
-        wget -O GmSSL-master.zip ${download_Url}/src/GmSSL-master.zip
-        unzip -q -o GmSSL-master.zip
-        mv GmSSL-master openssl
-        rm -f GmSSL-master.zip
-    fi
+    TLSv13_NGINX=$(echo ${nginxVersion} | tr -d '.' | cut -c 1-3)
+    opensslVersion="1.1.1w"
+    wget https://www.openssl.org/source/openssl-${opensslVersion}.tar.gz
+    tar -xzf openssl-${opensslVersion}.tar.gz
+    mv openssl-${opensslVersion} openssl
+    rm -f openssl.tar.gz
 
     pcre_version="8.43"
     wget -O pcre-$pcre_version.tar.gz ${download_Url}/src/pcre-$pcre_version.tar.gz
@@ -307,10 +304,6 @@ Install_Configure() {
     done
 
     cd ${Setup_Path}/src
-
-    # if [ "${GMSSL}" ];then
-    #     sed -i "s/$OPENSSL\/.openssl\//$OPENSSL\//g" auto/lib/openssl/conf
-    # fi
 
     export LUAJIT_LIB=/usr/local/lib
     export LUAJIT_INC=/usr/local/include/${LUAJIT_INC_PATH}/
@@ -556,10 +549,6 @@ Set_Version() {
     else
         echo "${nginxVersion}" >${Setup_Path}/version.pl
     fi
-
-    if [ "${GMSSL}" ]; then
-        echo "1.18国密版" >${Setup_Path}/version_check.pl
-    fi
 }
 
 Uninstall_Nginx() {
@@ -605,10 +594,6 @@ else
     '1.18')
         nginxVersion=${nginx_118}
         ;;
-    '1.18.gmssl')
-        nginxVersion=${nginx_118}
-        GMSSL="True"
-        ;;
     '1.19')
         nginxVersion=${nginx_119}
         ;;
@@ -630,13 +615,11 @@ else
     '1.25')
         nginxVersion=${nginx_125}
         ;;
-    '1.8')
-        nginxVersion=${nginx_108}
-        ;;
     'openresty')
         nginxVersion=${openresty}
+        version="openresty"
         ;;
-    *)
+    'tengine')
         nginxVersion=${tengine}
         version="tengine"
         ;;
@@ -664,4 +647,3 @@ else
         Update_Nginx
     fi
 fi
-
