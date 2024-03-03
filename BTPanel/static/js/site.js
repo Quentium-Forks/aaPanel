@@ -31,6 +31,8 @@ $('#cutMode .tabs-item').on('click', function () {
 })
 
 var site_table;
+var node_table;
+var countryList = []
 var site = {
     node: {
         /**
@@ -2088,10 +2090,11 @@ var site = {
     },
 
 		/**
-	 * @description 初始化php分类
+	 * @description 初始化php分类和需求反馈
 	 */
 		init_site_type: function () {
 			$('#php_cate_select').remove();
+$('.feedback-btn').remove();
 			$('.tootls_group.tootls_top .pull-left').append('\
 			<div id="php_cate_select" class="bt_select_updown site_class_type" style="vertical-align: bottom;">\
 					<div class="bt_select_value">\
@@ -2099,7 +2102,8 @@ var site = {
 					</span>\
 				</div>\
 				<ul class="bt_select_list"></ul>\
-			</div>');
+			</div>\
+			<span style="display:inline-block; margin-left:10px;vertical-align: bottom;" class="feedback-btn"><span class="flex" style="align-items: center;margin-right:16px;width:100px;"><i class="icon-demand"></i><a class="btlink" onClick="javascript:bt.openFeedback({title:\'aaPanel demand feedback collection\',placeholder:\'<span>If you encounter any problems or imperfect functions during use, please describe <br> your problems or needs to us in detail, we will try our best to solve or improve for <br> you</span>\',recover:\'We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better\',key:993,proType:2});" style="margin-left: 5px;">Feedback</a></span></span>');
 			bt.site.get_type(function (res) {
 				site.reader_site_type(res);
 			});
@@ -6930,13 +6934,212 @@ var site = {
             }, 200)
         })
 
+},
+		select_site_txt: function (box, value) {
+			var that = this;
+			layer.open({
+				type: 1,
+				closeBtn: 2,
+				title: lan.site.set_ssl.cust_domain,
+				area: '600px',
+				btn: [lan.public.ok, lan.public.cancel],
+				content:
+					'<div class="pd20"><div class="line "><span class="tname">Domain name</span><div class="info-r "><input  name="site_name" placeholder="'+ lan.site.set_ssl.cust_place +'" class="bt-input-text mr5 ssl_site_name_rc" type="text" value="' +
+					value +
+					'" style="width:400px" value=""></div></div>\
+							<ul class="help-info-text c7">\
+											<li> '+ lan.site.set_ssl.cust_tip1 +'</li>\
+											<li>'+ lan.site.set_ssl.cust_tip2 +'</li>\
+											<li>'+ lan.site.set_ssl.cust_tip3 +'</li>\
+											<li>    1、'+ lan.site.set_ssl.cust_tip4 +'</li>\
+											<li>    2、'+ lan.site.set_ssl.cust_tip5 +'</li>\
+											<li>    3、'+ lan.site.set_ssl.cust_tip6 +'</li>\
+									</ul >\
+							</div>',
+				success: function () {
+					$('[name="site_name"]').focus();
+				},
+				yes: function (layers, index) {
+					var domain = $('.ssl_site_name_rc').val(),
+						code = $('.perfect_ssl_info').data('code');
+					if (!bt.check_domain(domain)) {
+						return layer.msg(lan.site.set_ssl.sing_domain_err, { icon: 2 });
+					} else if (code.indexOf('wildcard') === -1) {
+						if (domain.indexOf('*') > -1) {
+							return layer.msg(lan.site.set_ssl.sing_domain_more, { icon: 2 });
+						}
+					}
+					layer.close(layers);
+					$('#' + box).val($('.ssl_site_name_rc').val());
+					// that.check_domain_error(domain);
+					that.check_domain_dns()
+				},
+			});
+		},
+		/**
+		 * @descripttion: 选择站点
+		 * @author: Lifu
+		 * @Date: 2020-08-14
+		 * @param {String} box 输出时所用ID
+		 * @return: 无返回值
+		 */
+		select_site_list: function (box, code) {
+			var that = this,
+				_optArray = [],
+				all_site_list = [];
+			bt.send('getData','data/getData',{ tojs: 'site.get_list', table: 'domain', limit: 10000, search: '', p: 1, order: 'id desc', type: -1 }, function (res) {
+				var _tbody = '';
+				if (res.data.length > 0) {
+					$.each(res.data, function (index, item) {
+						_body =
+							'<tr>' +
+							'<td>' +
+							'<div class="box-group" style="height:16px">' +
+							'<div class="bt_checkbox_groups"></div>' +
+							'</div>' +
+							'</td>' +
+							'<td><span class="overflow_style" style="width:210px">' +
+							item['name'] +
+							'</span></td>' +
+							'</tr>';
+						if (code.indexOf('wildcard') > -1) {
+							if (item['name'].indexOf('*.') > -1) {
+								all_site_list.push(item['name']);
+								_tbody += _body;
+							}
+						} else {
+							all_site_list.push(item['name']);
+							_tbody += _body;
+						}
+					});
+					if (all_site_list.length == 0) {
+						_tbody = '<tr><td colspan="2">'+ lan.bt.no_data +'</td></tr>';
+					}
+				} else {
+					_tbody = '<tr><td colspan="2">'+ lan.bt.no_data +'</td></tr>';
+				}
+
+				layer.open({
+					type: 1,
+					closeBtn: 2,
+					title: lan.site.set_ssl.select_domain,
+					area: ['600px', '650px'],
+					btn: [lan.public.ok, lan.public.cancel],
+					content:
+						'\
+					<div class="pd20 dynamic_head_box">\
+						<div class="line">\
+							<input type="text" name="serach_site" class="bt-input-text" style="width: 550px;" placeholder="'+ lan.site.set_ssl.sup_fuzzy +'">\
+						</div>\
+						<div class="dynamic_list_table">\
+							<div class="divtable" style="height:281px">\
+								<table class="table table-hover">\
+									<thead>\
+										<th width="30">\
+											<div class="box-group" style="height:16px">\
+												<div class="bt_checkbox_groups" data-key="0"></div>\
+											</div>\
+										</th>\
+										<th>'+ lan.site.set_ssl.domain_name +'</th>\
+									</thead>\
+									<tbody class="dynamic_list">' +
+						_tbody +
+						'</tbody>\
+								</table>\
+							</div>\
+						</div>\
+						<ul class="help-info-text c7">\
+							<li> '+ lan.site.set_ssl.cust_tip1 +'</li>\
+							<li>'+ lan.site.set_ssl.cust_tip2 +'</li>\
+							<li>'+ lan.site.set_ssl.cust_tip3 +'</li>\
+							<li>    1、'+ lan.site.set_ssl.cust_tip4 +'</li>\
+							<li>    2、'+ lan.site.set_ssl.cust_tip5 +'</li>\
+							<li>    3、'+ lan.site.set_ssl.cust_tip6 +'</li>\
+						</ul>\
+					</div> ',
+					success: function () {
+						// 固定表格头部
+						if (jQuery.prototype.fixedThead) {
+							$('.dynamic_list_table .divtable').fixedThead({resize: false});
+						} else {
+							$('.dynamic_list_table .divtable').css({overflow: 'auto'});
+						}
+						//检索输入
+						$('input[name=serach_site]').on('input', function () {
+							var _serach = $(this).val();
+							if (_serach.trim() != '') {
+								$('.dynamic_list tr').each(function () {
+									var _td = $(this).find('td').eq(1).html();
+									if (_td.indexOf(_serach) == -1) {
+										$(this).hide();
+									} else {
+										$(this).show();
+									}
+								});
+							} else {
+								$('.dynamic_list tr').show();
+							}
+						});
+
+						// 单选设置
+						$('.dynamic_list').on('click', '.bt_checkbox_groups', function (e) {
+							var _tr = $(this).parents('tr');
+							if ($(this).hasClass('active')) {
+								$(this).removeClass('active');
+							} else {
+								$('.dynamic_list .bt_checkbox_groups').removeClass('active');
+								$(this).addClass('active');
+								_optArray = [_tr.find('td').eq(1).text()];
+							}
+							e.preventDefault();
+							e.stopPropagation();
+						});
+						// tr点击时
+						$('.dynamic_list').on('click', 'tr', function (e) {
+							$(this).find('.bt_checkbox_groups').click();
+							e.preventDefault();
+							e.stopPropagation();
+						});
+					},
+					yes: function (layers, index) {
+						var _olist = [];
+						if (_optArray.length > 0) {
+							$.each(_optArray, function (index, item) {
+								if ($.inArray(item, _olist) == -1) {
+									_olist.push(item);
+								}
+							});
+						}
+						layer.close(layers);
+						// 多域名时，将olist过滤并追加到site.domain_dns_list
+						if (site.domain_dns_type == 'multi') {
+							var domainList = site.domain_dns_list;
+							var newDomainList = [];
+							$.each(_olist, function (index, item) {
+								if ($.inArray(item, domainList) == -1) {
+									newDomainList.push(item);
+								}
+							});
+							domainList = domainList.concat(newDomainList);
+						} else {
+							domainList = _olist;
+						}
+						$('#' + box).val(domainList.join('\n'));
+						site.domain_dns_list = domainList;
+						$('textarea[name=lb_site]').focus();
+
+						// that.check_domain_error(_olist[0]);
+						that.check_domain_dns()
+					},
+				});
+			});
     },
     web_edit: function (obj) {
         var _this = this;
         var item = obj;
         bt.open({
             type: 1,
-            area: ['780px', '683px'],
+            area: ['860px', '683px'],
             title: lan.site.website_change + ' [' + item.name + ']  --  ' + lan.site.addtime + ' [' + item.addtime + ']',
             closeBtn: 2,
             shift: 0,
@@ -6983,120 +7186,3390 @@ var site = {
             site.reload(0);
         }, 100)
     },
+domain_dns_list: [],       // dns域名列表
+		domain_dns_type: '',       // dns域名类型[one/multi]
+		dns_data_treating: [],     // 原始dns接口数据
+		dns_configured_table: [],  // 已配置的dns域名列表
+		dns_interface_list: [],    // dns接口列表
+		dnsForm: null,
+		//检测域名api配置是否正确
+		check_domain_dns: function () {
+			if(site.domain_dns_type == 'one'){
+				var domain = $('#apply_site_name').val()
+				site.domain_dns_list = [domain]
+				if(domain == '') return layer.msg(lan.site.set_ssl.domain_name_pl,{icon:0});
+			}else if(site.domain_dns_type == 'multi'){
+				if(site.domain_dns_list.length == 0) return layer.msg(lan.site.set_ssl.domain_name_pla,{icon:0});
+			}
+			site.refresh_dns_interface()
+		},
+		// 管理dns接口
+		set_dns_api_open:function(){
+			bt_tools.open({
+				title: lan.site.set_ssl.man_dns,
+				area: '600px',
+				btn: false,
+				content: '<div class="dnsManager pd20"></div>',
+				success: function (layers) {
+					bt_tools.table({
+						el: '.dnsManager',
+						url: '/site?action=GetDnsApi',
+						height: '400',
+						dataFilter: function (res) {
+							var data = []
+							for (var i = 1; i < res.length; i++) {
+								var resI = res[i]
+								for (var j = 0; j < resI.data.length; j++) {
+									var info = {}
+									info = {
+										ps: resI.data[j].ps,
+										id: resI.data[j].id,
+										domain: resI.data[j].domain,
+										conf: resI.data[j].conf,
+										typeTitle: resI.title,
+										dns_type: resI.name,
+										name: resI.data[j].conf[0].value,
+										value: resI.data[j].conf[1].value,
+									}
+									// 获取dns接口配置信息
+									for(var k = 0; k < resI.data[j].conf.length; k++){
+										info[resI.data[j].conf[k].name] = resI.data[j].conf[k].value
+									}
+									data.push(info)
+								}
+							}
+							site.dns_configured_table = site.data_treating(res)
+							return {data: data}
+						},
+						column: [
+							{
+								fid: 'typeTitle',
+								title: lan.public_backup.type
+							},
+							{
+								fid: 'ps',
+								title: lan.soft.ps,
+							},
+							{
+								title: bt.public.action,
+								align: 'right',
+								type: 'group',
+								group: [
+									{
+										title: bt.public.edit,
+										event: function (row, index, ev, key, _that) {
+											site.editDns(row,_that)
+										}
+									},
+									{
+										title: bt.public.del,
+										event: function (row, index, ev, key, _that) {
+											bt.simple_confirm({title: 'delete【'+ row.ps +'】',msg: lan.site.set_ssl.del_api_confirm + '？'},function () {
+												bt_tools.send({url: '/site?action=remove_dns_api',data:{dns_type: row.dns_type,api_id: row.id}},function (res) {
+													bt_tools.msg(res)
+													if(res.status) _that.$refresh_table_list(true);
+												},'Delete authentication interface')
+											})
+										}
+									}
+								]
+							}
+						],
+						tootls: [
+							{
+								type: 'group',
+								positon: ['left', 'top'],
+								list: [
+									{
+										title: lan.site.set_ssl.add_dns,
+										active: true,
+										event: function (row, _that) {
+											site.editDns(undefined,_that)
+										},
+									},
+								],
+							},
+						]
+					})
+				}
+			})
+		},
 
+		// 添加dns接口
+		add_dns_interface: function () {
+			var _this = this
+			if ($('.dns_interface_line').length > 0) return;
+			$('.check_model_line.line').after('<div class="dns_interface_line line"><div class="dnsForm"></div></div>'); // 插入dns
+			$('.isdnsbtn').show(); // 显示dns刷新按钮
+			var formConfig = [
+				{
+					label: lan.site.set_ssl.select_dns,
+					group: [
+						{
+							type: 'select',
+							name: 'dns_select',
+							width: '250px',
+							placeholder: lan.site.set_ssl.select_parse,
+							list: [
+								// {title:lan.site.set_ssl.auto_parse,value:'dns#@api'},
+								{title:lan.site.set_ssl.manual_parse,value:'dns'},
+							],
+							change: function (formData,el,that) {
+								that.config.form[0].group[0].value = formData.dns_select
+								if(formData.dns_select == 'dns#@api'){
+									that.config.form[0].group[0].suffix = ''
+									that.config.form[0].group[1].display = true
+								}else{
+									that.config.form[0].group[0].suffix = '<br><span class="c7">'+ lan.site.set_ssl.parse_tip +'</span>'
+									that.config.form[0].group[1].display = false
+								}
+								that.$replace_render_content(0)
+							},
+						},
+						{
+							display:false,
+							type: 'button',
+							class: 'btn-sub-success',
+							style: {'margin-left':'10px','vertical-align':'middle'},
+							title: lan.site.set_ssl.dns_api_config,
+						}
+					]
+				}
+			]
+			if($('#ssl_tabs span.on').text().indexOf('Let') > -1){
+				// formConfig插入数据
+				formConfig.push({
+						label: '',
+						group: [
+							{
+								name: 'app_root',
+								type: 'checkbox',
+								title: lan.site.set_ssl.auto_more_domain,
+							},
+						],
+					},
+					{
+						label: '',
+						group: [
+							{
+								type: 'help',
+								style: {'margin': '0'},
+								list: [lan.site.set_ssl.auto_more_tip],
+							},
+						],
+					})
+			}
+			// 渲染dns
+			_this.dnsForm = bt_tools.form({
+				el: '.dnsForm',
+				form: formConfig,
+			});
+			//管理dns点击事件
+			$('.dnsForm').unbind('click').on('click','.btn-sub-success.btn-success',function () {
+				site.set_dns_api_open()
+			})
+		},
+		// 添加/编辑dns接口
+		editDns:function(row,_that,isGlobal) {
+			var isEdit = row && row.hasOwnProperty('name') ? true : false
+			bt_tools.open({
+				title: isEdit ? 'Edit【'+ row.ps +'】' : lan.site.set_ssl.add_dns_ver,
+				area: '530px',
+				skin:'dns_layer_form',
+				content: {
+					class: 'pd20',
+					data: row,
+					form: this.switch_dns_add_key((isEdit?row.dns_type:site.dns_interface_list[0].value),isGlobal)
+				},
+				success: function (layero) {
+					$('.dns-help li').eq(3).show().siblings().hide()
+					$(layero).find('.layui-layer-content').css('overflow', 'inherit')
+									if(isGlobal){
+											$('textarea[name=domains]').val(isEdit?row.domain.join('\n'):'')
+									}
+				},
+				yes: function (formData,indexs) {
+					// 是否验证成功
+					var isverify = true,
+						param = {dns_type: formData.dns_type,ps: formData.ps},
+						paramArr = []
+					// 限制ps的长度
+					if(formData.ps.length > 35) return layer.msg(lan.site.set_ssl.ps_pl,{icon:0})
+					// dns_layer_form下input如果为空，提示对应的placeholder，然后return false
+					$('.dns_layer_form input').each(function(index,item){
+						var _val = $(item).val()
+						if( _val == '' || _val.replace(/\s+/g,"") == ''){
+							layer.msg($(item).attr('placeholder'),{icon:0})
+							isverify = false
+							return false
+						}
+					})
+					if(!isverify) return false
+					// 排除formData中的dns_type和ps,循环添加到paramArr中
+					for (var key in formData) {
+						if(key !== 'dns_type' && key !== 'ps'){
+							paramArr.push({name:key,value:formData[key]})
+						}
+					}
+					param['pdata'] = JSON.stringify(paramArr)
+
+					if(isEdit) param['api_id'] = row.id
+					if(typeof row != 'undefined' && row.hasOwnProperty('domains')){
+						param['domains'] = JSON.stringify([row.domains])  // 没有dns接口，默认已当前域名添加
+					}else if(isGlobal){
+											// 高级设置类型
+											param['domains'] = JSON.stringify(formData.domains.split('\r\n'))
+									}else{
+						param['domains'] = JSON.stringify([]) //不设定固定域名，单纯链接dns接口
+					}
+					bt_tools.send({url: isEdit ? '/site?action=set_dns_api' : '/site?action=add_dns_api',data:param},function (res) {
+						bt_tools.msg(res)
+						if(res.status) {
+							layer.close(indexs)
+							if(_that) {
+								_that.$refresh_table_list(true);
+							}else {
+								bt_tools.send({url: '/site?action=GetDnsApi'},function (data) {
+									site.dns_configured_table = site.data_treating(data)
+								})
+							}
+						}
+					},isEdit ? 'Modify authentication interface' : 'Add authentication interface')
+				}
+			})
+		},
+		/**
+		 * 生成不同dns类型的配置
+		 * @param {*} type dns|DNSPodDns|AliyunDns|CloudflareDns|GodaddyDns|DNSLADns|
+		 * @returns  config 用于重新渲染表单
+		 */
+		switch_dns_add_key:function(type,isGlobal){
+			// 在原始数据中查找type相同的数据
+			var sthat = this,firstApi = site.dns_data_treating.find(function(item){return item.name === type}),
+				helpObj = {},
+				configKey = []
+			for (var i = 0; i < site.dns_interface_list.length; i++) {
+				var help =site.dns_interface_list[i].help
+				helpObj[site.dns_interface_list[i].value] = [
+					'<a class="btlink" target="_blank" href="'+ help[0].link +'">'+ help[0].title +'</a>',
+					'<a class="btlink" target="_blank" href="'+ help[1].link +'">'+ help[1].title +'</a>',
+				]
+			}
+			var config = [
+				{
+					label: lan.site.set_ssl.ver_type,
+					group: [
+						{
+							type: 'select',
+							name: 'dns_type',
+							width: '330px',
+							list: this.dns_interface_list,
+							change: function (formData, element, that) {
+								// 根据不同的dns接口，渲染不同的输入框
+								that.config.form[0].group[0].value = formData.dns_type
+								that.$again_render_form(sthat.switch_dns_add_key(formData.dns_type))
+							}
+						}
+					]
+				},{
+					label: lan.soft.ps,
+					group: [
+						{
+							type: 'text',
+							name: 'ps',
+							width: '330px',
+							placeholder: lan.site.set_ssl.ps_pls
+						}
+					]
+				},
+				{
+					group: [
+						{
+							type: 'help',
+							class: 'dns-help',
+							list: helpObj[type],
+						}
+					]
+				}
+			]
+					//高级设置类型追加显示已添加的域名
+					if(isGlobal){
+							// 往config的第二个种，追加域名
+							config.splice(2,0,{
+									label: lan.site.set_ssl.as_domain,
+									group: [
+											{
+													type: 'textarea',
+													name: 'domains',
+													style: {
+															'width': '330px',
+															'min-width': '330px',
+															'min-height': '130px',
+															'line-height': '22px',
+															'padding-top': '10px',
+															'resize': 'both'
+													},
+													placeholder: lan.site.set_ssl.more_domain_pl
+											}
+									]
+							})
+					}
+			$.each(firstApi.add_table[0].fields,function(index,item){
+				configKey.push({
+					label: item,
+					group: [
+						{
+							type: 'text',
+							name: item,
+							width: '330px',
+							placeholder: 'Please enter'+item
+						}
+					]
+				})
+			})
+			config = config.slice(0, 1).concat(configKey).concat(config.slice(1));
+			return config
+		},
+		// 深度获取所有dns账号中的域名
+		data_treating:function(data) {
+			var tableData= [],dns_type = []
+			this.dns_data_treating = data.filter(function(item){return item.name !== 'dns'}) // 原始数据
+			for (var i = 0; i < data.length; i++) {
+				if(data[i].name == 'dns') continue; //手动解析
+				var item = data[i]
+				if(item.data) {
+					for (var j = 0; j < item.data.length; j++) {
+						tableData.push({
+							ps: item.data[j].ps,
+							id: item.data[j].id,
+							domain: item.data[j].domain,
+							conf: item.data[j].conf,
+							typeTitle: item.title,
+							dns_type: item.name,
+							name: item.data[j].conf ? item.data[j].conf[0].value : '',
+							value: item.data[j].conf ? item.data[j].conf[1].value : '',
+							help: item.help,
+							add_table: item.add_table
+						})
+					}
+				}
+				dns_type.push({title:item.title,value:item.name,help:item.help})
+			}
+			this.dns_interface_list = dns_type
+			return tableData
+		},
+		// 移除dns接口
+		remove_dns_interface: function () {
+			$('.dns_interface_line.line').remove();
+			$('.isdnsbtn').hide()
+		},
+		// 自动刷新dns域名情况
+		refresh_dns_interface: function () {
+			// 当前解析类型
+			var dns_type = $('select[name=dns_select]').val(),that = this;
+			// 是否手动解析
+			if(dns_type == 'dns'){
+				return false;
+			}
+			bt_tools.send({url:'site?action=test_domains_api',data:{domains:JSON.stringify(site.domain_dns_list)}},function(res){
+				if(site.domain_dns_type == 'one'){
+					if($.isEmptyObject(res[0])){
+						$('.damin_dns_result').html('<div class="btn-group"><button class="btn btn-danger btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">DNS interface: Click Configure <span class="caret"></span></button><ul class="dropdown-menu"></ul></div>')
+					}else{
+						$('.damin_dns_result').html('<div class="btn-group"><button class="btn btn-success btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">DNS interface: <span class="dns_selected_interface">'+res[0].dns_name+'</span><span class="caret"></span></button><ul class="dropdown-menu"></ul></div>')
+					}
+
+					// 点击配置
+					$('.damin_dns_result').on('click','button',function(){
+						// 没有dns接口，直接跳转到添加
+						if(site.dns_configured_table.length == 0) return site.editDns({domains:$('#apply_site_name').val()});
+						// 渲染dns列表
+						var options = ''
+						$.each(site.dns_configured_table,function(index,item){
+							options += '<li data-id="'+ item.id +'">'+ item.typeTitle+'['+item.ps+']' +'</a></li>'
+						})
+						$('.damin_dns_result .dropdown-menu').html(options)
+					})
+					// 点击选择
+					$('.damin_dns_result .dropdown-menu').unbind('click').on('click','li',function(){
+						var dns_id = $(this).data('id'),
+							param = {api_id:dns_id},
+							item = site.dns_configured_table.find(function(item){return item.id == dns_id})
+
+						param['dns_type'] = item.dns_type
+						param['force_domain'] = $('#apply_site_name').val()
+						bt_tools.send({url:'site?action=set_dns_api',data:param},function(res){
+							that.refresh_dns_interface()
+						})
+					})
+				}else{
+					var view = ''
+					$.each(site.domain_dns_list,function(index,item){
+						// 是否空对象（没有设置dns）
+						var isDnsEmpty = $.isEmptyObject(res[index])
+						view+='<div class="dns_domains_item">\
+							<div class="dns_domains_item_title">'+ item +'</div>\
+							<div class="dns_domains_item_btn">\
+								<div class="btn-group">\
+									<button type="button" class="btn btn-'+ (isDnsEmpty ? 'danger' : 'success') +' btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">\
+									DNS interface: <span class="dns_selected_interface">'+ (isDnsEmpty ? 'Click Configure' : res[index].dns_name) +'</span><span class="caret"></span>\
+									</button>\
+									<ul class="dropdown-menu">\
+									</ul>\
+								</div>\
+								<div class="dns_domains_item_close">\
+									<i class="glyphicon glyphicon-remove"></i>\
+								</div>\
+							</div>\
+						</div>'
+					})
+					$('.dns_domains_multi_list').html(view)
+
+					// 点击配置
+					$('.dns_domains_item_btn button').click(function(){
+						// 没有dns接口，直接跳转到添加
+						if(site.dns_configured_table.length == 0) return site.editDns({domains:$(this).parents('.dns_domains_item').find('.dns_domains_item_title').text()});
+						// 渲染dns列表
+						var options = ''
+						$.each(site.dns_configured_table,function(index,item){
+							options += '<li data-id="'+ item.id +'">'+ item.typeTitle+'['+item.ps+']' +'</a></li>'
+						})
+						$('.dns_domains_item_btn .dropdown-menu').html(options)
+					})
+					// 点击选择
+					$('.dns_domains_item_btn .dropdown-menu').unbind('click').on('click','li',function(){
+						var dns_id = $(this).data('id'),
+							param = {api_id:dns_id},
+							item = site.dns_configured_table.find(function(item){return item.id == dns_id})
+
+						param['dns_type'] = item.dns_type
+						param['force_domain'] = $(this).parents('.dns_domains_item').find('.dns_domains_item_title').text()
+						bt_tools.send({url:'site?action=set_dns_api',data:param},function(res){
+							that.refresh_dns_interface()
+						})
+					})
+					// 点击删除
+					$('.dns_domains_item_close').unbind('click').click(function(){
+						// 从site.domain_dns_list中删除当前选中的域名
+						var domain = $(this).parents('.dns_domains_item').find('.dns_domains_item_title').text()
+						site.domain_dns_list = site.domain_dns_list.filter(function(item){return item != domain})
+						$(this).parents('.dns_domains_item').remove()
+					})
+					// dns_domains_item鼠标经过时添加active，离开时移除active
+					$('.dns_domains_item').unbind('mouseenter').mouseenter(function(){
+						$(this).addClass('active')
+					})
+					$('.dns_domains_item').unbind('mouseleave').mouseleave(function(){
+						$(this).removeClass('active')
+					})
+				}
+			})
+		},
+		//批量设置站点证书
+		setBathSiteSsl: function (batch_list, callback) {
+			bt_tools.send(
+				{
+					url: '/ssl?action=SetBatchCertToSite',
+					data: {
+						BatchInfo: JSON.stringify(batch_list),
+					},
+				},
+				function (res) {
+					if (callback) callback(res);
+				},
+				'Set site certificates in batches'
+			);
+		},
     set_ssl: function (web) {
-        // if(typeof web['ele'] === 'undefined') web['ele'] = $('.webedit-con')
-        $('#webedit-con').html("<div id='ssl_tabs'></div><div class=\"tab-con\" style=\"padding:10px 0;\"></div>");
+        //站点/项目名、放置位置
         bt.site.get_site_ssl(web.name, function (rdata) {
-            var _tabs = [
-                // {
-                //     title: lan.site.bt_ssl, on: true, callback: function (robj) {
-                //         bt.pub.get_user_info(function (udata) {
-                //             if (udata.status) {
-                //                 bt.site.get_domains(web.id, function (ddata) {
-                //                     var domains = [];
-                //                     for (var i = 0; i < ddata.length; i++) {
-                //                         if (ddata[i].name.indexOf('*') == -1) domains.push({ title: ddata[i].name, value: ddata[i].name });
-                //                     }
-                //                     var arrs1 = [
-                //                         { title: lan.site.domain, width: '200px', name: 'domains', type: 'select', items: domains },
-                //                         {
-                //                             title: ' ', name: 'btsslApply', text: lan.site.btapply, type: 'button', callback: function (sdata) {
-                //                                 if (sdata.domains.indexOf('www.') != -1) {
-                //                                     var rootDomain = sdata.domains.split(/www\./)[1];
-                //                                     if (!$.inArray(domains, rootDomain)) {
-                //                                         layer.msg(lan.site.not_resolve_domain.replace('{1}',sdata.domains).replace("{2}",rootDomain), { icon: 2, time: 5000 });
-                //                                         return;
-                //                                     }
-                //                                 }
-                //                                 bt.site.get_dv_ssl(sdata.domains, web.path, function (tdata) {
-                //                                     bt.msg(tdata);
-                //                                     if (tdata.status) site.ssl.verify_domain(tdata.data.partnerOrderId, web.name);
-                //                                 })
-                //                             }
-                //                         }
-                //                     ]
-                //                     for (var i = 0; i < arrs1.length; i++) {
-                //                         var _form_data = bt.render_form_line(arrs1[i]);
-                //                         robj.append(_form_data.html);
-                //                         bt.render_clicks(_form_data.clicks);
-                //                     }
-                //                     var loading = bt.load()
-                //                     bt.site.get_order_list(web.name, function (odata) {
-                //                         loading.close();
-                //                         robj.append("<div class=\"divtable mtb15 table-fixed-box\" style=\"max-height:200px;overflow-y: auto;\"><table id='bt_order_list' class='table table-hover'></table></div>");
-                //                         bt.render({
-                //                             table: '#bt_order_list',
-                //                             columns: [
-                //                                 { field: 'commonName', title: lan.site.domain },
-                //                                 {
-                //                                     field: 'endtime', width: '70px', title: lan.site.endtime, templet: function (item) {
-                //                                         return bt.format_data(item.endtime, 'yyyy/MM/dd');
-                //                                     }
-                //                                 },
-                //                                 { field: 'stateName', width: '100px', title: lan.site.status },
-                //                                 {
-                //                                     field: 'opt', align: 'right', width: '100px', title: lan.site.operate, templet: function (item) {
-                //                                         var opt = '<a class="btlink" onclick="site.ssl.onekey_ssl(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.deploy+'</a>'
-                //                                         if (item.stateCode == 'WF_DOMAIN_APPROVAL') {
-                //                                             opt = '<a class="btlink" onclick="site.ssl.verify_domain(\'' + item.partnerOrderId + '\',\'' + web.name + '\')" href="javascript:;">'+lan.site.domain_validate+'</a>';
-                //                                         }
-                //                                         else {
-                //                                             if (item.setup) opt = lan.site.deployed+' | <a class="btlink" href="javascript:site.ssl.set_ssl_status(\'CloseSSLConf\',\'' + web.name + '\')">'+lan.site.turn_off+'</a>'
-                //                                         }
-                //                                         return opt;
-                //                                     }
-                //                                 }
-                //                             ],
-                //                             data: odata.data
-                //                         })
-                //                         bt.fixed_table('bt_order_list');
-                //                         var helps = [
-                //                             lan.site.ssl_tips1,
-                //                             lan.site.ssl_tips2,
-                //                             lan.site.ssl_tips3,
-                //                             lan.site.ssl_tips4,
-                //                             lan.site.ssl_tips5,
-                //                             lan.site.ssl_tips6
-                //                         ]
-                //                         robj.append(bt.render_help(helps));
-                //                     })
-                //                 })
-                //             }
-                //             else {
-                //                 robj.append('<div class="alert alert-warning" style="padding:10px">'+lan.site.bt_bind_no+'</div>');
-                //
-                //                 var datas = [
-                //                     { title: lan.site.bt_user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.site.phone_input },
-                //                     { title: lan.site.password, type: 'password', name: 'bt_password', value: rdata.email, width: '260px' },
-                //                     {
-                //                         title: ' ', items: [
-                //                             {
-                //                                 text: lan.site.login, name: 'btn_ssl_login', type: 'button', callback: function (sdata) {
-                //                                     bt.pub.login_btname(sdata.bt_username, sdata.bt_password, function (ret) {
-                //                                         if (ret.status) site.reload(7);
-                //                                     })
-                //                                 }
-                //                             },
-                //                             {
-                //                                 text: lan.site.bt_reg, name: 'bt_register', type: 'button', callback: function (sdata) {
-                //                                     window.open('https://www.bt.cn/register.html')
-                //                                 }
-                //                             }
-                //                         ]
-                //                     }
-                //                 ]
-                //                 for (var i = 0; i < datas.length; i++) {
-                //                     var _form_data = bt.render_form_line(datas[i]);
-                //                     robj.append(_form_data.html);
-                //                     bt.render_clicks(_form_data.clicks);
-                //                 }
-                //                 robj.append(bt.render_help([lan.site.bt_ssl_help_1, lan.site.bt_ssl_help_2, lan.site.bt_ssl_help_3, lan.site.bt_ssl_help_4]));
-                //             }
-                //         })
-                //
-                //     }
-                // },
+            var type = rdata.type; // 类型
+				var certificate = rdata.cert_data; // 证书信息
+				var pushAlarm = rdata.push; // 是否推送告警
+				var isStart = rdata.status; // 是否启用
+				var layers = null;
+				var expirationTime = certificate.endtime; // 证书过期时间
+				var isRenew = (function () {
+					// 是否续签
+					var state = false;
+					if (expirationTime <= 30) state = true;
+					if (type === 2 && expirationTime < 0) state = true;
+					if (type === 0 || type === -1) state = false;
+					return state;
+				})();
+
+				// 续签视图
+				function renewal_ssl_view(item) {
+					bt.confirm(
+						{
+							title: 'Visa renewal letter',
+							msg: 'The current certificate order needs to be regenerated into a new order, which requires manual renewal and re-deployment of the certificate. Do you want to continue?',
+						},
+						function () {
+							var loadT = bt.load(lan.site.set_ssl.renew_cert_load);
+							bt.send(
+								'renew_cert_order',
+								'ssl/renew_cert_order',
+								{
+									pdata: JSON.stringify({ oid: item.oid }),
+								},
+								function (res) {
+									loadT.close();
+									site.reload();
+									setTimeout(function () {
+										bt.msg(res);
+									}, 1000);
+								}
+							);
+						}
+					);
+				}
+
+				// 申请宝塔证书
+				function apply_bt_certificate() {
+					var html = '';
+					var domains = [];
+					for (var i = 0; i < rdata.domain.length; i++) {
+						var item = rdata.domain[i];
+						if (item.name.indexOf('*') == -1) domains.push({ title: item.name, value: item.name });
+					}
+					for (var i = 0; i < domains.length; i++) {
+						var item = domains[i];
+						html += '<option value="' + item.value + '">' + item.title + '</option>';
+					}
+					bt.open({
+						type: 1,
+						title: lan.site.set_ssl.req_free_cert,
+						area: '610px',
+						content:
+							'<form class="bt_form perfect_ssl_info free_ssl_info" onsubmit="return false;">\
+							<div class="warning_info mb20" style="display: flex;height: 60px;align-items: center;">\
+								<span class="glyphicon glyphicon-alert" style="color: #a94442; margin-right: 10px;"></span>\
+								<div>提示：尊敬的用户您好，感谢您对宝塔免费SSL证书的支持，由于证书签发机制的调整，我们的免费SSL证书签发将于<b>2023年12月31日</b>进行下架，<a target="_blank" class="btlink" href="https://www.trustasia.com/view-free-ssl-one-year-adjustment-announcement/">查看详情</a>。</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.cert_info +'</span>\
+									<div class="info-r">\
+											<span class="ssl_title">TrustAsia TLS RSA CA(Free edition)</span>\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.domain_name +'</span>\
+									<div class="info-r"><select class="bt-input-text mr5 " name="domain" style="width:200px">' +
+							html +
+							'</select></div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.per_name +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgName" value="" placeholder="'+ lan.site.set_ssl.per_name_pl +'" />\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.lo_area +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgRegion" value="" placeholder="'+ lan.site.set_ssl.province_pl +'" style="width: 190px; margin-right:0;" >\
+											<input type="text" class="bt-input-text mr5" name="orgCity" value="" placeholder="'+ lan.site.set_ssl.city_pl +'" style="width: 190px; margin-left: 15px;"  />\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.address +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgAddress" value="" placeholder="'+ lan.site.set_ssl.address_pl +'" />\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.public_backup.mobile_phone +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgPhone" value="" placeholder="'+ lan.site.set_ssl.phone_pl +'" />\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname">'+ lan.site.set_ssl.pos_code +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgPostalCode" value="" placeholder="'+ lan.site.set_ssl.pos_code_pl +'" />\
+									</div>\
+							</div>\
+							<div class="line" style="display:none;">\
+									<span class="tname">'+ lan.site.set_ssl.section +'</span>\
+									<div class="info-r">\
+											<input type="text" class="bt-input-text mr5" name="orgDivision" value="'+ lan.site.set_ssl.g_a +'"/>\
+									</div>\
+							</div>\
+							<div class="line">\
+									<span class="tname"></span>\
+									<div class="info-r">\
+											<span style="line-height: 20px;color:red;display: inline-block;">'+ lan.site.set_ssl.add_tips +'</span>\
+									</div>\
+							</div>\
+							<div class="line">\
+									<div class="info-r"><button class="btn btn-success submit_ssl_info">'+ lan.site.set_ssl.sub_info +'</button></div>\
+							</div>\
+					</form>',
+						success: function (layero, index) {
+							$('.submit_ssl_info').click(function () {
+								var form = $('.free_ssl_info').serializeObject();
+								for (var key in form) {
+									if (Object.hasOwnProperty.call(form, key)) {
+										var value = form[key],
+											el = $('[name="' + key + '"]');
+										if (value == '') {
+											layer.tips(el.attr('placeholder'), el, { tips: ['1', 'red'] });
+											el.focus();
+											el.css('borderColor', 'red');
+											return false;
+										} else {
+											el.css('borderColor', '');
+										}
+										switch (key) {
+											case 'orgPhone':
+												if (!bt.check_phone(value)) {
+													layer.tips(lan.site.set_ssl.phone_ver, el, { tips: ['1', 'red'] });
+													el.focus();
+													el.css('borderColor', 'red');
+													return false;
+												}
+												break;
+											case 'orgPostalCode':
+												if (!/^[0-9]\d{5}(?!\d)$/.test(value)) {
+													layer.tips(lan.site.set_ssl.postal_ver, el, { tips: ['1', 'red'] });
+													el.focus();
+													el.css('borderColor', 'red');
+													return false;
+												}
+												break;
+										}
+									}
+								}
+								if (form.domain.indexOf('www.') != -1) {
+									var rootDomain = form.domain.split(/www\./)[1];
+									if (!$.inArray(domains, rootDomain)) {
+										layer.msg(lan.site.set_ssl.no_root_tip(form.domain,rootDomain), { icon: 2, time: 5000 });
+										return;
+									}
+								}
+								var loadT = bt.load(lan.site.set_ssl.sub_cert);
+								bt.send('ApplyDVSSL', 'ssl/ApplyDVSSL', $.extend(form, { path: web.path }), function (tdata) {
+									loadT.close();
+									if (tdata.msg.indexOf('<br>') != -1) {
+										layer.msg(tdata.msg, { time: 0, shadeClose: true, area: '600px', icon: 2, shade: 0.3 });
+									} else {
+										bt.msg(tdata);
+									}
+									if (tdata.status) {
+										layer.close(index);
+										site.ssl.verify_domain(tdata.data.partnerOrderId, web.name);
+									}
+								});
+							});
+							$('.free_ssl_info input').keyup(function (res) {
+								var value = $(this).val();
+								if (value == '') {
+									layer.tips($(this).attr('placeholder'), $(this), { tips: ['1', 'red'] });
+									$(this).focus();
+									$(this).css('borderColor', 'red');
+								} else {
+									$(this).css('borderColor', '');
+								}
+							});
+						},
+					});
+				}
+
+				if (!Array.isArray(certificate.dns)) certificate = { dns: [] };
+
+				$('#webedit-con').html(
+					'<div class="warning_info mb10 ' +
+						(!isRenew && isStart ? 'hide' : '') +
+						'">' +
+						'<p class="' +
+						(isStart ? 'hide' : '') +
+						'">' + lan.site.set_ssl.tips1 + '<button class="btn btn-success btn-xs ml10 cutTabView">' + lan.site.set_ssl.apply + '</button></p>' +
+						'<p class="' +
+						(isRenew && isStart ? '' : 'hide') +
+						'">' + lan.site.set_ssl.tips2('<span class="ellipsis_text" style="display: inline-block;vertical-align:bottom;max-width: 250px;width: auto;" title="' +
+						certificate.dns.join(', ') +
+						'">' +
+						certificate.dns.join(', ') +
+						'</span>', expirationTime < 0) + '<button class="btn btn-success btn-xs mlr15 renewCertificate" data-type="' +
+						rdata.type +
+						'">' + lan.site.set_ssl.renewal + '</button></p>' +
+						'</div>' +
+						'<div id="ssl_tabs"></div><div class="tab-con" style="padding:10px 0;"></div>'
+				);
+				var tabs = [
+					{
+						title: lan.site.set_ssl.menu1 + ' - <i class="' + (rdata.status ? 'btlink' : 'bterror') + '">[' + (rdata.status ? lan.site.set_ssl.deployed : lan.site.set_ssl.not_deployed) + ']</i>',
+						callback: function (content) {
+							acme.id = web.id;
+							var classify = '';
+							var typeList = [
+								lan.site.set_ssl.cert_type1, 
+								lan.site.set_ssl.cert_type2, 
+								lan.site.set_ssl.cert_type3, 
+								lan.site.set_ssl.cert_type4
+							];
+							var state = $(
+								'<div class="ssl_state_info ' +
+									(!rdata.csr ? 'hide' : '') +
+									'">' +
+									'<div class="state_info_flex">' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.cert_type + '</span><span><a href="javascript:;" class="btlink cutSslType" data-type="' +
+									(typeList[rdata.type] === lan.site.other_cert ? -1 : rdata.type) +
+									'">' +
+									(rdata.type === -1 ? lan.site.set_ssl.other_cert : typeList[rdata.type]) +
+									'</a></span></div>' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.cert_brand + '</span><span class="ellipsis_text" title="' +
+									certificate.issuer +
+									'">' +
+									certificate.issuer +
+									'</span></div>' +
+									'</div>' +
+									'<div class="state_info_flex">' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.auth_domain + '</span><span class="ellipsis_text" title="' +
+									certificate.dns.join('、') +
+									'">' +
+									certificate.dns.join('、') +
+									'</span></div>' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.expire_time + '</span><span style="' +
+									(expirationTime >= 30 ? '' : 'color:#EF0808') +
+									'" class="' +
+									(expirationTime >= 30 ? 'btlink' : '') +
+									'">' +
+									(expirationTime >= 0 ? lan.site.set_ssl.expire_time_text(rdata.cert_data.notAfter, expirationTime.toFixed(0)) : lan.site.set_ssl.expired) +
+									'</span></div>' +
+									'</div>' +
+									'<div class="state_info_flex">' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.force_https + '</span><span><span class="bt_switch"><input class="btswitch btswitch-ios" id="https" type="checkbox" ' +
+									(rdata.httpTohttps ? 'checked' : '') +
+									'><label class="btswitch-btn" for="https"></label></span></span></div>' +
+									// '<div class="state_item"><span>' + lan.site.set_ssl.expire_reminder + ':</span><span><span class="bt_switch"><input class="btswitch btswitch-ios" id="expiration" type="checkbox" ' +
+									// (pushAlarm.status ? 'checked' : '') +
+									// '><label class="btswitch-btn" for="expiration"></label></span><a class="btlink setAlarmMode" style="margin-left: 15px;" href="javascript:;">Config</a></span></div>' +
+									'</div>' +
+									'</div>' +
+									'<div class="custom_certificate_info">' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.ssl_key + '</span><textarea class="bt-input-text key" name="key">' +
+									(rdata.key || '') +
+									'</textarea></div>' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.ssl_crt + '</span><textarea class="bt-input-text key" name="csr">' +
+									(rdata.csr || '') +
+									'</textarea></div>' +
+									'</div>' +
+									'<div class="mt10">' +
+									'<button type="button" class="btn btn-success btn-sm mr10 saveCertificate ' +
+									(isStart ? '' : '') +
+									'">' +
+									(isStart ? lan.site.set_ssl.save_btn : lan.site.set_ssl.save_enable_btn) +
+									'</button>' +
+									'<button type="button" class="btn btn-success btn-sm mr10 renewCertificate ' +
+									(isRenew || type === 1 ? '' : 'hide') +
+									'" data-type="' +
+									rdata.type +
+									'">' + lan.site.set_ssl.renewal_btn + '</button>' +
+									'<button type="button" class="btn btn-default btn-sm mr10 downloadCertificate ' +
+									(!rdata.csr ? 'hide' : 'hide') +
+									'">' + lan.site.set_ssl.download_btn + '</button>' +
+									'<button type="button" class="btn btn-default btn-sm closeCertificate ' +
+									(!isStart ? 'hide' : '') +
+									'">' + lan.site.set_ssl.close_btn + '</button>' +
+									'</div>'
+							);
+							content.append(state);
+							content.append(
+								bt.render_help([
+									lan.site.set_ssl.save_ssl_tips1,
+									lan.public_backup.cret_err,
+									lan.public_backup.pem_format,
+									lan.site.set_ssl.save_ssl_tips2,
+									lan.site.set_ssl.save_ssl_tips3,
+								])
+							);
+							// if(rdata.status) {
+							// 	bt_tools.send({url: '/site?action=check_ssl',data: {hostname: web.name}}, function (res) {
+							// 		if(!res.status) content.prepend('<div class="div-box-tips"><i class="ico-text-hint"></i><span>'+ res.msg +'<span></div>')
+							// 	},{verify:false})
+							// }
+							var setAlarmMode = bt.get_cookie('setAlarmMode');
+							if (!pushAlarm.status && rdata.csr && !setAlarmMode) {
+							// if (true) {
+								bt.set_cookie('setAlarmMode', 1);
+								layer.tips(lan.site.set_ssl.set_alarm_mode_tips, '.setAlarmMode', {
+									tips: [1, '#d9534f'],
+									area: '380px',
+									time: 5000
+								});
+								setTimeout(function () {
+									$(window).one('click', function () {
+										layer.closeAll('tips');
+									});
+								}, 500);
+							}
+							var moduleConfig = null;
+							function cacheModule(callback) {
+								if (moduleConfig && callback) return callback(moduleConfig);
+								bt.site.get_module_config({ name: 'site_push', type: 'ssl' }, function (rdata1) {
+									moduleConfig = rdata1;
+									if (callback) callback(rdata1);
+								});
+							}
+
+							/**
+							 * 提醒到期弹框
+							 * @param $check 到期提醒开关
+							 */
+							function alarmMode($check) {
+								var time = new Date().getTime();
+								var isExpiration = pushAlarm.status;
+								if ($check) isExpiration = $check.is(':checked');
+								layer.open({
+									type: 1,
+									title: lan.site.set_ssl.expire_reminder_title,
+									area: '470px',
+									closeBtn: 2,
+									content:
+										'\
+									<div class="pd20">\
+										<div class="bt-form">\
+											<div class="line">\
+												<span class="tname">' + lan.site.set_ssl.expire_reminder + '</span>\
+												<div class="info-r line-switch">\
+													<input type="checkbox" id="dueAlarm" class="btswitch btswitch-ios" name="due_alarm" ' +
+										(isExpiration ? 'checked="checked"' : '') +
+										' />\
+													<label class="btswitch-btn" for="dueAlarm"></label>\
+												</div>\
+											</div>\
+											<div class="line">\
+												<span class="tname">' + lan.site.set_ssl.site + '</span>\
+												<div class="info-r">\
+													<input class="bt-input-text mr10" disabled style="width:200px;" value="' +
+										web.name +
+										'" />\
+												</div>\
+											</div>\
+											<div class="line">\
+												<span class="tname">'+ lan.site.set_ssl.remaining_days +'</span>\
+												<div class="info-r">\
+													<div class="inlineBlock">\
+														<input type="number" min="1" name="cycle" class="bt-input-text triggerCycle" style="width:70px;" value="' +
+										(pushAlarm.cycle || '30') +
+										'" />\
+														<span class="unit">Days</span>\
+													</div>\
+												</div>\
+											</div>\
+											<div class="line">\
+												<span class="tname">'+ lan.site.set_ssl.number_ransmissions +'</span>\
+												<div class="info-r">\
+													<div class="inlineBlock">\
+														<input type="number" min="1" name="push_count" class="bt-input-text triggerPushCount" style="width:70px;" value="' +
+																			(pushAlarm.push_count || '2') +
+																			'" />\
+														<span class="unit">，'+ lan.site.set_ssl.no_more +'</span>\
+													</div>\
+												</div>\
+											</div>\
+											<div class="line">\
+												<span class="tname">'+ lan.site.set_ssl.notification_mode + '</span>\
+												<div class="info-r installPush"></div>\
+											</div>\
+											<div class="line">\
+												<span class="tname">'+ lan.site.set_ssl.application_config +'</span>\
+												<div class="info-r">\
+													<div class="inlineBlock module-check setAllSsl">\
+														<div class="cursor-pointer form-checkbox-label mr10">\
+															<i class="form-checkbox cust—checkbox cursor-pointer mr5"></i>\
+															<input type="checkbox" class="form—checkbox-input hide mr10" name="allSsl"/>\
+															<span class="vertical_middle">'+ lan.site.set_ssl.apply_all +'<span class="red">&nbsp;'+ lan.site.set_ssl.no_config_site +'</span></span>\
+														</div>\
+													</div>\
+												</div>\
+											</div>\
+										</div>\
+									</div>',
+									btn: [lan.site.set_ssl.save_config, lan.public.cancel],
+									success: function ($layer) {
+										cacheModule(function (rdata1) {
+											// 获取配置
+											bt.site.get_msg_configs(function (rdata) {
+												var html = '',
+													unInstall = '',
+													pushList = rdata1.push;
+												for (var key in rdata) {
+													var item = rdata[key],
+														_html = '',
+														accountConfigStatus = false,
+														module = pushAlarm.module || [];
+													if (pushList.indexOf(item.name) === -1) continue;
+													if (key == 'sms') continue;
+													if (key === 'wx_account') {
+														if (!$.isEmptyObject(item.data) && item.data.res.is_subscribe && item.data.res.is_bound) {
+															accountConfigStatus = true; //安装微信公众号模块且绑定
+														}
+													}
+													_html =
+														'<div class="inlineBlock module-check ' +
+														(!item.setup || $.isEmptyObject(item.data) ? 'check_disabled' : key == 'wx_account' && !accountConfigStatus ? 'check_disabled' : '') +
+														'">' +
+														'<div class="cursor-pointer form-checkbox-label mr10">' +
+														'<i class="form-checkbox cust—checkbox cursor-pointer mr5 ' +
+														(module.indexOf(item.name) > -1 ? (!item.setup || $.isEmptyObject(item.data) ? '' : key == 'wx_account' && !accountConfigStatus ? '' : 'active') : '') +
+														'" data-type="' +
+														item.name +
+														'"></i>' +
+														'<input type="checkbox" class="form—checkbox-input hide mr10" name="' +
+														item.name +
+														'" ' +
+														(item.setup || !$.isEmptyObject(item.data) ? (key == 'wx_account' && !accountConfigStatus ? '' : 'checked') : '') +
+														'/>' +
+														'<span class="vertical_middle" title="' +
+														item.ps +
+														'">' +
+														item.title +
+														(!item.setup || $.isEmptyObject(item.data)
+															? '[<a target="_blank" class="bterror installNotice" data-type="' + item.name + '">'+ lan.public_backup.install +'</a>]'
+															: key == 'wx_account' && !accountConfigStatus
+															? '[<a target="_blank" class="bterror installNotice" data-type="' + item.name + '">'+ lan.public_backup.install +'</a>]'
+															: '') +
+														'</span>' +
+														'</div>' +
+														'</div>';
+													if (!item.setup) {
+														unInstall += _html;
+													} else {
+														html += _html;
+													}
+												}
+												$('.installPush').html(html + unInstall);
+												$('.setAllSsl').on('click', function () {
+													var that = $(this).find('i');
+													if (that.hasClass('active')) {
+														that.removeClass('active');
+														that.next().prop('checked', false);
+													} else {
+														that.addClass('active');
+														that.next().prop('checked', true);
+													}
+												});
+												if (pushAlarm.project === 'all' && pushAlarm.status) $('.setAllSsl').trigger('click');
+											});
+										});
+
+										// 安装消息通道
+										$('.installPush').on('click', '.form-checkbox-label', function () {
+											var that = $(this).find('i');
+											if (!that.parent().parent().hasClass('check_disabled')) {
+												if (that.hasClass('active')) {
+													that.removeClass('active');
+													that.next().prop('checked', false);
+												} else {
+													that.addClass('active');
+													that.next().prop('checked', true);
+												}
+											}
+										});
+										$('.triggerCycle').on('input', function () {
+											$('.siteSslHelp span').html($(this).val());
+										});
+
+										$('.installPush').on('click', '.installNotice', function () {
+											var type = $(this).data('type');
+											openAlertModuleInstallView(type);
+										});
+									},
+									yes: function (index) {
+										var status = $('input[name="due_alarm"]').is(':checked');
+										var cycle = $('.triggerCycle').val();
+																			var push_count = $('.triggerPushCount').val();
+										var arry = [];
+										var module = '';
+										var isAll = $('[name="allSsl"]').is(':checked');
+										$('.installPush .active').each(function (item) {
+											var item = $(this).attr('data-type');
+											arry.push(item);
+										});
+										if (!arry.length) return layer.msg('Please select an alarm mode', { icon: 2 });
+										if (!parseInt(cycle)) return layer.msg('Remaining days cannot be less than 1', { icon: 2 });
+																			if (!parseInt(push_count)) return layer.msg('Send times cannot be less than 1', { icon: 2 });
+
+										// 参数
+										var data = {
+											status: status,
+											type: 'ssl',
+											project: web.name,
+											cycle: parseInt(cycle),
+											title: 'Website SSL expiration alert',
+											module: arry.join(','),
+											interval: 600,
+																					push_count: parseInt(push_count),
+										};
+
+										// 判断是否点击全局应用
+										if (isAll) {
+											// 请求设置全局应用告警配置
+											var allData = Object.assign({}, data);
+											allData.status = true;
+											allData.project = 'all';
+											bt.site.set_push_config({
+												name: 'site_push',
+												id: time,
+												data: JSON.stringify(allData),
+											});
+										}
+
+										// 请求设置本站点告警配置
+										bt.site.set_push_config(
+											{
+												name: 'site_push',
+												id: pushAlarm.id ? pushAlarm.id : time,
+												data: JSON.stringify(data),
+											},
+											function (rdata) {
+												bt.msg(rdata);
+												setTimeout(function () {
+													site.reload();
+												}, 1000);
+												layer.close(index);
+											}
+										);
+									},
+									cancel: function () {
+										$check && $check.prop('checked', !isExpiration);
+									},
+									btn2: function () {
+										$check && $check.prop('checked', !isExpiration);
+									},
+								});
+							}
+							// 设置强制HTTPS
+							$('#https').on('click', function () {
+								var that = $(this),
+									isHttps = $(this).is(':checked');
+								if (!isHttps) {
+									layer.confirm(
+										lan.site.set_ssl.force_https_confirm,
+										{
+											icon: 3,
+											closeBtn: 2,
+											title: 'Turn off forced HTTPS',
+											cancel: function () {
+												that.prop('checked', !isHttps);
+											},
+											btn2: function () {
+												that.prop('checked', !isHttps);
+											},
+										},
+										function () {
+											bt.site.close_http_to_https(web.name, function (rdata) {
+												if (rdata.status) {
+													setTimeout(function () {
+														site.reload(7);
+													}, 3000);
+												} else {
+													that.prop('checked', !isHttps);
+												}
+											});
+										}
+									);
+								} else {
+									bt.site.set_http_to_https(web.name, function (rdata) {
+										if (rdata.status) {
+											site.reload(7);
+										} else {
+											that.prop('checked', !isHttps);
+											layer.confirm(lan.site.set_ssl.open_ssl_comfirm, { icon: 3, title: 'Tips' }, function (index) {
+												$.ajaxSettings.async = false;
+												$('.saveCertificate').click();
+												$.ajaxSettings.async = true;
+												$('#https').click();
+												layer.close(index);
+											});
+										}
+									});
+								}
+							});
+
+							// 设置告警通知
+							$('#expiration').on('click', function () {
+								layer.close(layers);
+								var _that = $(this);
+								var isExpiration = $(this).is(':checked');
+								var time = new Date().getTime();
+								if (isExpiration) {
+									alarmMode(_that);
+								} else {
+									var data = JSON.stringify({
+										status: isExpiration,
+										type: 'ssl',
+										project: web.name,
+										cycle: parseInt(pushAlarm.cycle),
+										title: 'Website SSL expiration alert',
+										module: pushAlarm.module,
+										interval: 600,
+										push_count: 1,
+									});
+									var id = pushAlarm.id ? pushAlarm.id : time;
+									if (pushAlarm.project === 'all') id = time;
+									bt.site.set_push_config(
+										{
+											name: 'site_push',
+											id: id,
+											data: data,
+										},
+										function (rdata) {
+											bt.msg(rdata);
+											setTimeout(function () {
+												site.reload();
+											}, 1000);
+										}
+									);
+								}
+							});
+
+							// 保存证书
+							$('.saveCertificate').on('click', function () {
+								var key = $('[name="key"]').val(),
+									csr = $('[name="csr"]').val();
+								function set_ssl() {
+									if (key === '' || csr === '') return bt.msg({ status: false, msg: 'Please fill in the complete certificate content' });
+									bt.site.set_ssl(
+										web.name,
+										{
+											type: rdata.type,
+											siteName: rdata.siteName,
+											key: key,
+											csr: csr,
+										},
+										function (ret) {
+											if (ret.status) site.reload(7);
+											if (site.model_table) site.model_table.$refresh_table_list(true);
+											if (node_table) node_table.$refresh_table_list(true);
+											if (site_table) site_table.$refresh_table_list(true);
+											bt.msg(ret);
+										}
+									);
+								}
+
+								if ((key !== rdata.key && rdata.key) || (csr !== rdata.csr && rdata.key)) {
+									layer.confirm(
+										lan.site.set_ssl.edit_cert_comfirm,
+										{
+											icon: 3,
+											closeBtn: 2,
+											title: 'Certificate saving prompt',
+										},
+										set_ssl
+									);
+								} else {
+									set_ssl();
+								}
+							});
+
+							// 告警方式
+							$('.setAlarmMode').on('click', function () {
+								layer.close(layers);
+								alarmMode();
+							});
+
+							// 续签证书
+							$('.renewCertificate')
+								.unbind('click')
+								.on('click', function () {
+									var type = parseInt($(this).attr('data-type'));
+									switch (type /**/) {
+										case 3: // 商业证书续签
+											renewal_ssl_view({ oid: rdata.oid });
+											break;
+										case 2: // 宝塔证书 续签
+											apply_bt_certificate();
+											layer.msg('The current certificate type does not support one-click renewal. Please fill in the information application again', { icon: 2, time: 2000 });
+											break;
+										case 1: // Let's Encrypt 续签
+											site.ssl.renew_ssl(web.name, rdata.auth_type, rdata.index);
+											break;
+									}
+								});
+
+							// 关闭证书
+							$('.closeCertificate').on('click', function () {
+								site.ssl.set_ssl_status('CloseSSLConf', web.name);
+							});
+
+							// 切换证书类型
+							$('.cutSslType').on('click', function () {
+								var type = $(this).attr('data-type');
+								switch (type) {
+									case '0':
+										type = 0;
+										break;
+									case '1':
+										type = 3;
+										break;
+									case '2':
+										type = 2;
+										break;
+									case '3':
+										type = 1;
+										break;
+								}
+								$('#ssl_tabs span:eq(' + type + ')').trigger('click');
+							});
+
+							// 下载证书
+							$('.downloadCertificate').on('click', function () {
+								var key = $('[name="key"]').val(),
+									pem = $('[name="csr"]').val();
+								bt.site.download_cert(
+									{
+										siteName: web.name,
+										pem: pem,
+										key: key,
+									},
+									function (rdata) {
+										
+										if (rdata.status){ 
+											window.open('/download?filename=' + encodeURIComponent(rdata.msg));
+										}else{
+											layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
+										}
+									}
+								);
+							});
+						},
+					},
+					{
+						title: lan.site.set_ssl.menu2,
+						callback: function (robj) {
+							$.getScript('https://js.stripe.com/v3/');
+							robj = $('#webedit-con .tab-con');
+							bt.pub.get_user_info(function (udata) {
+								if (udata.status) {
+									var deploy_ssl_info = rdata,
+										html = '',
+										deploy_html = '',
+										product_list,
+										userInfo,
+										order_list,
+										is_check = true,
+										itemData,
+										activeData,
+										loadY,
+										pay_ssl_layer;
+									bt.send('get_order_list', 'ssl/get_order_list', {}, function (res) {
+										var rdata = res.res;
+										order_list = rdata;
+										if (rdata.length == 0) {
+											$('#ssl_order_list tbody').html(
+												'<tr><td colspan="5" style="text-align:center;">'+ lan.site.set_ssl.no_cert +' <a class="btlink" href="javascript:$(\'.ssl_business_application\').click();"> ->'+ lan.site.set_ssl.apply_certificate +'</a></td></tr>'
+											);
+											return;
+										}
+										$.each(rdata, function (index, item) {
+											if (deploy_ssl_info.type == 3 && deploy_ssl_info.oid === item.uc_id) {
+												deploy_html +=
+													'<tr data-index="' +
+													index +
+													'">' +
+													'<td><span>' +
+													item.domains.join('、') +
+													'</span></td><td><span class="size_ellipsis" title="' +
+													item.title +
+													'" style="width:110px;display:block;">' +
+													item.title +
+													'</span></td><td>' +
+													(function () {
+														var dayTime = new Date().getTime() / 1000,
+															color = '',
+															endTiems = '';
+														if (item.end_date != '') {
+															item.end_date = parseInt(item.end_date);
+															endTiems = parseInt((item.end_date - dayTime) / 86400);
+															if (endTiems <= 15) color = 'orange';
+															if (endTiems <= 7) color = 'red';
+															if (endTiems < 0) return '<span style="color:red">'+ lan.site.set_ssl.expired +'</span>';
+															return '<span style="' + color + '">'+ lan.site.set_ssl.expire_date_text(endTiems) +'</span>';
+														} else {
+															return '--';
+														}
+													})() + 
+													'</td><td>'+ lan.site.set_ssl.order_complate +'</td><td style="text-align:right">'+ lan.site.set_ssl.deployed +' | <a class="btlink" href="javascript:site.ssl.set_ssl_status(\'CloseSSLConf\',\'' +
+													web.name +
+													'\',2)">'+ lan.public.close +'</a></td></td>';
+											} else {
+												html +=
+													'<tr data-index="' +
+													index +
+													'">' +
+													'<td><span>' +
+													(item.domains == null ? '--' : item.domains.join('、')) +
+													'</span></td><td><span class="size_ellipsis" title="' +
+													item.title +
+													'" style="width:110px;display:block;">' +
+													item.title +
+													'</span></td><td>' +
+													(function () {
+														var dayTime = new Date().getTime() / 1000,
+															color = '',
+															endTiems = '';
+														if (item.end_date != '') {
+															item.end_date = parseInt(item.end_date);
+															endTiems = parseInt((item.end_date - dayTime) / 86400);
+															if (endTiems <= 15) color = 'orange';
+															if (endTiems <= 7) color = 'red';
+															if (endTiems < 0) return '<span style="color:red">'+ lan.site.set_ssl.expired +'</span>';
+															return '<span style="' + color + '">'+ lan.site.set_ssl.expire_date_text(endTiems) +'</span>';
+														} else {
+															return '--';
+														}
+													})() +
+													'</td><td>' +
+													(function () {
+														var suggest = '';
+														if (!item.install)
+															suggest =
+																'&nbsp;|<span class="bt_ssl_suggest" style="display: inline-block;white-space: nowrap;"><span>'+ lan.site.set_ssl.troubleshooting_method +'?</span><div class="suggest_content"><ul style="display:flex;"><li>'+ lan.site.set_ssl.check_oneself +'<p style="white-space: pre-wrap;">'+ lan.site.set_ssl.check_self_tip +'</p><div><a class="btlink" style="white-space: pre-wrap;" href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank">'+ lan.site.set_ssl.how_verify +'?</a></div></li><li style="position: relative;padding-left: 15px;">Labor Service Purchase<p style="white-space: pre-wrap;">Need deployment assistance? Human customer service available.</p><div><button class="btn btn-success btn-xs btn-title service_buy" type="button" data-oid="'+item.uc_id+'">Buy</button></div></li>' +
+																'</ul></div></span>';
+														if (item.certId == '') {
+															return '<span style="color:orange;cursor: pointer;" class="options_ssl" data-type="perfect_user_info">'+ lan.site.set_ssl.data_com +'</span>' + suggest;
+														} else if (item.status === 1) {
+															switch (item.order_status) {
+																case 'COMPLETE':
+																	return '<span style="color:#20a53a;">'+ lan.site.set_ssl.order_complate +'</span>';
+																	break;
+																case 'PENDING':
+																	return '<span style="color: orange;">'+ lan.site.set_ssl.in_verify +'</span>' + suggest;
+																	break;
+																case 'CANCELLED':
+																	return '<span style="color: #888;">'+ lan.site.set_ssl.cancelled +'</span>';
+																	break;
+																case 'FAILED':
+																	return '<span style="color:red;">'+ lan.site.set_ssl.app_fail +'</span>';
+																	break;
+																default:
+																	return '<span style="color: orange;">'+ lan.site.set_ssl.to_verified +'</span>';
+																	break;
+															}
+														} else {
+															switch (item.status) {
+																case 0:
+																	return '<span style="color: orange;">'+ lan.site.set_ssl.no_pay +'</span>';
+																	break;
+																case -1:
+																	return '<span style="color: #888;">'+ lan.site.set_ssl.cancelled +'</span>';
+																	break;
+																default:
+																	return '<span>--</span>';
+															}
+														}
+													})() +
+													'</td><td style="text-align:right;">' +
+													(function () {
+														var html = '';
+														if (item.renew) html += '<a href="javascript:;" class="btlink options_ssl" data-type="renewal_ssl">'+ lan.site.set_ssl.renew_cert +'</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+														if (item.certId == '') {
+															// if (item.install) html += '<a class="btlink options_ssl service_method" target="_blank">人工服务</a>&nbsp;|&nbsp;';
+															html += '<a href="javascript:;" class="btlink options_ssl"  data-type="perfect_user_info">'+ lan.site.set_ssl.complete_data +'</a>';
+															return html;
+														} else if (item.status === 1) {
+															var html = '';
+															switch (item.order_status) {
+																case 'COMPLETE': //申请成功
+																	return (
+																		'<a href="javascript:;" data-type="deploy_ssl" class="btlink options_ssl">'+ lan.site.set_ssl.deploy +'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/ssl?action=download_cert&uc_id=' +
+																		item.uc_id +
+																		'" data-type="download_ssl" class="btlink options_ssl" style="white-space: nowrap;">'+ lan.site.set_ssl.download +'</a>'
+																	);
+																	break;
+																case 'PENDING': //申请中
+																	// if (item.install) html += '<a class="btlink options_ssl service_method" target="_blank">人工服务</a>&nbsp;|&nbsp;';
+																	html += '<a href="javascript:;" data-type="verify_order" class="btlink options_ssl">'+ lan.site.set_ssl.verify +'</a>';
+																	return html;
+																	break;
+																case 'CANCELLED': //已取消
+																	return lan.site.set_ssl.no_action;
+																	break;
+																case 'FAILED':
+																	return '<a href="javascript:;" data-type="info_order" class="btlink options_ssl">'+ lan.site.set_ssl.detail +'</a>';
+																	break;
+																default:
+																	// if (item.install) html += '<a class="btlink options_ssl service_method" target="_blank">人工服务</a>&nbsp;|&nbsp;';
+																	html += '<a href="javascript:;" data-type="verify_order" class="btlink options_ssl">'+ lan.site.set_ssl.verify +'</a>';
+																	return html;
+																	break;
+															}
+														} else {
+															return '<span>--</span>';
+														}
+													})() +
+													'</td>' +
+													'</tr>';
+											}
+										});
+										$('#ssl_order_list tbody').html(deploy_html + html);
+										//解决方案事件
+										$('#ssl_order_list').on('click', '.bt_ssl_suggest', function (e) {
+											var $this = $(this);
+											var $layer = $this.parents('.layui-layer');
+											var $cont = $this.find('.suggest_content');
+											var rect = $this.offset();
+											var layerRect = $layer.offset();
+											var top = rect.top - layerRect.top + $this.height() + 7;
+											var left = rect.left - layerRect.left - 153;
+											$cont.css({
+												top: top + 'px',
+												left: left + 'px',
+												right: 'auto',
+												bottom: 'auto',
+												width:'410px',
+											});
+											$('.suggest_content').hide();
+											$cont.show();
+											$(document).one('click', function () {
+												$cont.hide();
+											});
+											e.stopPropagation();
+										});
+										// 表格滚动隐藏解决方案内容
+										$('.ssl_order_list').scroll(function (e) {
+											$('.suggest_content').hide();
+										});
+										//人工客服购买
+										$('#ssl_order_list').on('click', '.service_buy', function () {
+											var loads = bt.load('Payment order is being generated, please wait...');
+											bt.send(
+												'apply_cert_install_pay',
+												'ssl/apply_cert_install_pay',
+												{
+													uc_id: $(this).data('oid'),
+												},
+												function (res) {
+													loads.close();
+													if(!res.success){
+														layer.msg(res.res, { icon: 2 })
+														return
+													}
+													var stripe = Stripe(res.res.stripe_public_key);
+													stripe.redirectToCheckout({ sessionId: res.res.session_id });
+													// if (res.status != undefined && !res.status) {
+													// 	return layer.msg(res.msg, { time: 0, shadeClose: true, icon: 2, shade: 0.3 });
+													// }
+													// open_service_buy(res);
+												}
+											);
+										});
+
+										//人工客服咨询
+										$('.service_method').click(function () {
+											bt.onlineService();
+										});
+									});
+									robj.append(
+										'<div class="alert alert-success" style="padding: 10px 15px;"><div class="business_line" ><div class="business_info business_advantage" style="padding-top:0"><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.enterprise_certificate +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.exceptional_application +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.anti_hijackingTampering +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.increase_seo +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.indemnity_guarantee +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.refund_failure +'</span></div><div class="business_advantage_item" style="width:60%"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.official_use +'</span></div></div></div></div>\
+																		<div class= "mtb10" >\
+																		<button class="btn btn-success btn-sm btn-title ssl_business_application" type="button">'+ lan.site.set_ssl.apply_certificate +'</button>\
+																		<div class="divtable mtb10 ssl_order_list"  style="height: 250px;overflow-y: auto;">\
+																				<table class="table table-hover" id="ssl_order_list" style="table-layout: fixed;">\
+																						<thead><tr><th width="130px">'+ lan.public_backup.domain +'</th><th  width="110px">'+ lan.site.set_ssl.certificate_type +'</th><th>'+ lan.site.set_ssl.expire_date +'</th><th style="width:130px;">'+ lan.public.status +'</th><th style="text-align:right;width:140px;">'+ lan.public.action +'</th></tr></thead>\
+																						<tbody><tr><td colspan="5" style="text-align:center"><img src="/static/images/loading-2.gif" style="width:15px;vertical-align: middle;"><span class="ml5" style="vertical-align: middle;">'+ lan.site.set_ssl.get_certificate_list +'...</span></td></tr></tbody>\
+																				</table>\
+																		</div>\
+																</div><ul class="help-info-text c7">\
+																		<li style="color:red;">'+ lan.site.set_ssl.bus_tip1 +'</li>\
+																		<li>'+ lan.site.set_ssl.bus_tip2 +'</li>\
+																		<li>'+ lan.site.set_ssl.bus_tip3 +'</li>\
+																		<li>'+ lan.site.set_ssl.bus_tip4 +'</li>\
+																</ul>'
+									);
+									$('.service_buy_before').click(function () {
+										bt.onlineService();
+									});
+									bt.fixed_table('ssl_order_list');
+									/**
+									 * @description 证书购买人工服务
+									 * @param {Object} param 支付回调参数
+									 * @returns void
+									 */
+									function open_service_buy(param) {
+										var order_info = {},
+											is_check = true;
+										pay_ssl_layer = bt.open({
+											type: 1,
+											title: '购买人工服务',
+											area: ['790px', '770px'],
+											skin: 'service_buy_view',
+											content:
+												'<div class="bt_business_ssl">\
+												<div class="bt_business_tab ssl_applay_info active">\
+														<div class="guide_nav"><span class="active">微信支付</span><span >支付宝支付</span></div>\
+														<div class="paymethod">\
+																<div class="pay-wx" id="PayQcode"></div>\
+														</div>\
+														<div class="lib-price-box text-center">\
+																<span class="lib-price-name f14"><b>总计</b></span>\
+																<span class="price-txt"><b class="sale-price"></b>元</span>\
+														</div>\
+														<div class="lib-price-detailed">\
+																<div class="info">\
+																		<span class="text-left">商品名称</span>\
+																		<span class="text-right"></span>\
+																</div>\
+																<div class="info">\
+																		<span class="text-left">下单时间</span>\
+																		<span class="text-right"></span>\
+																</div>\
+														</div>\
+														<div class="lib-prompt"><span>微信扫一扫支付</span></div>\
+												</div>\
+												<div class="bt_business_tab order_service_check">\
+														<div class="prder_pay_service_left">\
+																<div class="order_pay_title">支付成功</div>\
+																<div class="lib-price-detailed">\
+																		<div class="info">\
+																				<span class="text-left">商品名称：</span>\
+																				<span class="text-right"></span>\
+																		</div>\
+																		<div class="info-line"></div>\
+																		<div class="info">\
+																				<span class="text-left">商品价格：</span>\
+																				<span class="text-right"></span>\
+																		</div>\
+																		<div class="info" style="display:block">\
+																				<span class="text-left">下单时间：</span>\
+																				<span class="text-right"></span>\
+																		</div>\
+																</div>\
+														</div>\
+														<div class="prder_pay_service_right">\
+																<div class="order_service_qcode">\
+																		<div class="order_open_title">请打开微信扫一扫联系人工客服</div>\
+																		<div class="order_wx_qcode"><img id="contact_qcode" src="/static/images/customer-qrcode.png" alt="qrcode" style="width: 120px;"><i class="wechatEnterprise"></i></div>\
+																</div>\
+														</div>\
+												</div>\
+										</div>',
+											success: function (layero, indexs) {
+												var order_wxoid = null,
+													qq_info = null;
+
+												$('.guide_nav span').click(function () {
+													$(this).addClass('active').siblings().removeClass('active');
+													$('.lib-prompt span').html($(this).index() == 0 ? '微信扫一扫支付' : '支付宝扫一扫支付');
+													$('#PayQcode').empty();
+													$('#PayQcode').qrcode({
+														render: 'canvas',
+														width: 200,
+														height: 200,
+														text: $(this).index() != 0 ? order_info.alicode : order_info.wxcode,
+													});
+												});
+												reader_applay_qcode(
+													$.extend(
+														{
+															name: '证书安装服务',
+															price: param.price,
+															time: bt.format_data(new Date().getTime()),
+														},
+														param
+													),
+													function (info) {
+														check_applay_status(function (rdata) {
+															$('.order_service_check').addClass('active').siblings().removeClass('active');
+															$('.order_service_check .lib-price-detailed .text-right:eq(0)').html(info.name);
+															$('.order_service_check .lib-price-detailed .text-right:eq(1)').html('￥' + info.price);
+															$('.order_service_check .lib-price-detailed .text-right:eq(2)').html(info.time);
+															$('#ssl_tabs .on').click();
+															//人工客服二维码
+															$('#contact_qcode').qrcode({
+																render: 'canvas',
+																width: 120,
+																height: 120,
+																text: 'https://work.weixin.qq.com/kfid/kfc9151a04b864d993f',
+															});
+															//缩小展示窗口
+															$('.service_buy_view')
+																.width(690)
+																.height(350)
+																.css({
+																	//设置最外层弹窗大小
+																	left: (document.body.clientWidth - 690) / 2 + 'px',
+																	top: (document.body.clientHeight - 350) / 2 + 'px',
+																});
+														}); //检测支付状态
+													}
+												); //渲染二维码
+
+												function reader_applay_qcode(data, callback) {
+													order_wxoid = data.wxoid;
+													qq_info = data.qq;
+													order_info = data;
+
+													$('#PayQcode').empty().qrcode({
+														render: 'canvas',
+														width: 240,
+														height: 240,
+														text: data.wxcode,
+													});
+													$('.price-txt .sale-price').html(data.price);
+													$('.lib-price-detailed .info:eq(0) span:eq(1)').html(data.name);
+													$('.lib-price-detailed .info:eq(1) span:eq(1)').html(data.time);
+													if (typeof data.qq != 'undefined') {
+														$('.order_pay_btn a:eq(0)').attr({
+															href: data.qq,
+															target: '_blank',
+														});
+													} else {
+														$('.order_pay_btn a:eq(0)').remove();
+													}
+													if (callback) callback(data);
+												}
+
+												function check_applay_status(callback) {
+													bt.send(
+														'get_wx_order_status',
+														'auth/get_wx_order_status',
+														{
+															wxoid: order_wxoid,
+														},
+														function (res) {
+															if (res.status) {
+																is_check = false;
+																if (callback) callback(res);
+															} else {
+																if (!is_check) return false;
+																setTimeout(function () {
+																	check_applay_status(callback);
+																}, 2000);
+															}
+														}
+													);
+												}
+											},
+											cancel: function (index) {
+												if (is_check) {
+													if (confirm('当前正在支付订单，是否取消？')) {
+														layer.close(index);
+														is_check = false;
+													}
+													return false;
+												}
+											},
+										});
+									}
+									/**
+									 * @description 对指定表单元素的内容进行效验
+									 * @param {Object} el jqdom对象
+									 * @param {String} name 表单元素name名称
+									 * @param {*} value 表单元素的值
+									 * @returns 返回当前元素的值
+									 */
+									function check_ssl_user_info(el, name, value, config) {
+										el.css('borderColor', '#ccc');
+										var status;
+										switch (name) {
+											case 'domains':
+												el = site.domain_dns_type == 'multi' ? $('.dns_domains_multi_view'): el
+												value = bt.strim(value).replace(/\n*$/, '');
+												var list = value.split('\n');
+												if (value == '') {
+													set_info_tips(el, { msg: 'The domain name cannot be empty!', color: 'red' });
+													status = false;
+												}
+												if (!Array.isArray(list)) list = [list];
+												$.each(list, function (index, item) {
+													if (bt.check_domain(item)) {
+														var type = item.indexOf(),
+															index = null;
+														if (config.code.indexOf('multi') > -1) index = 0;
+														if (config.code.indexOf('wildcard') > -1) index = 1;
+														if (config.code.indexOf('wildcard') > -1 && config.code.indexOf('multi') > -1) index = 2;
+														switch (index) {
+															case 0:
+																if (list.length > config.limit) {
+																	set_info_tips(el, { msg: lan.site.set_ssl.more_cert_tip1(config.limit), color: 'red' });
+																	status = false;
+																} else if (list.length == 1) {
+																	set_info_tips(el, { msg: lan.site.set_ssl.more_cert_tip2(config.limit), color: 'red' });
+																	status = false;
+																}
+																break;
+															case 1:
+																if (item.indexOf('*') != 0) {
+																	set_info_tips(el, { msg: 'Wildcard domain name format error, correct writing \'*.bt.cn\'', color: 'red' });
+																	status = false;
+																}
+																break;
+															case 2:
+																if (list.length > config.limit) {
+																	set_info_tips(el, { msg: lan.site.set_ssl.more_cert_tip1(config.limit), color: 'red' });
+																	status = false;
+																} else if (list.length == 1) {
+																	set_info_tips(el, { msg: lan.site.set_ssl.more_cert_tip2(config.limit), color: 'red' });
+																	status = false;
+																}
+																if (item.indexOf('*') != 0) {
+																	set_info_tips(el, { msg: 'Wildcard domain name format error, correct writing \'*.bt.cn\'', color: 'red' });
+																	status = false;
+																}
+																break;
+														}
+													} else {
+														if (value != '') {
+															set_info_tips(el, { msg: '【 ' + item + ' 】' + ',Domain name format error!', color: 'red' });
+														} else {
+															set_info_tips(el, { msg: 'The domain name cannot be empty!', color: 'red' });
+														}
+														status = false;
+													}
+												});
+												value = list;
+												break;
+											case 'state':
+												if (value == '') {
+													set_info_tips(el, { msg: 'The province cannot be empty!', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'city':
+												if (value == '') {
+													set_info_tips(el, { msg: 'Your city/county cannot be empty!', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'city':
+												if (value == '') {
+													set_info_tips(el, { msg: 'Your city/county cannot be empty!', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'organation':
+												if (value == '') {
+													set_info_tips(el, { msg: 'The company name cannot be empty, if it is an individual application, please enter your name!', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'address':
+												if (value == '') {
+													set_info_tips(el, { msg: 'Please enter the company address, cannot be empty, specific requirements see the description', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'name':
+												if (value == '') {
+													set_info_tips(el, { msg: 'User name cannot be empty!', color: 'red' });
+													status = false;
+												}
+												break;
+											case 'email':
+												if (value == '') {
+													set_info_tips(el, { msg: 'User email address cannot be empty!', color: 'red' });
+													status = false;
+												}
+												if (!bt.check_email(value)) {
+													set_info_tips(el, { msg: 'User email address format error!', color: 'red' });
+													status = false;
+												}
+												break;
+											// case 'mobile':
+											// 	if (value != '') {
+											// 		if (!bt.check_phone(value)) {
+											// 			set_info_tips(el, { msg: 'User mobile phone number format error!', color: 'red' });
+											// 			status = false;
+											// 		}
+											// 	}
+											// 	break;
+											// case 'phonePre':
+											// 	if (value != '') {
+											// 		var reg = /^\+\d+/
+											// 		if (!reg.test(value)) {
+											// 			set_info_tips(el, { msg: 'User mobile phone number format error!', color: 'red' });
+											// 			status = false;
+											// 		}
+											// 	}
+											// 	break;
+											default:
+												status = value;
+												break;
+										}
+										if (typeof status == 'boolean' && status === false) return false;
+										status = value;
+										return status;
+									}
+
+									/**
+									 * @description 设置元素的提示和边框颜色
+									 * @param {Object} el jqdom对象
+									 * @param {Object} config  = {
+									 *  @param {String} config.msg 提示内容
+									 *  @param {String} config.color 提示颜色
+									 * }
+									 */
+									function set_info_tips(el, config) {
+										$('html').append($('<span id="width_test">' + config.msg + '</span>'));
+										layer.tips(config.msg, el, { tips: [1, config.color], time: 3000 });
+										el.css('borderColor', config.color);
+										$('#width_test').remove();
+									}
+									/**
+									 * @description 更换域名验证方式
+									 * @param {Number} oid 域名订单ID
+									 * @returns void
+									 */
+									function again_verify_veiw(oid, is_success) {
+										var loads = bt.load('Please wait while obtaining verification method...');
+										bt.send('get_verify_result', 'ssl/get_verify_result', { uc_id: oid }, function (res) {
+											loads.close();
+											var type = res.data.dcvList[0].dcvMethod;
+											loadT = bt.open({
+												type: 1,
+												title: lan.site.set_ssl.ver_file(type),
+												area: '520px',
+												btn: [lan.public.edit, lan.public.cancel],
+												content:
+													'<div class="bt-form pd15"><div class="line"><span class="tname">Verification mode</span><div class="info-r"><select class="bt-input-text mr5" name="file_rule" style="width:250px"></select></div></div>\
+																											<ul class="help-info-text c7">'+ lan.site.set_ssl.file_ver_tip +'</ul>\
+																									</div>',
+												success: function (layero, index) {
+													var _option_list = { 'File Validation (HTTP)': 'HTTP_CSR_HASH', 'File Validation (HTTPS)': 'HTTPS_CSR_HASH', 'DNS Authentication (CNAME resolution)': 'CNAME_CSR_HASH' },
+														_option = '';
+													$.each(_option_list, function (index, item) {
+														_option += '<option value="' + item + '" ' + (type == item ? 'selected' : '') + '>' + index + '</option>';
+													});
+													$('select[name=file_rule]').html(_option);
+												},
+												yes: function (index, layero) {
+													var new_type = $('select[name=file_rule]').val();
+													if (type == new_type) return layer.msg('Duplicate authentication mode', { icon: 2 });
+													var loads = bt.load('Changing the verification mode, please wait...');
+													bt.send('again_verify', 'ssl/again_verify', { uc_id: oid, dcv_method: new_type }, function (res) {
+														loads.close();
+														if (res.success) layer.close(index);
+														layer.msg(res.res, { icon: res.success ? 1 : 2 });
+													});
+												},
+											});
+										});
+									}
+									/**
+									 * @description 验证域名
+									 * @param {Number} oid 域名订单ID
+									 * @param {Boolean} openTips 是否展示状态
+									 * @returns void
+									 */
+									function verify_order_veiw(oid, is_success, openTips) {
+										var loads = bt.load('Obtaining verification results, please wait...');
+										bt.send('get_verify_result', 'ssl/get_verify_result', { uc_id: oid }, function (res) {
+											loads.close();
+											if (!res.status) {
+												bt.msg(res);
+												return false;
+											}
+											if (res.status == 'COMPLETE') {
+												site.ssl.reload();
+												return false;
+											}
+											var rdata = res.data;
+											var domains = [],
+												type = rdata.dcvList[0].dcvMethod != 'CNAME_CSR_HASH',
+												info = {};
+											$.each(rdata.dcvList, function (key, item) {
+												domains.push(item['domainName']);
+											});
+											if (type) {
+												info = { fileName: rdata.DCVfileName, fileContent: rdata.DCVfileContent, filePath: '/.well-known/pki-validation/', paths: res.paths, kfqq: res.kfqq };
+											} else {
+												info = { dnsHost: rdata.DCVdnsHost, dnsType: rdata.DCVdnsType, dnsValue: rdata.DCVdnsValue, paths: res.paths, kfqq: res.kfqq };
+											}
+											if (is_success) {
+												is_success({ type: type, domains: domains, info: info });
+												return false;
+											}
+											loadT = bt.open({
+												type: 1,
+												title: lan.site.set_ssl.ver_file(type),
+												area: '620px',
+												content: reader_domains_cname_check({ type: type, domains: domains, info: info }),
+												success: function (layero, index) {
+													//展示验证状态
+													setTimeout(function () {
+														if (openTips && res.status == 'PENDING') layer.msg('Verification, please wait patiently', { time: 0, shadeClose: true, icon: 0, shade: 0.3 });
+													}, 500);
+													var clipboard = new ClipboardJS('.parsing_info .parsing_icon');
+													clipboard.on('success', function (e) {
+														bt.msg({ status: true, msg: 'Successful copy' });
+														e.clearSelection();
+													});
+													clipboard.on('error', function (e) {
+														bt.msg({ status: true, msg: 'Copy failed, please manually ctrl+c copy!' });
+													});
+													$('.verify_ssl_domain').click(function () {
+														verify_order_veiw(oid, false, true);
+														layer.close(index);
+													});
+
+													$('.set_verify_type').click(function () {
+														again_verify_veiw(oid);
+														layer.close(index);
+													});
+
+													$('.return_ssl_list').click(function () {
+														layer.close(index);
+														$('#ssl_tabs span.on').click();
+													});
+
+													// 重新验证按钮
+													$('.domains_table').on('click', '.check_url_results', function () {
+														var _url = $(this).data('url'),
+															_con = $(this).data('content');
+														check_url_txt(_url, _con, this);
+													});
+												},
+											});
+										});
+									}
+
+									/**
+									 * @description 重新验证
+									 * @param {String} url 验证地址
+									 * @param {String} content 验证内容
+									 * @returns 返回验证状态
+									 */
+									function check_url_txt(url, content, _this) {
+										var loads = bt.load('Obtaining verification results, please wait...');
+										bt.send('check_url_txt', 'ssl/check_url_txt', { url: url, content: content }, function (res) {
+											loads.close();
+											var html =
+												'<span style="color:red">fail[' + res + ']</span><a href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a>';
+											if (res === 1) {
+												html = '<a class="btlink">pass</a>';
+											}
+											$(_this).parents('tr').find('td:nth-child(2)').html(html);
+										});
+									}
+									/**
+									 * @description 渲染验证模板接口
+									 * @param {Object} data 验证数据
+									 * @returns void
+									 */
+									function reader_domains_cname_check(data) {
+										var html = '';
+										if (data.type) {
+											var check_html =
+												'<div class="bt-table domains_table" style="margin-bottom:20px"><div class="divtable"><table class="table table-hover" style="table-layout:fixed;"><thead><tr><th width="250">URL</th><th width="85">'+ lan.site.set_ssl.verification_result +'</th><th style="text-align:right;">'+ lan.public.action +'</th></thead>';
+											var paths = data.info.paths;
+											for (var i = 0; i < paths.length; i++) {
+												check_html +=
+													'<tr><td><span title="' +
+													paths[i].url +
+													'" class="lib-ssl-overflow-span-style" style="display: inline-block;width: 100%;overflow: hidden;text-overflow: ellipsis;">' +
+													paths[i].url +
+													'</span></td><td>' +
+													(paths[i].status == 1
+														? '<a class="btlink">pass</a>'
+														: '<span style="color:red">fail[' +
+															paths[i].status +
+															']</span><a href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank" class="bt-ico-ask" style="cursor: pointer;">?</a>') +
+													'</td><td style="text-align:right;"><a href="javascript:bt.pub.copy_pass(\'' +
+													paths[i].url +
+													'\');" class="btlink">copy</a> | <a href="' +
+													paths[i].url +
+													'" target="_blank" class="btlink">open</a> | <a data-url="' +
+													paths[i].url +
+													'" data-content="' +
+													data.info.fileContent +
+													'" class="btlink check_url_results">reverify</a></td>';
+											}
+											check_html += '</table></div></div>';
+											html =
+												'<div class="lib-ssl-parsing">\
+											<div class="parsing_tips">Please give the following domain name【 <span class="highlight">' +
+												data.domains.join('、') +
+												'</span> 】Add a verification file. The verification information is as follows：</div>\
+											<div class="parsing_parem"><div class="parsing_title">File location：</div><div class="parsing_info"><input type="text" name="filePath"  class="parsing_input border" value="' +
+												data.info.filePath +
+												'" readonly="readonly" style="width:345px;"/></div></div>\
+											<div class="parsing_parem"><div class="parsing_title">File name：</div><div class="parsing_info"><input type="text" name="fileName" class="parsing_input" value="' +
+												data.info.fileName +
+												'" readonly="readonly" style="width:345px;"/><span class="parsing_icon" data-clipboard-text="' +
+												data.info.fileName +
+												'">copy</span></div></div>\
+											<div class="parsing_parem"><div class="parsing_title" style="vertical-align: top;">File content：</div><div class="parsing_info"><textarea name="fileValue"  class="parsing_textarea" readonly="readonly" style="width:350px;">' +
+												data.info.fileContent +
+												'</textarea><span class="parsing_icon" style="display: block;width: 60px;border-radius: 3px;" data-clipboard-text="' +
+												data.info.fileContent +
+												'">copy</span></div></div>' +
+												check_html +
+												'<div class="parsing_tips" style="font-size:13px;line-height: 24px;">· The verification result is verified by [this server], and the actual verification will be verified by [CA server]. Please wait patiently</br>· Please ensure that all items in the above list are successfully verified and click [Verify domain name] to submit verification again</br>· If the authentication fails for a long time, please change it to [DNS authentication] through [Modify Authentication method].</br>· SSL Adds the file authentication mode ->> <a href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank" class="btlink" >View the tutorial</a></div>\
+															<div class="parsing_parem" style="padding: 0 0px;"><button type="submit" class="btn btn-success verify_ssl_domain">Verify Domain</button><button type="submit" class="btn btn-default set_verify_type">Modify Auth Mode</button><button type="submit" class="btn btn-default return_ssl_list">Return list</button></div>\
+													</div>';
+										} else {
+											html =
+												'<div class="lib-ssl-parsing">\
+													<div class="parsing_tips">Please give the following domain name【 <span class="highlight">' +
+												data.domains.join('、') +
+												'</span> 】add“' +
+												data.info.dnsType +
+												'”the parsing parameters as follows：</div>\
+													<div class="parsing_parem"><div class="parsing_title">Host record：</div><div class="parsing_info"><input type="text" name="host" class="parsing_input" value="' +
+												data.info.dnsHost +
+												'" readonly="readonly" /><span class="parsing_icon" data-clipboard-text="' +
+												data.info.dnsHost +
+												'">copy</span></div></div>\
+													<div class="parsing_parem"><div class="parsing_title">Record type：</div><div class="parsing_info"><input type="text" name="host" class="parsing_input" value="' +
+												data.info.dnsType +
+												'" readonly="readonly" style="border-right: 1px solid #ccc;border-radius: 3px;width: 390px;" /></div></div>\
+													<div class="parsing_parem"><div class="parsing_title">Record value：</div><div class="parsing_info"><input type="text" name="domains"  class="parsing_input" value="' +
+												data.info.dnsValue +
+												'" readonly="readonly" /><span class="parsing_icon" data-clipboard-text="' +
+												data.info.dnsValue +
+												'">copy</span></div></div>\
+													<div class="parsing_tips" style="font-size:13px;line-height: 24px;">· The verification result is verified by [this server], and the actual verification will be verified by [CA server]. Please wait patiently</br>· Please ensure that all items in the above list are successfully verified and click [Verify domain name] to submit verification again</br>· If the authentication fails for a long time, please change it to [DNS authentication] through [Modify Authentication method].</br>· How to add domain name resolution，And consult the server operator</br>· <a class="btlink" href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank">How do I verify commercial certificates?</a></div>\
+													<div class="parsing_parem" style="padding: 0 0px;"><button type="submit" class="btn btn-success verify_ssl_domain">Verify Domain</button><button type="submit" class="btn btn-default set_verify_type">Modify Auth Mode</button><button type="submit" class="btn btn-default return_ssl_list">Return list</button></div>\
+											</div>';
+										}
+										return html;
+									}
+									// 购买证书信息
+									function pay_ssl_business() {
+										var order_info = {},
+											user_info = {},
+											is_check = false;
+										var loadT = bt.load(lan.site.set_ssl.get_apply_cert);
+										bt.send('get_product_list_v2', 'ssl/get_product_list_v2', {}, function (rdata) {
+											loadT.close();
+											var res = rdata.res;
+											var dataLength = res['data'] && res.data.length,
+												data_list = res.data,
+												list = [],
+												prompt_msg = res.info;
+											bt.open({
+												type: 1,
+												title: lan.site.set_ssl.buy_cert,
+												area: ['810px', '832px'],
+												skin: 'layer-business-ssl',
+												content:
+													'\
+												<span style="width:700px;display: inline-block;line-height: 30px;background: #F2DEDF;color: #A5374A;font-size: 12px;border-radius: 2px;position: relative;top: 25px;left: 50px;">\
+													<span class="glyphicon glyphicon-alert" style="color: #A5374A; margin-right: 10px;"></span>\
+													'+ lan.site.set_ssl.bus_cert_tip +'</span>\
+												<div>\
+													<div class="business_ssl_form bt_business_tab active">\
+														<div class="bt-form" style="padding: 30px 20px 20px;">\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.domain_num +'</span>\
+																<div class="info-r">\
+																	<div class="domain_number_group">\
+																		<div class="domain_number_reduce is_disable" data-type="reduce"></div>\
+																		<input type="number" class="domain_number_input" value="" />\
+																		<div class="domain_number_add"  data-type="add"></div>\
+																	</div>\
+																	<div class="unit mt5 domain_number_tips"></div>\
+																	<div class="tips_gray mt5"><p>'+ lan.site.set_ssl.select_domain_num +'</p></div>\
+																</div>\
+															</div>\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.cert_class +'</span>\
+																<div class="info-r">\
+																	<div class="inlineBlock" style="display:flex">\
+																		<div class="ssl_item ssl_type_item mr10" data-type="OV">\
+																			<div class="ssl_item_title">'+ lan.site.set_ssl.ov_cert +'</div>\
+																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_enterprise +'</div>\
+																		</div>\
+																		<div class="ssl_item ssl_type_item mr10" data-type="DV">\
+																			<em>Hot</em>\
+																			<div class="ssl_item_title">'+ lan.site.set_ssl.dv_cert +'</div>\
+																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_pseson +'</div>\
+																		</div>\
+																		<div class="ssl_item ssl_type_item mr10" data-type="EV">\
+																			<div class="ssl_item_title">'+ lan.site.set_ssl.ev_cert +'</div>\
+																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_large +'</div>\
+																		</div>\
+																	</div>\
+																	<div class="tips_gray ssl_type_tips"></div>\
+																</div>\
+															</div>\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.cert_brand +'</span>\
+																<div class="info-r">\
+																	<div class="inlineBlock business_brand_list">\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="Positive" title="Positive">Positive</div>\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="sslTrus" title="sslTrus">sslTrus</div>\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="CFCA" title="CFCA">CFCA</div>\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="Digicert" title="Digicert">Digicert</div>\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="GeoTrust" title="GeoTrust">GeoTrust</div>\
+																		<div class="ssl_item ssl_brand_item mr10" data-type="Sectigo" title="Sectigo">Sectigo</div>\
+																	</div>\
+																	<div class="tips_gray ssl_brand_tips"></div>\
+																</div>\
+															</div>\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.cert_type +'</span>\
+																<div class="info-r">\
+																	<div class="inlineBlock business_price_list">\
+																		<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.one_domain +'</div>\
+																		<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.more_domain +'</div>\
+																	</div>\
+																	<div class="tips_gray ssl_price_tips"></div>\
+																</div>\
+															</div>\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.pur_period +'</span>\
+																<div class="info-r">\
+																	<div class="inlineBlock business_year_list">\
+																		<div class="ssl_item ssl_year_item mr10" data-year="1">'+ lan.site.set_ssl.num_year_test(1) +'</div>\
+																		<div class="ssl_item ssl_year_item mr10" data-year="2">'+ lan.site.set_ssl.num_year_test(2) +'</div>\
+																		<div class="ssl_item ssl_year_item mr10" data-year="3">'+ lan.site.set_ssl.num_year_test(3) +'</div>\
+																		<div class="ssl_item ssl_year_item mr10" data-year="4">'+ lan.site.set_ssl.num_year_test(4) +'</div>\
+																		<div class="ssl_item ssl_year_item mr10" data-year="5">'+ lan.site.set_ssl.num_year_test(5) +'</div>\
+																	</div>\
+																	<div class="tips_gray mt5 ssl_year_tips"></div>\
+																</div>\
+															</div>\
+															<div class="line">\
+																<span class="tname">'+ lan.site.set_ssl.deploy_service +'</span>\
+																<div class="info-r">\
+																	<div class="inlineBlock">\
+																		<div class="ssl_item ssl_service_item mr10" data-install="0" style="width: 90px;">'+ lan.site.set_ssl.no_necess +'</div>\
+																			<div class="ssl_item ssl_service_item mr10 active" data-serviceprice="28.9" data-install="1" style="width: 90px;">'+ lan.site.set_ssl.deploy_service +'</div>\
+																			<span class="unit ssl_service_unit"></span>\
+																	</div>\
+																	<div class="tips_gray mt5 ssl_service_tips"></div>\
+																</div>\
+															</div>\
+														</div>\
+														<div class="business_ssl_btn">\
+															<div class="mr5">\
+																<div class="bname">'+ lan.site.set_ssl.goods_include +'：<span class="ml10"></span></div>\
+																<div>'+ lan.site.set_ssl.total_cost +'：<div class="present_price ml10">\
+																		<span>$278.66</span>/1year（'+ lan.site.set_ssl.in_service +'）\
+																	</div>\
+																	<div class="original_price">Original price$342/1year</div>\
+																</div>\
+															</div>\
+															<div class="inlineBlock ml10">\
+																<button type="button" class="business_ssl_pay">'+ lan.site.set_ssl.buy_now +'</button>\
+															</div>\
+														</div>\
+													</div>\
+													<div class="bt_business_tab ssl_applay_info">\
+														<div class="guide_nav">\
+															<span class="active">'+ lan.site.set_ssl.wechat_pay +'</span>\
+															<span>'+ lan.site.set_ssl.Alipay_pay +'</span>\
+														</div>\
+														<div class="paymethod">\
+															<div class="pay-wx" id="PayQcode"></div>\
+														</div>\
+														<div class="lib-price-box text-center">\
+															<span class="lib-price-name f14"><b>'+ lan.site.set_ssl.total +'</b></span>\
+															<span class="price-txt">$<b class="sale-price"></b></span>\
+														</div>\
+														<div class="lib-price-detailed">\
+															<div class="info">\
+																<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
+																<span class="text-right"></span>\
+															</div>\
+															<div class="info">\
+																<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
+																<span class="text-right"></span>\
+															</div>\
+														</div>\
+														<div class="lib-prompt">\
+															<span>'+ lan.site.set_ssl.wechat_swipe +'</span>\
+														</div>\
+													</div>\
+													<div class="bt_business_tab ssl_order_check" style="padding: 25px 60px 0 60px;">\
+														<div class="order_pay_title">'+ lan.site.set_ssl.pay_sus +'</div>\
+														<div class="lib-price-detailed">\
+															<div class="info">\
+																<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
+																<span class="text-right"></span>\
+															</div>\
+															<div class="info">\
+																<span class="text-left">'+ lan.site.set_ssl.com_price +'</span>\
+																<span class="text-right"></span>\
+															</div>\
+															<div class="info">\
+																<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
+																<span class="text-right"></span>\
+															</div>\
+														</div>\
+														<div class="order_pay_btn">\
+															<a href="javascript:;">人工服务</a>\
+															<a href="javascript:;" data-type="info">'+ lan.site.set_ssl.com_info +'</a>\
+															<a href="javascript:;" data-type="clear">'+ lan.site.set_ssl.return_list +'</a>\
+														</div>\
+														<ul class="help-info-text c7" style="padding:15px 0 0 70px;font-size:13px;">\
+															<li>'+ lan.site.set_ssl.buy_cert_tip1 +'</li>\
+														</ul>\
+													</div>\
+												</div>',
+												// <div class="ssl_item ssl_service_item mr10" data-install="1" style="width: 90px;">'+ lan.site.set_ssl.deploy_service +'</div>\
+												// <div class="ssl_item ssl_service_item mr10" data-install="2" style="width: 130px;">'+ lan.site.set_ssl.service_secret +'</div>\
+												// <li>如果已购买人工服务，请点击“人工服务”咨询帮助。</li>\
+												success: function (layero, indexs) {
+													$.getScript('https://js.stripe.com/v3/');
+
+													var numBtn = $('.domain_number_reduce,.domain_number_add'),
+														ssl_type_item = $('.ssl_type_item'),
+														ssl_brand_item = $('.ssl_brand_item'),
+														ssl_service_item = $('.ssl_service_item'),
+														ssl_price_item = $('.ssl_price_item'),
+														ssl_year_item = $('.ssl_year_item'),
+														business_brand_list = $('.business_brand_list'),
+														input = $('.domain_number_input'),
+														ssl_type_tips = $('.ssl_type_tips'),
+														ssl_brand_tips = $('.ssl_brand_tips'),
+														ssl_year_tips = $('.ssl_year_tips'),
+														ssl_price_tips = $('.ssl_price_tips'),
+														ssl_service_unit = $('.ssl_service_unit'),
+														ssl_service_tips = $('.ssl_service_tips');
+													var dataInfo = [],
+														ylist = [],
+														is_single = false, //是否存在单域名
+														is_worldxml = false, //是否存在泛域名
+														year = 1,
+														serviceprice = 0,
+														install = 0,
+														add_domain_number = 0,
+														order_id = null,
+														qq_info = null;
+
+													$('.ssl-service').click(function () {
+														bt.onlineService();
+													});
+
+													// 数量加减
+													numBtn.click(function () {
+														var type = $(this).data('type'),
+															reduce = input.prev(),
+															add = input.next(),
+															min = 1,
+															max = 99,
+															input_val = parseInt(input.val());
+														if ($(this).hasClass('is_disable')) {
+															layer.msg(type === 'reduce' ? 'The number of current domain names cannot be 0' : 'The number of domain names cannot be greater than 99');
+															return false;
+														}
+														switch (type) {
+															case 'reduce':
+																input_val--;
+																if (min > input_val < max) {
+																	input.val(min);
+																}
+																break;
+															case 'add':
+																input_val++;
+																if (min > input_val < max) {
+																	input.val(input_val);
+																	add.removeClass('is_disable');
+																}
+																if (input_val == max) $(this).addClass('is_disable');
+																break;
+														}
+														if (input_val == min) {
+															reduce.addClass('is_disable');
+														} else if (input.val() == max) {
+															add.addClass('is_disable');
+														} else {
+															reduce.removeClass('is_disable');
+															add.removeClass('is_disable');
+														}
+
+														reader_product_info({ current_num: parseInt(input_val) });
+													});
+													$('.domain_number_input').on('input', function () {
+														var _input = $(this),
+															input_val = parseInt(_input.val()),
+															input_min = 1,
+															input_max = 99,
+															reduce = _input.prev(),
+															add = _input.next();
+														if (input_val <= input_min) {
+															_input.val(input_min);
+															reduce.addClass('is_disable');
+														} else if (input_val >= input_max) {
+															input.val(input_max);
+															add.addClass('is_disable');
+														} else {
+															reduce.removeClass('is_disable');
+															add.removeClass('is_disable');
+														}
+														if (_input.val() == '') {
+															_input.val(input_min);
+															input_val = input_min;
+															reduce.addClass('is_disable');
+														}
+														reader_product_info({ current_num: parseInt(_input.val()) });
+													});
+
+													function automatic_msg() {
+														layer.msg('The current certificate brand does not support multi-domain certificate, has automatically switched to the supported certificate brand for you!');
+													}
+
+													//总计费用信息
+													function reader_product_info(config) {
+														config.current_num = config.current_num !== '' ? config.current_num : 1;
+														add_domain_number = config.current_num;
+														input.val(config.current_num !== '' ? config.current_num : 1);
+														var p_index = $('.ssl_price_item.active').index(); //证书类型下标
+														var year_list = ylist.filter(function (s) {
+															return p_index ? s.code.indexOf('wildcard') > -1 : s.code.indexOf('wildcard') === -1;
+														});
+														var is_flag = year_list.some(function (s) {
+															return s.code.indexOf('multi') > -1 || s.brand === 'Digicert';
+														});
+														if (p_index) {
+															ssl_type_item.eq(2).addClass('disabled');
+														} else {
+															ssl_type_item.eq(2).removeClass('disabled');
+														}
+														if (input.val() > 1) {
+															// disabled
+															//证书类型禁用
+															var is_type_disabled = ylist
+																.filter(function (s) {
+																	return !p_index ? s.code.indexOf('wildcard') > -1 : s.code.indexOf('wildcard') === -1;
+																})
+																.some(function (s) {
+																	return s.code.indexOf('multi') > -1 || s.brand === 'Digicert';
+																});
+															if (!is_type_disabled) {
+																ssl_price_item.eq(p_index ? 0 : 1).addClass('disabled');
+															} else {
+																ssl_price_item.eq(p_index ? 0 : 1).removeClass('disabled');
+															}
+															//证书品牌禁用
+															for (var i = 0; i < ssl_brand_item.length; i++) {
+																if (ssl_brand_item.eq(i).css('display') !== 'none') {
+																	var brand_data = ssl_brand_item.eq(i).data();
+																	if (p_index) {
+																		if (!brand_data.is_multi_w) ssl_brand_item.eq(i).addClass('disabled');
+																		else ssl_brand_item.eq(i).removeClass('disabled');
+																	} else {
+																		if (!brand_data.is_multi) ssl_brand_item.eq(i).addClass('disabled');
+																		else ssl_brand_item.eq(i).removeClass('disabled');
+																	}
+																}
+															}
+														} else {
+															ssl_price_item.eq(p_index ? 0 : 1).removeClass('disabled');
+															ssl_brand_item.removeClass('disabled');
+														}
+														if (!is_flag) {
+															if (input.val() > 1) {
+																for (var i = 0; i < ssl_brand_item.length; i++) {
+																	if (ssl_brand_item.eq(i).css('display') !== 'none') {
+																		var brand_data = ssl_brand_item.eq(i).data();
+																		if (p_index) {
+																			if (brand_data.is_multi_w) {
+																				automatic_msg();
+																				return ssl_brand_item.eq(i).click();
+																			}
+																		} else {
+																			if (brand_data.is_multi) {
+																				automatic_msg();
+																				return ssl_brand_item.eq(i).click();
+																			}
+																		}
+																	}
+																}
+															}
+														}
+														//选中的证书信息
+														var data_info = year_list.filter(function (s) {
+															return $('.domain_number_input').val() > 1 ? (s.brand === 'Digicert' ? s.code.indexOf('multi') === -1 : s.code.indexOf('multi') > -1) : s.code.indexOf('multi') === -1;
+														})[0];
+														dataInfo = data_info;
+														dataInfo['current_num'] = config['current_num'];
+														//服务费
+														var service_price = [0, data_info.deploy_price /100 || 0, data_info.install_price_v2 || 0];
+														for (var i = 0; i < service_price.length; i++) {
+															ssl_service_item.eq(i).data('serviceprice', service_price[i]);
+															// if(i == 1){
+															// ssl_service_item.eq(i).data('serviceprice', 28.9);
+															// }
+														}
+														serviceprice = $('.ssl_service_item.active').data('serviceprice');
+														if ($('.ssl_service_item.active').index()) ssl_service_unit.html(''+ lan.site.set_ssl.deploy_cost +'<span class="org">$' + serviceprice + '/1 Time</span>');
+														else ssl_service_unit.html('');
+														var cur_num = (config.current_num < data_info.num ? data_info.num : config.current_num) - data_info.num;
+														var p_price = parseFloat(Number(serviceprice)*100 + (data_info.price + data_info.add_price * cur_num) * year).toFixed(2);
+														if (config.current_num > 1 || data_info.brand === 'Digicert') {
+															if (data_info.brand !== 'Digicert') ssl_price_item.eq(0).text('Universal domain');
+															if (data_info.brand === 'Digicert') ssl_price_item.eq(0).text('Single domain');
+															$('.domain_number_tips').html( lan.site.set_ssl.default_over(data_info.num) +'<span>$' + data_info.add_price + '/one/year</span>');
+														} else {
+															ssl_price_item.eq(0).text('Single domain');
+															$('.domain_number_tips').empty();
+														}
+														var pp_html = '<span>$' + Number(p_price) / 100 + '</span>/' + year + 'year' + ($('.ssl_service_item.active').index() ? '（'+ lan.site.set_ssl.in_service +'）' : ''),
+															op_html = lan.site.set_ssl.or_price + '$' + parseFloat(parseFloat((Number(serviceprice)*100 + (data_info.other_price + data_info.add_price * cur_num) * year)/100).toFixed(2)) + '/' + year + 'year';
+														var price_pack = parseFloat(parseFloat(data_info.price * year).toFixed(2)),
+															price_extra = data_info.add_price * cur_num * year;
+														$('.business_ssl_btn .bname span').html(
+															lan.site.set_ssl.default_domain(data_info.num) + '$' + price_pack /100 + '/' + year + 'year' + (cur_num ? lan.site.set_ssl.over_domain(cur_num) + '$' + price_extra + '/' + year + 'year' : '')
+														);
+														$('.business_ssl_btn .present_price').html(pp_html);
+														$('.business_ssl_btn .original_price').html(op_html);
+													}
+
+													setTimeout(function () {
+														ssl_type_item.eq(0).click();
+													}, 50);
+													//证书分类切换
+													ssl_type_item.click(function () {
+														if ($(this).hasClass('disabled')) return layer.msg(lan.site.set_ssl.dis_tip);
+														if (!$(this).hasClass('active')) $(this).addClass('active').siblings().removeClass('active');
+														//证书类型
+														var type = $(this).data('type'),
+															brand_list = []; //品牌类型
+														list = dataLength
+															? data_list.filter(function (s) {
+																	return s.type.indexOf(type) > -1;
+																})
+															: [];
+														var type_tips_list = prompt_msg['type'][type.toLowerCase()],
+															type_tips = '';
+														for (var i = 0; i < type_tips_list.length; i++) {
+															type_tips += '<p class="mt5">' + type_tips_list[i] + '</p>';
+														}
+														ssl_type_tips.html(type_tips); //提示信息
+														$.each(list, function (i, item) {
+															brand_list.push(item.brand);
+														});
+														brand_list = Array.from(new Set(brand_list)); //去重
+														var recommend = prompt_msg['recommend'][type.toLowerCase()];
+														business_brand_list.find('em').remove();
+														business_brand_list.find('[data-type="' + prompt_msg['recommend'][type.toLowerCase()] + '"]').prepend('<em>Hot</em>');
+														ssl_brand_item.hide();
+														for (var i = 0; i < brand_list.length; i++) {
+															business_brand_list.find('[data-type="' + brand_list[i] + '"]').show();
+															var b_list = list.filter(function (s) {
+																return s.brand === brand_list[i];
+															});
+															//品牌是否存在多域名
+															var is_multi = b_list.some(function (s) {
+																return (s.code.indexOf('wildcard') === -1 && s.code.indexOf('multi') > -1) || s.brand === 'Digicert';
+															});
+															var is_multi_w = b_list.some(function (s) {
+																return (s.code.indexOf('wildcard') > -1 && s.code.indexOf('multi') > -1) || s.brand === 'Digicert';
+															});
+															business_brand_list.find('[data-type="' + brand_list[i] + '"]').data({ is_multi: is_multi, is_multi_w: is_multi_w });
+														}
+														business_brand_list.find('[data-type="' + recommend + '"]').click();
+													});
+
+													//证书品牌
+													ssl_brand_item.click(function () {
+														var p_index = $('.ssl_price_item.active').index();
+														if ($(this).hasClass('disabled')) {
+															if (p_index !== -1) {
+																for (var i = 0; i < ssl_brand_item.length; i++) {
+																	if (ssl_brand_item.eq(i).css('display') !== 'none') {
+																		var brand_data = ssl_brand_item.eq(i).data();
+																		if (p_index) {
+																			if (brand_data.is_multi_w) return ssl_brand_item.eq(i).click();
+																		} else {
+																			if (brand_data.is_multi) return ssl_brand_item.eq(i).click();
+																		}
+																	}
+																}
+															}
+															return layer.msg('The current certificate brand does not support multi-domain wildcard certificates. Please select another brand certificate');
+														}
+														if (!$(this).hasClass('active')) $(this).addClass('active').siblings().removeClass('active');
+														var type = $(this).data('type'),
+															years_list = [],
+															max_years = 0,
+															years_html = '',
+															cert_html = '';
+														ylist = list.filter(function (s) {
+															return s.brand.indexOf(type) > -1;
+														});
+														brand_type = $('.ssl_type_item.active').data('type');
+														var brand_tips_list = prompt_msg['brand'][type === 'Positive' || type === 'sslTrus' ? type : type.toLowerCase()],
+															brand_tips = '';
+														for (var i = 0; i < brand_tips_list.length; i++) {
+															brand_tips += '<p class="mt5">' + brand_tips_list[i] + '</p>';
+														}
+														ssl_brand_tips.html(brand_tips); //提示信息
+														$.each(ylist, function (i, item) {
+															years_list.push(item.max_years);
+														});
+														//是否存在单域名/泛域名按钮
+														is_single = ylist.some(function (s) {
+															return s.code.indexOf('wildcard') === -1;
+														});
+														is_worldxml = ylist.some(function (s) {
+															return s.code.indexOf('wildcard') > -1;
+														});
+														if (is_single) {
+															ssl_price_item.eq(0).show();
+														} else {
+															ssl_price_item.eq(0).hide();
+														}
+														if (is_worldxml) {
+															ssl_price_item.eq(1).show();
+														} else {
+															ssl_price_item.eq(1).hide();
+														}
+														max_years = Array.from(new Set(years_list))[0];
+														for (var i = 0; i < 5; i++) {
+															if (i < max_years) {
+																ssl_year_item.eq(i).show();
+															} else {
+																ssl_year_item.eq(i).hide();
+															}
+														}
+														//证书类型点击
+														var p_index = $('.ssl_price_item.active').index();
+														ssl_price_item.eq(p_index !== -1 ? (!is_worldxml && p_index === 1 ? 0 : p_index) : 0).click();
+													});
+													//证书类型
+													$('.business_ssl_form').on('click', '.ssl_price_item', function () {
+														if ($(this).hasClass('disabled')) return layer.msg(lan.site.set_ssl.dis_tip);
+														if (!$(this).hasClass('active')) $(this).addClass('active').siblings().removeClass('active');
+														var price_tips_list_0 = [
+															lan.site.set_ssl.single_tip1,
+															lan.site.set_ssl.single_tip2,
+															],
+															price_tips_list_1 = [
+																lan.site.set_ssl.more_tip1,
+															lan.site.set_ssl.more_tip2,
+															];
+														var price_tips_list = $(this).index() ? price_tips_list_1 : price_tips_list_0,
+															price_tips = '';
+														for (var i = 0; i < price_tips_list.length; i++) {
+															price_tips += '<p class="mt5">' + price_tips_list[i] + '</p>';
+														}
+														ssl_price_tips.html(price_tips);
+														//购买年限点击
+														var y_index = $('.ssl_year_item.active').index();
+
+														ssl_year_item.eq(y_index !== -1 && $('.ssl_year_item.active').css('display') !== 'none' ? y_index : 0).click();
+													});
+													//购买年限
+													$('.business_ssl_form').on('click', '.ssl_year_item', function () {
+														if (!$(this).hasClass('active')) $(this).addClass('active').siblings().removeClass('active');
+														year = $(this).data('year');
+														var year_tips_list = prompt_msg['times'][year + '_year'],
+															year_tips = '';
+														for (var i = 0; i < year_tips_list.length; i++) {
+															year_tips += '<p class="mt5">' + year_tips_list[i] + '</p>';
+														}
+														ssl_year_tips.html(year_tips); //提示信息
+
+														var ser_index = $('.ssl_service_item.active').index();
+														ssl_service_item.eq(ser_index !== -1 ? ser_index : 1).click();
+													});
+
+													//部署服务点击
+													ssl_service_item.click(function () {
+														if (!$(this).hasClass('active')) $(this).addClass('active').siblings().removeClass('active');
+														var index = $(this).index();
+														(serviceprice = $(this).data('serviceprice')), (install = $(this).data('install'));
+														ssl_service_tips.html(
+															index
+																? index === 1
+																	? 'aaPanel provides manual deployment certificate deployment services from China time 9:00 -18:30 to help customers troubleshoot deployment certificate validity problems and quickly go online'
+																	: '宝塔提供9:00 - 24:00的人工部署国密算法证书部署服务，帮助客户排查部署证书部署生效问题，快速上线'
+																: ''
+														);
+														var value = $('.domain_number_input').val();
+														reader_product_info({ current_num: value === '' ? value : parseInt(value) });
+													});
+
+													//购买事件
+													$('.business_ssl_pay').click(function () {
+														var loadT = bt.load('Payment order is being generated, please wait...'),
+															num = 0;
+														add_domain_number = input.val();
+														if (dataInfo.add_price !== 0) num = parseInt(dataInfo.current_num - dataInfo.num);
+														bt.send(
+															'apply_cert_order_pay',
+															'ssl/apply_cert_order_pay',
+															{
+																pdata: JSON.stringify({
+																	pid: dataInfo.pid,
+																	deploy: install,
+																	years: year,
+																	num: num,
+																}),
+															},
+															function (rdata) {
+																loadT.close();
+																if (rdata.success) {
+																	is_check = true;
+																	var res = rdata.res;
+																
+																	var stripe = Stripe(res.stripe_public_key);
+																	stripe.redirectToCheckout({ sessionId: res.session_id });
+																}
+															}
+														);
+													});
+													//支付切换
+													$('.guide_nav span').click(function () {
+														var price = $('.business_ssl_btn .present_price span').text(),
+															is_wx_quota = parseFloat(price) >= 6000;
+														if ($(this).index() === 0 && is_wx_quota) {
+															layer.msg('Wechat single transaction limit 6000 yuan, please use Alipay payment', {
+																icon: 0,
+															});
+														} else {
+															$(this).addClass('active').siblings().removeClass('active');
+															$('.lib-prompt span').html($(this).index() == 0 ? lan.site.set_ssl.wechat_swipe : 'Pay with a swipe on Alipay');
+															$('#PayQcode').empty();
+															$('#PayQcode').qrcode({
+																render: 'canvas',
+																width: 200,
+																height: 200,
+																text: $(this).index() != 0 ? order_info.alicode : order_info.wxcode,
+															});
+														}
+													});
+													$('.order_pay_btn a').click(function () {
+														switch ($(this).data('type')) {
+															case 'info':
+																confirm_certificate_info(
+																	$.extend(dataInfo, {
+																		oid: order_id,
+																		qq: qq_info,
+																		install: install ? true : false,
+																		limit: add_domain_number,
+																	})
+																);
+																break;
+															case 'clear':
+																layer.close(indexs);
+																break;
+														}
+													});
+												},
+												cancel: function (index) {
+													if (is_check) {
+														if (confirm('The order is currently being paid, would you like to cancel it?')) {
+															layer.close(index);
+															is_check = false;
+														}
+														return false;
+													}
+												},
+											});
+										});
+									}
+									// 确认证书信息
+									function confirm_certificate_info(config) {
+										var userLoad = bt.load('Getting user info, please wait...');
+										bt.send('get_cert_admin', 'ssl/get_cert_admin', {}, function (rdata) {
+											var res = rdata.res;
+											userLoad.close();
+											var html = '';
+											var isWildcard = config.code.indexOf('wildcard') > -1;
+											var isMulti = config.code.indexOf('multi') > -1;
+											if (typeof pay_ssl_layer != 'undefined') pay_ssl_layer.close();
+											if (config.code.indexOf('multi') > -1) {
+												if (isWildcard) {
+													placeholder = lan.site.set_ssl.more_cert_pl1(config.limit);
+												} else {
+													placeholder = lan.site.set_ssl.more_cert_pl2(config.limit);
+												}
+												site.domain_dns_type = 'multi'
+												html = '<div class="dns_domains_multi_view"><div class="dns_domains_multi_list"></div><div class="dns_domains_add_block"><input type="text" placeholder="Enter the domain name and press Enter to add or select the domain name"/><span class="btlink selct_site_btn" onclick="site.select_site_list(\'dns_hide_domains\',\'' + config.code +'\')">Select a website domain name</span><textarea id="dns_hide_domains" name="domains"></textarea></div></div><div class="dns_domains_verify"><button class="btn btn-default btn-xs isdnsbtn" onclick="site.check_domain_dns()">Refreshing DNS interface information</button><span class="dns_multi_warring_tips"></span></div>'
+											} else {
+												if (isWildcard) {
+													placeholder = 'single domain wildcard certificate, for example, *.bt.cn';
+												} else {
+													placeholder = 'single domain name certificate, for example, www.bt.cn';
+												}
+												site.domain_dns_type = 'one'
+												html =
+													'<input type="text" disabled="true" readonly="readonly" id="apply_site_name" class="bt-input-text mr5" name="domains" placeholder="' +
+													placeholder +
+													'" style="margin-right: 60px;"/><div class="damin_dns_result"></div><button class="btn btn-success btn-xs" onclick="site.select_site_list(\'apply_site_name\',\'' +
+													config.code +
+													'\')" style="">Select domain name</button><button class="btn btn-default btn-xs" onclick="site.select_site_txt(\'apply_site_name\',$(\'#apply_site_name\').val())" style="margin: 5px;">Domain name</button><button class="btn btn-default btn-xs isdnsbtn" onclick="site.check_domain_dns()">Refreshing DNS interface information</button>';
+											}
+											bt.open({
+												type: 1,
+												title: lan.site.set_ssl.inpro_cert_info,
+												area: '640px',
+												content:
+													'<div class="bt_form perfect_ssl_info" onsubmit="return false;">\
+													<div class="line">\
+															<span class="tname">Cert Info</span>\
+															<div class="info-r">\
+																	<span class="ssl_title">' +
+													config.title +
+													(config.limit > 1 ? '<span style="margin-left:5px;">，Contains ' + config.limit + 'domain names</span>' : '') +
+													'</span>\
+															</div>\
+													</div>\
+													<div class="line">\
+															<span class="tname">'+ lan.site.set_ssl.domain_name +'</span>\
+															<div class="info-r domain_list_info" style="margin-bottom:-5px;">' +
+													html +
+													'</div>\
+													</div>\
+													<div class="line check_model_line">\
+															<span class="tname">'+ lan.site.checking_mode +'</span>\
+															<div class="info-r flex">\
+																<div class="mr20 check_method_item CNAME_CSR_HASH">\
+																	<input id="CNAME_CSR_HASH" type="radio" name="dcvMethod" checked="checked" value="CNAME_CSR_HASH">\
+																	<label for="CNAME_CSR_HASH">DNS Authentication (CNAME resolution)</label>\
+																	<span class="testVerify hide"></span>\
+																</div>\
+																<div class="mr20 check_method_item HTTP_CSR_HASH"  style="display: ' +
+													(isWildcard ? 'none' : 'flex') +
+													';">\
+																	<input id="HTTP_CSR_HASH" type="radio" name="dcvMethod" value="HTTP_CSR_HASH">\
+																	<label for="HTTP_CSR_HASH">File Validation (HTTP)</label>\
+																	<span class="testVerify hide"></span>\
+																</div>\
+																<div class="mr20 check_method_item HTTPS_CSR_HASH" style="display: ' +
+													(isWildcard ? 'none' : 'flex') +
+													';">\
+																	<input id="HTTPS_CSR_HASH" type="radio" name="dcvMethod" value="HTTPS_CSR_HASH">\
+																	<label for="HTTPS_CSR_HASH">File Validation (HTTPS)</label>\
+																	<span class="testVerify hide"></span>\
+																</div>\
+															</div>\
+													</div>\
+													<div style="display: flex; align-items: center;cursor: pointer;line-height: 40px;" class="basics-info">\
+									<div class="icon-down-ssl" ><svg width="12.000000" height="12.000000" viewBox="0 0 12 5" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\
+									<desc>\
+										Created with Pixso.\
+									</desc>\
+									<defs></defs>\
+									<path id="path" d="M0.123291 0.809418L4.71558 5.84385C4.8786 6.02302 5.16846 6.04432 5.33038 5.86389L9.87927 0.783104C10.0412 0.602676 10.04 0.311989 9.87701 0.132816C9.79626 0.0446892 9.68945 0 9.58374 0C9.47693 0 9.36938 0.0459404 9.28827 0.136574L5.02881 4.89284L0.708618 0.15662C0.627869 0.0684967 0.522217 0.0238075 0.415405 0.0238075C0.307434 0.0238075 0.20105 0.0697479 0.119873 0.160381C-0.041626 0.338303 -0.0393677 0.630241 0.123291 0.809418Z" fill-rule="nonzero" fill="#999999"></path>\
+										</svg>\
+									</div>\
+										<span class="basics-title" style="width: 122px">Show user Info</span>\
+										<span style="width:100%;border-bottom: 1px solid #EBEEF5;"></span>\
+									</div>\
+													<div class="line basics-clid">\
+															<span class="tname">Local area</span>\
+															<div class="info-r">\
+															<select class="bt-input-text cou" style="width: 100px;" name="country" placeholder="Country"></select>\
+																	<input type="text" class="bt-input-text mr5" name="state" value="' +
+													res.state +
+													'" placeholder="State/province" style="width: 140px; margin-left: 5px;" data-placeholder="'+ lan.site.set_ssl.province_pl +'">\
+																	<input type="text" class="bt-input-text mr5" name="city" value="' +
+													res.city +
+													'" placeholder="City" style="width: 140px; margin-left: 5px;" data-placeholder="'+ lan.site.set_ssl.city_pl +'" />\
+															</div>\
+													</div>\
+													<div class="line basics-clid" >\
+															<span class="tname">'+ lan.site.set_ssl.address +'</span>\
+															<div class="info-r">\
+																	<input type="text" class="bt-input-text mr5" name="address" value="' +
+													res.address +
+													'" placeholder="Please enter the detailed address of the company, the specific requirements are described, required fields" />\
+															</div>\
+													</div>\
+													<div class="line basics-clid">\
+															<span class="tname">Company name</span>\
+															<div class="info-r">\
+																	<input type="text" class="bt-input-text mr5" name="organation" value="' +
+													res.organation +
+													'" placeholder="Company name, For individuals, enter personal name. Mandatory field" />\
+															</div>\
+													</div>\
+													<div class="line basics-clid">\
+															<span class="tname">Name</span>\
+															<div class="info-r ">\
+															<input type="text" class="bt-input-text mr5" style="width: 190px;" name="firstName" value="' +
+															res.firstName +
+															'" placeholder="firstName" />\
+																	<input type="text" class="bt-input-text mr5" style="width: 190px;  margin-left: 15px;" name="name" value="' +
+													res.lastName +
+													'" placeholder="lastName" />\
+															</div>\
+													</div>\
+													<div class="line basics-clid">\
+															<span class="tname">Email</span>\
+															<div class="info-r ">\
+																	<input type="text" class="bt-input-text mr5" name="email" value="' +
+													res.email +
+													'" placeholder="Please enter the email address, required field" />\
+															</div>\
+													</div>\
+													<div class="line basics-clid">\
+															<span class="tname">'+ lan.public_backup.mobile_phone +'</span>\
+															<div class="info-r">\
+															<select class="bt-input-text pre" style="width: 120px; margin-right:5px;" name="phonePre" placeholder="area code"></select>\
+																	<input type="text" class="bt-input-text mr5" style="width:270px;" name="mobile" value="' +
+													res.mobile +
+													'" placeholder="Mobile number. If empty, use current bound number" />\
+															</div>\
+													</div>\
+													<div class="line">\
+															<div class="info-r"><button class="btn btn-success submit_ssl_info">'+ lan.site.set_ssl.sub_info +'</button></div>\
+													</div>\
+													<ul class="help-info-text c7 ssl_help_info">\
+														<li style="' +
+													(isWildcard ? '' : 'display: none;') +
+													'">Wildcard certificates support only DNS authentication</li>\
+														<li style="' +
+													(isMulti ? '' : 'display: none;') +
+													'">Multiple domain names support only DNS authentication</li>\
+														<li tyle="color:red">https or http authentication: Ensure that the website can be accessed through http/https</li>\
+														<li tyle="color:red">The domain name prefix is www, reminding users to resolve the upper-level root domain name, such as www.bt.cn, please ensure that the resolution of bt.cn</li>\
+														<li><a class="btlink" href="https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial" target="_blank">How do I verify commercial certificates?</a></li>\
+													</ul>\
+													<ul class="help-info-text c7 ssl_help_info" style="display:' +
+													(config.code.indexOf('ov') > -1 || config.code.indexOf('ev') > -1 ? 'block' : 'none') +
+													'; margin-top: 0;">\
+															<li>OV/EV certificate application process conditions：</li>\
+															<li>1、Fill in the website authentication information (file authentication or DNS authentication)</li>\
+															<li>2、Complete the email authentication, and improve the email content according to the mail sent by CA (just fill in Chinese)</li>\
+															<li>3、Enterprise check or love enterprise check, Baidu map, 114best can query relevant enterprise information, and the company name and company address exactly match</li>\
+															<li>4、The phone number left by the company or other platforms can guarantee that you can hear the CA certification phone from Monday to Friday (7:00-15:00), the phone number belongs to the United States, please pay attention to answer.</li>\
+													</ul>\
+											</div>',
+												check_dns_interface: function (callback) {
+													var val = $('input[name="dcvMethod"]:radio:checked').val();
+													if (val !== 'CNAME_CSR_HASH') {
+														if (callback) callback();
+														return;
+													}
+													var dns_val = $('.dns_interface_select').val();
+													if (dns_val == 'dns') {
+														if (callback) callback();
+													} else {
+														bt.site.get_dns_api(function (res) {
+															var config;
+															for (var i = 0; i < res.length; i++) {
+																if (res[i].name == dns_val) {
+																	config = res[i];
+																	break;
+																}
+															}
+															var check = true;
+															var title = '';
+															if (config && config.data) {
+																for (var j = 0; j < config.data.length; j++) {
+																	if (config.data[j].value === '') {
+																		check = false;
+																		title = config.title;
+																		break;
+																	}
+																}
+															}
+															if (check) {
+																if (callback) callback();
+															} else {
+																layer.msg('No key is configured for the selected DNS interface ['+ title +']', { icon: 2 });
+															}
+														});
+													}
+												},
+												success: function (layero, index) {
+													$.ajax({
+														type: "GET",
+														url: "/static/js/countryCode.json",
+														data: "data",
+														dataType: "JSON",
+														success: function (data) {
+															countryList = data
+																var _option = ''
+																var couOp = ''
+																$.each(data,function(index,item){
+																	_option += '<option value="+' + item.country_code + '">' + item.country_name_en + '(+' + item.country_code + ')</option>';
+																	couOp += '<option value="' + item.ab + '">' + item.country_name_en +'</option>';
+																})
+																var node_pid = $('.pre[name=phonePre]');
+																var countrySelect = $('.cou[name=country]');
+																node_pid.html(_option);
+																node_pid.val(res.tel_prefix)
+																countrySelect.html(couOp)
+																countrySelect.val(res.country)
+														}
+												})
+													$('.basics-clid').hide();
+													if (config.code.indexOf('multi') > -1) {
+														$('#CNAME_CSR_HASH').click();
+														$('#HTTP_CSR_HASH,#HTTPS_CSR_HASH').attr('disabled', 'disabled');
+
+														// dns_domains_add_block下的input焦点触发时，隐藏selct_site_btn
+														$('.dns_domains_add_block input').on('focus blur keyup',function (e) {
+															e = e || window.event;
+															switch (e.type) {
+																case 'focus':
+																	$('.selct_site_btn').hide();
+																	break;
+																case 'blur':
+																	$('.selct_site_btn').css('display','inline-block');
+																	break;
+																case 'keyup':
+																	if (e.keyCode != 13 && e.type == 'keyup') return false;
+																	var val = $(this).val();
+																	if (!bt.check_domain(val)) return layer.msg('Domain name format error', { icon: 2 });
+																	site.domain_dns_list.push(val)
+																	$(this).val('');// 清空输入框
+																	site.refresh_dns_interface();
+																	break;
+															}
+														})
+													}
+													$('.perfect_ssl_info').data('code', config.code);
+													var _this_layer = this;
+													bt_tools.send({url: '/site?action=GetDnsApi'},function (data) {
+														site.dns_configured_table = site.data_treating(data)
+														site.add_dns_interface();
+														// 基础信息隐藏显示
+														$('.basics-info').click(function () {
+															if ($('.basics-info').hasClass('active')) {
+																$('.basics-info').removeClass('active');
+																$('.basics-title').text('Show user Info')
+																$('.basics-clid').hide();
+															}else{
+																$('.basics-info').addClass('active');
+																$('.basics-title').text('Hide user Info')
+																$('.basics-clid').show();
+																//config.code.含有ov、ev时，隐藏公司详细地址
+																// if(config.code.indexOf('ov') == -1 || config.code.indexOf('ev') == -1){
+																// 	$('.basics-clid').eq(1).hide();
+																// }
+															}
+															$('.ssl_help_info').toggle();
+														})
+														// 判断基础信息中是否存在空置，将基础信息自动显示
+														$('.basics-clid input').each(function () {
+															// isMulti为false时，不需要验证公司详细地址
+															if (!isMulti && $(this).attr('name') == 'address') return true;
+															if ($(this).val() == '') {
+																$('.basics-info').click();
+																return false;
+															}
+														})
+
+														// 验证方式
+														$('input[name="dcvMethod"]').change(function () {
+															var val = $(this).val();
+															if (val == 'CNAME_CSR_HASH') {
+																site.add_dns_interface();
+															} else {
+																site.remove_dns_interface();
+															}
+														});
+
+														// 公司详细地址联动
+														$('.perfect_ssl_info').on('input', 'input[name="state"], input[name="city"]', function (e) {
+															var is_ovev = config.code.indexOf('ov') > -1 || config.code.indexOf('ev') > -1;
+															if (!is_ovev) {
+																var state = $('.perfect_ssl_info input[name="state"]').val();
+																var city = $('.perfect_ssl_info input[name="city"]').val();
+																$('.perfect_ssl_info input[name="address"]').val(state + city);
+															}
+														});
+														$('.perfect_ssl_info')
+															.on('focus', 'input[type=text],textarea', function () {
+																var placeholder = $(this).attr('placeholder');
+																$('html').append($('<span id="width_test">' + placeholder + '</span>'));
+																$(this).attr('data-placeholder', placeholder);
+																layer.tips(placeholder, $(this), { tips: [1, '#20a53a'], time: 0 });
+																$(this).attr('placeholder', '');
+																$('#width_test').remove();
+															})
+															.on('blur', 'input[type=text],textarea', function () {
+																var name = $(this).attr('name'),
+																	val = $(this).val();
+																layer.closeAll('tips');
+																$(this).attr('placeholder', $(this).attr('data-placeholder'));
+																check_ssl_user_info($(this), name, val, config);
+															});
+														function btserializeDiv(div) {
+															var result = {};
+															var elements = div.querySelectorAll("input, select, textarea");
+															for(var i = 0; i < elements.length; i++) {
+																var element = elements[i];
+																var name = element.name;
+																var value = element.value;
+																if(name && !element.disabled) {
+																	result[name] = value;
+																}
+															}
+															return result;
+														}
+														$('.submit_ssl_info').on('click', function () {
+															var data = {},
+																// form = $('.perfect_ssl_info').serializeObject(),
+																form = btserializeDiv(document.querySelector('.perfect_ssl_info')),
+																is_ovev = config.code.indexOf('ov') > -1 || config.code.indexOf('ev') > -1,
+																loadT = null;
+															// var reg = /^[\u4E00-\u9FA5]+$/;
+															// if (form.name.length < 2 || !reg.test(form.name)) return layer.msg('The name shall be Chinese and two characters or more in length');
+															$('.perfect_ssl_info')
+																.find('input,textarea')
+																.each(function () {
+																	var name = $(this).attr('name'),
+																		value = $(this).val(),
+																		value = check_ssl_user_info($(this), name, value, config);
+																	if (typeof value === 'boolean') {
+																		form = false;
+																		return false;
+																	}
+																	form[name] = value;
+																});
+																form.phonePre = $('.perfect_ssl_info [name=phonePre]').val()
+																form.phonePre = $('.perfect_ssl_info [name=phonePre]').val()
+															if (typeof form == 'boolean') return false;
+															delete form['undefined'] // 删除undefined
+															form['domains'] = site.domain_dns_list;
+
+															if (!is_ovev) form['address'] = form['state'] + form['city'];
+															if (typeof config.limit == 'undefined') config.limit = config.num;
+															if (form.domains.length < config.limit) {
+																bt.confirm({ title: 'Tips', msg: 'The current certificate supports '+ config.limit +' domain names. Do you want to continue to add domain names?' }, function () {
+																	req(true);
+																});
+																return false;
+															}
+															req(true);
+															function req(verify) {
+																if (verify) {
+																	bt.open({
+																		title: 'The user information is confirmed twice',
+																		area: ['600px'],
+																		btn: ['Continue to submit', 'Cancel'],
+																		content:
+																			'<div class="bt_form certificate_confirm" style="font-size: 12px;padding-left: 25px">' +
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">Local area</span>'+
+																			'<div class="info-r">'+
+																			'<select class="bt-input-text" style="width: 100px;" name="country" placeholder="Country"></select>'+
+																			'<input type="text" class="bt-input-text mr5" name="state" value="' +form.state +'" placeholder="State/province" style="width: 140px; margin-left: 5px;" data-placeholder="'+ lan.site.set_ssl.province_pl +'">'+
+																			'<input type="text" class="bt-input-text mr5" name="city" value="' + form.city +'" placeholder="City" style="width: 140px; margin-left: 5px;" data-placeholder="'+ lan.site.set_ssl.city_pl +'" />'+
+																			'</div>'+
+																			'</div>'+
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">Address</span>'+
+																			'<div class="info-r">'+
+																			'<input type="text" class="bt-input-text mr5" name="address" value="' +form.address +'" placeholder="Please enter the detailed address of the company, the specific requirements are described, required fields" />'+
+																			'</div>'+
+																			'</div>'+
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">Company name</span>'+
+																			'<div class="info-r">'+
+																			'<input type="text" class="bt-input-text mr5" name="organation" value="' +form.organation +'" placeholder="Company name, For individuals, enter personal name. Mandatory field" />'+
+																			'</div>'+
+																			'</div>'+
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">Name</span>'+
+																			'<div class="info-r ">'+
+																			'<input type="text" class="bt-input-text mr5" style="width: 190px; " name="firstName" value="' +form.firstName +'" placeholder="firstName" />'+
+																			'<input type="text" class="bt-input-text mr5" style="width: 190px; margin-left: 15px;" name="name" value="' +form.name +'" placeholder="lastName" />'+
+																			'</div>'+
+																			'</div>'+
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">Email</span>'+
+																			'<div class="info-r ">'+
+																			'<input type="text" class="bt-input-text mr5" name="email" value="' +form.email +'" placeholder="Please enter the email address, required field" />'+
+																			'</div>'+
+																			'</div>'+
+																			'<div class="line basics-clid">'+
+																			'<span class="tname">'+ lan.public_backup.mobile_phone +'</span>'+
+																			'<div class="info-r">'+
+																			'<select class="bt-input-text" style="width: 120px; margin-right:5px;"  value="' +form.phonePre +'" name="phonePre" placeholder="area code"></select>'+
+																			'<input type="text" class="bt-input-text mr5" style="width:275px;" name="mobile" value="' +form.mobile +'" placeholder="Mobile number. If empty, use current bound number" />'+
+																			'</div>'+
+																			'</div>'+
+																			'</ul>' +
+																			'</div>',
+																		yes: function () {
+																			var isVerify = true
+																			$('.certificate_confirm')
+																				.find('input')
+																				.each(function () {
+																					var name = $(this).attr('name'),
+																						value = $(this).val(),
+																						value = check_ssl_user_info($(this), name, value, config);
+																					if (typeof value === 'boolean') {
+																						form = false;
+																						return false;
+																					}
+																					form[name] = value;
+																				});
+																			req(false);
+																		},
+																		success: function () {
+																			if(countryList.length>0){
+																				var _option = ''
+																				var couOp = ''
+																				$.each(countryList,function(index,item){
+																					_option += '<option value="+' + item.country_code + '">' + item.country_name_en + '(+' + item.country_code + ')</option>';
+																					couOp += '<option value="' + item.ab + '">' + item.country_name_en +'</option>';
+																				})
+																				var node_pid = $('[name=phonePre]');
+																				var countrySelect = $('[name=country]');
+																				node_pid.html(_option);
+																				node_pid.val(form.phonePre)
+																				countrySelect.html(couOp)
+																				countrySelect.val(form.country)
+																			}
+																		// 	$.ajax({
+																		// 		type: "GET",
+																		// 		url: "/static/js/countryCode.json",
+																		// 		data: "data",
+																		// 		dataType: "JSON",
+																		// 		success: function (data) {
+																		// 				console.log(data);
+																						
+																		// 		}
+																		// })
+																			$('.certificate_confirm [name="organation"]').change(function () {
+																				$('.perfect_ssl_info [name="organation"]').val($(this).val());
+																				form.organation = $(this).val();
+																			});
+																			$('.certificate_confirm [name="address"]').change(function () {
+																				$('.perfect_ssl_info [name="address"]').val($(this).val());
+																				form.address = $(this).val();
+																			});
+																			$('.checkInfo').on('click', function (e) {
+																				window.open('https://www.qcc.com/web/search?key=' + $('.certificate_confirm [name="organation"]').val());
+																			});
+																		},
+																	});
+																	return false;
+																}
+																_this_layer.check_dns_interface(function () {
+																	var loadT = bt.load('Please wait while submitting certificate information...');
+																	var auth_to = $("[name='dns_select']") ? $("[name='dns_select']").val() : '';
+																	bt.send(
+																		'apply_order_ca',
+																		'ssl/apply_order_ca',
+																		{
+																			pdata: JSON.stringify({
+																				pid: config.pid,
+																				oid: config.oid,
+																				domains: form.domains,
+																				dcvMethod: $("[name='dcvMethod']:checked").val(),
+																				auth_to: auth_to,
+																				uc_id:config.uc_id,
+																				Administrator: {
+																					job: 'General affairs',
+																					postCode: '523000',
+																					country: form.country,
+																					firstName:form.firstName,
+																					lastName: form.name,
+																					state: form.state,
+																					city: form.city,
+																					address: form.address,
+																					organation: form.organation,
+																					email: form.email,
+																					tel_prefix:form.phonePre,
+																					mobile: form.mobile,
+																					lastName: form.name,
+																				},
+																			}),
+																		},
+																		function (res) {
+																			loadT.close();
+																			if (typeof res.msg == 'object') {
+																				for (var key in res.msg.errors) {
+																					if (Object.hasOwnProperty.call(res.msg.errors, key)) {
+																						var element = res.msg.errors[key];
+																						bt.msg({
+																							status: false,
+																							msg: element,
+																						});
+																					}
+																				}
+																			} else {
+																				if (res.caa_list) {
+																					site.show_domain_error_dialog(res.caa_list, res.msg);
+																				} else {
+																					bt.msg({status:res.success,msg:res.res});
+																				}
+																			}
+																			if (res.success) {
+																				layer.close(index);
+																				verify_order_veiw(config.uc_id);
+																				$('#ssl_tabs span.on').click();
+																			}
+																		}
+																	);
+																});
+															}
+														});
+
+														$('.check_method_item label').click(function (e) {
+															e.stopPropagation();
+														});
+
+														$('.check_method_item').click(function () {
+															// 选中
+															$(this).find('label').trigger('click');
+															// 判断是否显示异常
+															var show = $(this).data('show-tips');
+															if (!show) return;
+															$(this).data('show-tips', false);
+															// 判断是否存在异常数据
+															var data = $(this).data('error-data');
+															if (!data) return;
+															$(this).find('.error-link').trigger('click');
+														});
+
+														$('.check_method_item').on('click', '.error-link', function (e) {
+															e.stopPropagation();
+															var data = $(this).parents('.check_method_item').data('error-data');
+
+															if ($.isPlainObject(data)) {
+																site.show_domain_error_dialog(data);
+															}
+															if (Array.isArray(data)) {
+																var html = '';
+																$.each(data, function (i, item) {
+																	html += '<p>' + item + '</p>';
+																});
+																layer.msg(html, {
+																	icon: 2,
+																	shade: 0.3,
+																	closeBtn: 2,
+																	time: 0,
+																	success: function ($layer) {
+																		$layer.css({ 'max-width': '560px' });
+																		var width = $(window).width();
+																		var lWidth = $layer.width();
+																		$layer.css({
+																			left: (width - lWidth) / 2 + 'px',
+																		});
+																	},
+																});
+															}
+														});
+
+														var Timer = null;
+														$('.CNAME_CSR_HASH,.HTTP_CSR_HASH,.HTTPS_CSR_HASH').hover(
+															function () {
+																var $this = $(this);
+																var data = $(this).data('error-data');
+																if (data) return;
+																var arry = ['If the website has not been filed, optional [DNS verification]', 'If the 301, 302, forced HTTPS, and reverse proxy functions are not enabled, select HTTP', 'If the website enables "mandatory HTTPS", please select "HTTPS verification".'];
+																var tips = arry[$this.index()];
+																clearTimeout(Timer);
+																Timer = setTimeout(function () {
+																	$this.data({
+																		tips: layer.tips(tips, $this.find('label'), { tips: 1, time: 0 }),
+																	});
+																}, 200);
+															},
+															function () {
+																clearTimeout(Timer);
+																layer.close($(this).data('tips'));
+															}
+														);
+													})
+												},
+											});
+										});
+									}
+									$('.ssl_business_application').click(function () {
+										pay_ssl_business();
+									});
+									//订单证书操作
+									$('.ssl_order_list')
+										.unbind('click')
+										.on('click', '.options_ssl', function () {
+											var type = $(this).data('type'),
+												tr = $(this).parents('tr');
+											itemData = order_list[tr.data('index')];
+											switch (type) {
+												case 'deploy_ssl': // 部署证书
+													bt.confirm(
+														{
+															title: 'Deployment certificate',
+															msg: 'Whether to deploy the certificate and whether to continue？<br>Certificate type：' + itemData.title + ' <br>Certificate supported domain name：' + itemData.domains.join('、') + '<br>Deployment site name:' + web.name + '',
+														},
+														function (index) {
+															var loads = bt.load('Please wait while certificates are deployed...');
+															bt.send('set_cert', 'ssl/set_cert', { uc_id: itemData.uc_id, siteName: web.name }, function (rdata) {
+																layer.close(index);
+																$('#webedit-con').empty();
+																site.set_ssl(web);
+																site.ssl.reload();
+																bt.msg(rdata);
+															});
+														}
+													);
+													break;
+												case 'verify_order': // 验证订单
+													verify_order_veiw(itemData.uc_id);
+													break;
+												case 'clear_order': // 取消订单
+													bt.confirm(
+														{
+															title: 'Cancel order',
+															msg: 'Whether to cancel the order, the order domain name [' + itemData.domains.join('、') + '], whether to continue？',
+														},
+														function (index) {
+															var loads = bt.load('Cancelling order, please wait...');
+															bt.send('cancel_cert_order', 'ssl/cancel_cert_order', { oid: itemData.oid }, function (rdata) {
+																layer.close(index);
+																if (rdata.status) {
+																	$('#ssl_tabs span:eq(2)').click();
+																	setTimeout(function () {
+																		bt.msg(rdata);
+																	}, 2000);
+																}
+																bt.msg(rdata);
+															});
+														}
+													);
+													break;
+												case 'perfect_user_info': //完善用户信息
+													confirm_certificate_info(itemData);
+													break;
+												case 'renewal_ssl':
+													renewal_ssl_view(itemData);
+													break;
+											}
+										});
+								} else {
+									robj.append('<div class="alert alert-warning" style="padding:10px">'+ lan.site.set_ssl.no_bind +'</div>');
+									var datas = [
+										{ title: lan.public.user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.public_backup.mobile_phone },
+										{ title: lan.public.pass, type: 'password', name: 'bt_password', value: rdata.email, width: '260px' },
+										{
+											title: ' ',
+											items: [
+												{
+													text: lan.public_backup.login,
+													name: 'btn_ssl_login',
+													type: 'button',
+													callback: function (sdata) {
+														bt.pub.login_btname(sdata.bt_username, sdata.bt_password, function (ret) {
+															if (ret.status) site.reload(7);
+														});
+													},
+												},
+												{
+													text: lan.site.set_ssl.register_ac,
+													name: 'bt_register',
+													type: 'button',
+													callback: function (sdata) {
+														window.open('https://www.aapanel.com/user_admin/login');
+													},
+												},
+											],
+										},
+									];
+									for (var i = 0; i < datas.length; i++) {
+										var _form_data = bt.render_form_line(datas[i]);
+										robj.append(_form_data.html);
+										bt.render_clicks(_form_data.clicks);
+									}
+									robj.append(
+										bt.render_help([
+											lan.site.set_ssl.bind_tip1 + '<a class="btlink" target="_blank" href="https://www.racent.com/sectigo-ssl">'+ lan.site.set_ssl.click_view + '</a>',
+											lan.site.set_ssl.bind_tip2,
+										])
+									);
+								}
+							});
+						},
+					},
                 {
                     title: "Let's Encrypt",
                     callback: function (robj) {
@@ -7413,111 +10886,111 @@ var site = {
                         })
                     }
                 },
-                {
-                    title: lan.site.other_ssl,
-                    callback: function (robj) {
-                        robj = $('#webedit-con .tab-con')
-                        var cert_info = '';
-                        if (rdata.cert_data['notBefore']) {
-                            cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
-                                  <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">' + (rdata.status ? lan.site.deploy_success_tips : lan.site.not_deploy_and_save) + '</span>\
-                                  <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
-                                  <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.auth_domain + '</b> ' + (rdata.cert_data.dns ? rdata.cert_data.dns.join(', ') : '') + '</span>\
-                                  <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
-                        }
-                        robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
-                        var datas = [{
-                            items: [
-                                {name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key},
-                                {name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr}
-                            ]
-                        },
-                            {
-                                items: [{
-                                    text: lan.site.save,
-                                    name: 'btn_ssl_save',
-                                    type: 'button',
-                                    callback: function (sdata) {
-                                        bt.site.set_ssl(web.name, sdata, function (ret) {
-                                            if (ret.status) site.reload(7);
-                                            bt.msg(ret);
-                                        })
-                                    }
-                                },
-                                    {
-                                        text: lan.site.ssl_close,
-                                        name: 'btn_ssl_close',
-                                        hide: !rdata.status,
-                                        type: 'button',
-                                        callback: function (sdata) {
-                                            site.ssl.set_ssl_status('CloseSSLConf', web.name);
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                        for (var i = 0; i < datas.length; i++) {
-                            var _form_data = bt.render_form_line(datas[i]);
-                            robj.append(_form_data.html);
-                            bt.render_clicks(_form_data.clicks);
-                        }
-                        var helps = [
-                            lan.site.bt_ssl_help_10,
-                            lan.public_backup.cret_err,
-                            lan.public_backup.pem_format,
-                            lan.site.ssl_tips5,
-                        ]
-                        robj.append(bt.render_help(helps));
-                        robj.find(".help-info-text").css('margin-top', '0');
-                        robj.find('textarea').css('resize', 'none');
-                        robj.find('[name=csr]').css('margin-right', '0');
-                    }
-                },
-                {
-                    title: lan.site.turn_off,
-                    callback: function (robj) {
-                        robj = $('#webedit-con .tab-con');
-                        if (rdata.type == -1) {
-                            robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
-                        } else {
-                            var txt = '';
-                            switch (rdata.type) {
-                                case 1:
-                                    txt = "Let's Encrypt";
-                                    break;
-                                case 0:
-                                    txt = lan.site.other_ssl;
-                                    break;
-                                case 2:
-                                    txt = lan.site.bt_ssl;
-                                    break;
-                            }
-                            robj.html('\
-                              <div class="line mtb15">' + lan.get('ssl_enable', [txt]) + '</div>\
-                              <div class="line mtb15">\
-                                  <button class="btn btn-success btn-sm" onclick="site.ssl.set_ssl_status(\'CloseSSLConf\', \'' + web.name + '\')">' + lan.site.ssl_close + '</button>\
-                              </div>\
-                          ');
-                        }
-                        var loadT = bt.load(lan.site.the_msg);
-                        $.post('/site?action=get_auto_restart_rph', {
-                            sitename: web.name
-                        }, function (res) {
-                            loadT.close();
-                            if (res) {
-                                var checked_str = res.status ? 'checked="true"' : '';
-                                robj.append('\
-                                <div style="margin-bottom: 15px; border-top: #ccc 1px dashed;"></div>\
-                                  <div class="line">Auto restart proxy, redirect, http to https when apply or renew SSL</div>\
-                                  <div class="line">\
-                                      <input type="checkbox" class="btswitch btswitch-ios" id="auto_restart_rph" ' + checked_str + ' />\
-                                      <label class="btswitch-btn" for="closePl" onclick="site.ssl.set_auto_restart_rph(\'' + web.name + '\')"></label>\
-                                  </div>\
-                              ');
-                            }
-                        });
-                    }
-                },
+                // {
+                //     title: lan.site.other_ssl,
+                //     callback: function (robj) {
+                //         robj = $('#webedit-con .tab-con')
+                //         var cert_info = '';
+                //         if (rdata.cert_data['notBefore']) {
+                //             cert_info = '<div style="margin-bottom: 10px;padding: 10px;" class="alert alert-success">\
+                //                   <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;">' + (rdata.status ? lan.site.deploy_success_tips : lan.site.not_deploy_and_save) + '</span>\
+                //                   <span style="display: inline-block;overflow: hidden;min-width: 49%;text-overflow: ellipsis;white-space: nowrap;max-width: 100%;"><b>' + lan.site.cert_brand + '</b>' + rdata.cert_data.issuer + '</span>\
+                //                   <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.auth_domain + '</b> ' + (rdata.cert_data.dns ? rdata.cert_data.dns.join(', ') : '') + '</span>\
+                //                   <span style="display:inline-block;max-width: 100%;min-width: 49%;overflow:hidden;text-overflow:ellipsis;white-space: nowrap; "><b>' + lan.site.expire_time + '</b> ' + rdata.cert_data.notAfter + '</span></div>'
+                //         }
+                //         robj.append('<div>' + cert_info + '<div><span>' + lan.site.ssl_key + '</span><span style="padding-left:190px">' + lan.site.ssl_crt + '</span></div></div>');
+                //         var datas = [{
+                //             items: [
+                //                 {name: 'key', width: '48%', height: '220px', type: 'textarea', value: rdata.key},
+                //                 {name: 'csr', width: '48%', height: '220px', type: 'textarea', value: rdata.csr}
+                //             ]
+                //         },
+                //             {
+                //                 items: [{
+                //                     text: lan.site.save,
+                //                     name: 'btn_ssl_save',
+                //                     type: 'button',
+                //                     callback: function (sdata) {
+                //                         bt.site.set_ssl(web.name, sdata, function (ret) {
+                //                             if (ret.status) site.reload(7);
+                //                             bt.msg(ret);
+                //                         })
+                //                     }
+                //                 },
+                //                     {
+                //                         text: lan.site.ssl_close,
+                //                         name: 'btn_ssl_close',
+                //                         hide: !rdata.status,
+                //                         type: 'button',
+                //                         callback: function (sdata) {
+                //                             site.ssl.set_ssl_status('CloseSSLConf', web.name);
+                //                         }
+                //                     }
+                //                 ]
+                //             }
+                //         ]
+                //         for (var i = 0; i < datas.length; i++) {
+                //             var _form_data = bt.render_form_line(datas[i]);
+                //             robj.append(_form_data.html);
+                //             bt.render_clicks(_form_data.clicks);
+                //         }
+                //         var helps = [
+                //             lan.site.bt_ssl_help_10,
+                //             lan.public_backup.cret_err,
+                //             lan.public_backup.pem_format,
+                //             lan.site.ssl_tips5,
+                //         ]
+                //         robj.append(bt.render_help(helps));
+                //         robj.find(".help-info-text").css('margin-top', '0');
+                //         robj.find('textarea').css('resize', 'none');
+                //         robj.find('[name=csr]').css('margin-right', '0');
+                //     }
+                // },
+                // {
+                //     title: lan.site.turn_off,
+                //     callback: function (robj) {
+                //         robj = $('#webedit-con .tab-con');
+                //         if (rdata.type == -1) {
+                //             robj.html("<div class='mtb15' style='line-height:30px'>" + lan.site.ssl_help_1 + "</div>");
+                //         } else {
+                //             var txt = '';
+                //             switch (rdata.type) {
+                //                 case 1:
+                //                     txt = "Let's Encrypt";
+                //                     break;
+                //                 case 0:
+                //                     txt = lan.site.other_ssl;
+                //                     break;
+                //                 case 2:
+                //                     txt = lan.site.bt_ssl;
+                //                     break;
+                //             }
+                //             robj.html('\
+                //               <div class="line mtb15">' + lan.get('ssl_enable', [txt]) + '</div>\
+                //               <div class="line mtb15">\
+                //                   <button class="btn btn-success btn-sm" onclick="site.ssl.set_ssl_status(\'CloseSSLConf\', \'' + web.name + '\')">' + lan.site.ssl_close + '</button>\
+                //               </div>\
+                //           ');
+                //         }
+                //         var loadT = bt.load(lan.site.the_msg);
+                //         $.post('/site?action=get_auto_restart_rph', {
+                //             sitename: web.name
+                //         }, function (res) {
+                //             loadT.close();
+                //             if (res) {
+                //                 var checked_str = res.status ? 'checked="true"' : '';
+                //                 robj.append('\
+                //                 <div style="margin-bottom: 15px; border-top: #ccc 1px dashed;"></div>\
+                //                   <div class="line">Auto restart proxy, redirect, http to https when apply or renew SSL</div>\
+                //                   <div class="line">\
+                //                       <input type="checkbox" class="btswitch btswitch-ios" id="auto_restart_rph" ' + checked_str + ' />\
+                //                       <label class="btswitch-btn" for="closePl" onclick="site.ssl.set_auto_restart_rph(\'' + web.name + '\')"></label>\
+                //                   </div>\
+                //               ');
+                //             }
+                //         });
+                //     }
+                // },
                 {
                     title: lan.site.ssl_dir,
                     callback: function (robj) {
@@ -7553,35 +11026,35 @@ var site = {
                     }
                 }
             ]
-            bt.render_tab('ssl_tabs', _tabs);
-            $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>' + lan.site.force_https + '</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
-            $("#toHttps").attr('checked', rdata.httpTohttps);
-            $('#toHttps').click(function (sdata) {
-                var isHttps = $("#toHttps").attr('checked');
-                if (isHttps) {
-                    layer.confirm('After closing HTTPS, you need to clear your browser cache to see the effect. Continue?', {
-                        icon: 3,
-                        title: "Turn off forced HTTPS\""
-                    }, function () {
-                        bt.site.close_http_to_https(web.name, function (rdata) {
-                            if (rdata.status) {
-                                setTimeout(function () {
-                                    site.reload(7);
-                                }, 3000);
-                            }
-                        })
-                    });
-                } else {
-                    bt.site.set_http_to_https(web.name, function (rdata) {
-                        if (!rdata.status) {
-                            setTimeout(function () {
-                                site.reload(7);
-                            }, 3000);
-                        }
+            bt.render_tab('ssl_tabs', tabs);
+            // $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>' + lan.site.force_https + '</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
+            // $("#toHttps").attr('checked', rdata.httpTohttps);
+            // $('#toHttps').click(function (sdata) {
+            //     var isHttps = $("#toHttps").attr('checked');
+            //     if (isHttps) {
+            //         layer.confirm('After closing HTTPS, you need to clear your browser cache to see the effect. Continue?', {
+            //             icon: 3,
+            //             title: "Turn off forced HTTPS\""
+            //         }, function () {
+            //             bt.site.close_http_to_https(web.name, function (rdata) {
+            //                 if (rdata.status) {
+            //                     setTimeout(function () {
+            //                         site.reload(7);
+            //                     }, 3000);
+            //                 }
+            //             })
+            //         });
+            //     } else {
+            //         bt.site.set_http_to_https(web.name, function (rdata) {
+            //             if (!rdata.status) {
+            //                 setTimeout(function () {
+            //                     site.reload(7);
+            //                 }, 3000);
+            //             }
 
-                    })
-                }
-            })
+            //         })
+            //     }
+            // })
             // switch (rdata.type) {
             //     case 1:
             //         $('#ssl_tabs span:eq(0)').trigger('click');

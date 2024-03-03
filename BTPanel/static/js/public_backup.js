@@ -34,6 +34,14 @@ var bt = {
             var check = bt.check_exts(fileName, exts);
             return check;
         },
+check_email: function (email) {
+					var reg = /\w[-\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}/;
+					return reg.test(email);
+				},
+				check_phone: function (phone) {
+					var reg = /^1(3|4|5|6|7|8|9)\d{9}$/;
+					return reg.test(phone);
+				},
     check_zip: function(fileName) {
         var ext = fileName.split('.');
         var extName = ext[ext.length - 1].toLowerCase();
@@ -1163,7 +1171,7 @@ var bt = {
                         }
                     }
                 } else {
-                    _tab.append("<tr><td colspan='" + obj.columns.length + "'>" + lan.bt.no_data + "</td></tr>");
+                    _tab.append("<tr><td colspan='" + obj.columns.length + "'>" + obj.empty? obj.empty:lan.bt.no_data + "</td></tr>");
                 }
                 $(obj.table).find('.check').click(function() {
                     var checked = $(this).prop('checked');
@@ -1324,6 +1332,115 @@ var bt = {
 			}
 		});
 	},
+/**
+	 * @description 需求反馈弹窗
+	 * @param {Object} param 配置对象 {title:标题, placeholder:反馈问题pl(可带标签),recover:input框下方提示语, key:反馈问题key, proType:产品类型}
+	 */
+	openFeedback: function (param) {
+		// 需求反馈
+		var openFeed = bt_tools.open({
+			area:['570px','400px'],
+			btn:false,
+			content:'<div id="feedback">\
+			<div class="nps_survey_banner">\
+			<span class="Ftitle"> <i></i> <span style="vertical-align:4px;">'+param.title+'</span> </span>\
+		</div>\
+		<div style="padding: 25px 0 0 40px">\
+			<div class="flex flex-col items-center">\
+				<div id="feedForm"></div>\
+			</div>\
+		</div>\
+		</div>',
+			success:function(that){
+				var id = "x66ed9v07MjVjYjczNTUyMDE0Le8BEdl"
+				bt_tools.send({url:'/config?action=get_nps_new',data:{product_type:param.proType}},function(ress){
+					//请求回调
+					console.log(ress);
+					if(ress.res){
+						id = ress.res[0].id
+					}
+				},{load:'Loading...',verify:false})
+				//打开弹窗后执行的事件
+				that.find('.layui-layer-title').remove()
+				bt_tools.form({
+					el:'#feedForm',
+					form:[
+						{
+							group: {
+								type: 'textarea',
+								name: 'feed',
+								style: {
+									'width': '500px',
+									'min-width': '500px',
+									'min-height': '130px',
+									'line-height': '22px',
+									'padding-top': '10px',
+									'resize': 'none'
+								},
+								tips: { //使用hover的方式显示提示
+									text: param.placeholder,
+									style: { top: '126px', left: '50px' },
+								},
+							}
+						},
+						{
+							group:{
+								name: 'tips',
+								type: 'other',
+								boxcontent:'<div style="color:#20a53a;margin-left:-5px;">'+param.recover+'</div>'
+							}
+						},
+						{
+							group: {
+								type: 'button',
+								size: '',
+								name: 'submitForm',
+								class:'feedBtn',
+								style:'margin:10px auto 0;padding:6px 40px;',
+								title: 'Submit',
+								event: function (formData, element, that) {
+									// 触发submit
+									if(formData.feed == '') {
+										return bt.msg({status:false,msg:'Please fill in the feedback'})
+									}
+									var config = {}
+									config[id] = formData.feed
+									bt_tools.send({url:'config?action=write_nps_new',data:{questions:JSON.stringify(config),rate:0,product_type:param.proType}},function(ress){
+										if(ress.status){
+											openFeed.close()
+											layer.open({
+												title: false,
+												btn: false,
+												shadeClose: true,
+												shade:0.1,
+												closeBtn: 0,
+												skin:'qa_thank_dialog',
+												area: '230px',
+												content: '<div class="qa_thank_box" style="background-color:#F1F9F3;text-align: center;padding: 20px 0;"><img src="/static/img/feedback/QA_like.png" style="width: 55px;"><p style="margin-top: 15px;">Thank you for your participation!</p></div>',
+												success: function (layero,index) {
+													$(layero).find('.layui-layer-content').css({'padding': '0','border-radius': '5px'})
+													$(layero).css({'border-radius': '5px','min-width': '230px'})
+
+													setTimeout(function(){layer.close(index)},3000)
+												}
+											})
+										}
+									},'submit feedback')
+
+								}
+							}
+						}
+					]
+				})
+			},
+			yes:function(){
+				//点击确定时,如果btn:false,当前事件将无法使用
+			},
+			cancel: function () {
+				//点击右上角关闭时,如果btn:false,当前事件将无法使用
+			}
+		})
+},
 };
 
 
@@ -6304,6 +6421,66 @@ bt.site = {
             if (callback) callback(rdata);
         })
     },
+get_module_config: function (param, callback) {
+			var loadT = bt.load('Obtaining the alarm configuration, please wait...');
+			bt.send(
+				'get_module_config',
+				'push/get_module_config',
+				{
+					name: param.name,
+					type: param.type,
+				},
+				function (rdata) {
+					loadT.close();
+					if (callback) callback(rdata);
+				}
+			);
+		},
+
+		// 设置
+		set_push_config: function (param, callback) {
+			var loadT = bt.load('Please wait while setting alarm configuration...');
+			bt.send(
+				'set_push_config',
+				'push/set_push_config',
+				{
+					name: param.name,
+					id: param.id,
+					data: param.data,
+				},
+				function (rdata) {
+					loadT.close();
+					if (callback) callback(rdata);
+				}
+			);
+		},
+		// 获取消息推送配置
+		get_msg_configs: function (callback) {
+			var loadT = bt.load('Getting the message push configuration, please wait...');
+			bt.send('get_msg_configs', 'config/get_msg_configs', {}, function (rdata) {
+				loadT.close();
+				if (callback) callback(rdata);
+			});
+		},
+		// 下载证书
+		download_cert: function (param, callback) {
+			var loadT = bt.load('Please wait while downloading the certificate...');
+			bt.send(
+				'download_cert',
+				'site/download_cert',
+				{
+					siteName: param.siteName,
+					ssl_type: param.ssl_type || 'csr',
+					pem: param.pem,
+					key: param.key,
+					pwd: param.pwd || '', //密码，非必填
+				},
+				function (rdata) {
+					loadT.close();
+					if (callback) callback(rdata);
+				}
+			);
+		},
     get_ssl_info: function(partnerOrderId, siteName, callback) {
         var loadT = bt.load(lan.site.ssl_apply_3);
         bt.send('GetSSLInfo', 'ssl/GetSSLInfo', { partnerOrderId: partnerOrderId, siteName: siteName }, function(rdata) {

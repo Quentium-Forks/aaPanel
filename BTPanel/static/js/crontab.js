@@ -29,7 +29,8 @@ var crontab = {
         { title: 'Free RAM', value: 'rememory' },
         { title: 'Access URL', value: 'toUrl' }
       ],
-      unit: '<span style="margin-top: 9px; display: inline-block;"><i style="color: red;font-style: initial;font-size: 12px;margin-right: 5px">*</i>Type of task: Shell Script, Backup Site, Backup Database, Cut log, Free RAM, Access URL, Sync time</span>',
+      unit: '<span style="margin-top: 9px; display: inline-block;"><i style="color: red;font-style: initial;font-size: 12px;margin-right: 5px">*</i>Type of task: Shell Script, Backup Site, Backup Database, Cut log, Free RAM, Access URL, Sync time</span>\
+			<span style="display:inline-block; margin-left:10px;vertical-align: middle;" class="feedback-btn"><span class="flex" style="align-items: center;margin-right:16px;width:100px;"><i class="icon-demand"></i><a class="btlink" onClick="javascript:bt.openFeedback({title:\'aaPanel demand feedback collection\',placeholder:\'<span>If you encounter any problems or imperfect functions during use, please describe <br> your problems or needs to us in detail, we will try our best to solve or improve for <br> you</span>\',recover:\'We pay special attention to your requirements feedback, and we conduct regular weekly requirements reviews. I hope I can help you better\',key:993,proType:2});" style="margin-left: 5px;">Feedback</a></span></span>',
       change: function (formData, element, that) {
         that.data.type = 'week'   //默认类型为每星期
         var config = crontab.crontabsType(arryCopy(crontab.crontabFormConfig), formData, that)
