@@ -27,7 +27,7 @@ _tips = [
     "How to set：sysctl -w kernel.randomize_va_space=2",
 ]
 _help = ''
-
+_remind = 'This scheme can reduce the risk of intrusers using buffer overflow to attack the server, and strengthen the protection of the server. '
 def check_run():
        try:
            if os.path.exists("/proc/sys/kernel/randomize_va_space"):

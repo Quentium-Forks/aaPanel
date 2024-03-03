@@ -15,7 +15,7 @@ _tips = [
     "Note: If there is a backdoor user, it means that your server has been invaded"
 ]
 _help = ''
-
+_remind = 'This scheme will remove the backdoor users with the same privileges as the root user, and enhance the protection of the server permission control. If it is a business requirement, this risk term is ignored. '
 def check_run():
     '''
         @name 开始检测

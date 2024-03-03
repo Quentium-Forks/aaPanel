@@ -33,7 +33,9 @@ class panelSSL:
     __CODEURL = 'https://api.bt.cn/Auth/GetBindCode'  # 获取绑定验证码
 
     __UPATH = 'data/userInfo.json'
+    # __APIURL = 'http://dev.aapanel.com/api'
     __APIURL = 'https://www.aapanel.com/api'
+
     __PUBKEY = 'data/public.key'
 
     # 证书购买
@@ -77,12 +79,6 @@ class panelSSL:
         self.__PDATA = pdata
 
         # public.print_log('初始化------->最后 !!!!!!!!!!!!!!!!!!!用户信息:  {}'.format(self.__userInfo))
-        # {'id': 73092, 'uuid': 'f754a5a0-501d-4a88-b31c-684b29b25e57', 'referral_code': 'YwauGPEJ', 'referral_id': 0,
-        #  'username': 'aaP_15238123671', 'is_verified_email': 1, 'email': '15238123671@qq.com',
-        #  'reg_ip': '23.158.104.160', 'last_login_ip': '125.93.252.236', 'is_super': 1, 'status': 1, 'integral': 0,
-        #  'create_time': 1705893906, 'update_time': 1706508600, 'email_verified_time': 1705894005, 'referral': None,
-        #  'token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpcEFkZHJlc3MiOiIxMjUuOTMuMjUyLjIzNiIsImlzcyI6Imh0dHBzOlwvXC93d3cuYWFwYW5lbC5jb21cL2FwaVwvdXNlclwvbG9naW4iLCJpYXQiOjE3MDY1MDg2MDAsIm5iZiI6MTcwNjUwODYwMCwianRpIjoiSlFORmVMRzRiMnlNczVEVSIsInN1YiI6NzMwOTIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.rgfTzczpROtTK7xUqoTYRBrkosCz2DoW9KkKLRt0I2k',
-        #  'uid': 73092, 'server_id': 'a18b1788abdd7375ed42549ecbec5f1c4891335f878d599ac6675ffce68d9a92'}
 
     def en_code_rsa(self, data):
         pk = public.readFile(self.__PUBKEY)
@@ -149,16 +145,6 @@ class panelSSL:
                 public.writeFile(self.__UPATH, json.dumps(userinfo))
                 # if bool:
                 #     # public.print_log("写入用户信息  成功 {}".format(userinfo))
-                # #
-                # #     # 写入用户信息
-                # #     # 成功
-                # #     # {'id': 73092, 'uuid': 'f754a5a0-501d-4a88-b31c-684b29b25e57', 'referral_code': 'YwauGPEJ',
-                # #     #  'referral_id': 0, 'username': 'aaP_15238123671', 'is_verified_email': 1,
-                # #     #  'email': '15238123671@qq.com', 'reg_ip': '23.158.104.160', 'last_login_ip': '125.93.252.236',
-                # #     #  'is_super': 1, 'status': 1, 'integral': 0, 'create_time': 1705893906, 'update_time': 1706171995,
-                # #     #  'email_verified_time': 1705894005, 'referral': None,
-                # #     #  'token':
-                # #     #  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpcEFkZHJlc3MiOiIxMjUuOTMuMjUyLjIzNiIsImlzcyI6Imh0dHBzOlwvXC93d3cuYWFwYW5lbC5jb21cL2FwaVwvdXNlclwvbG9naW4iLCJpYXQiOjE3MDYxNzY2NTYsIm5iZiI6MTcwNjE3NjY1NiwianRpIjoiSXBPenVXYUpIeTVSdHY5YyIsInN1YiI6NzMwOTIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.K4PBOhOk5130XX22b6wh57Ys-2949bKQnaBGGn58u7M'}
                 # else:
                 #     public.print_log("写入用户信息  失败")
 
@@ -275,12 +261,6 @@ class panelSSL:
     # 完善资料CA(先支付接口)   todo  可能是支付后的完善信息接口
     def apply_order_ca(self, args):
         pdata = json.loads(args.pdata)
-        # {'pid': 8023, 'oid': 19, 'domains': ['aa.aaaaa'], 'dcvMethod': 'CNAME_CSR_HASH', 'auth_to': 'dns#@api',
-        #  'uc_id': 19,
-        #  'Administrator': {'job': 'General affairs', 'postCode': '523000', 'country': 'CN', 'firstName': '张三的',
-        #                    'lastName': '奥运的', 'state': '广东省', 'city': '东莞市', 'address': '广东省东莞市',
-        #                    'organation': '广东堡塔安全技术有限公司', 'email': '827291701@qq.com',
-        #                    'mobile': '15016510463'}}
 
         result = self.check_ssl_caa(pdata['domains'])
         if result:
@@ -723,7 +703,7 @@ class panelSSL:
             if 'authKey' in result['data']:
                 authfile = get.path + '/.well-known/pki-validation/' + result['data']['authKey']
             else:
-                return public.returnMsg(False, '获取验证文件失败 Failed to get the validation file!')
+                return public.returnMsg(False, ' Failed to get the validation file!')
 
         if 'authValue' in result['data']:
             public.writeFile(authfile, result['data']['authValue'])
@@ -737,18 +717,24 @@ class panelSSL:
             "authorization": "bt {}".format(self.__userInfo['token'])
         }
 
+
         result = public.return_msg_gettext(False, 'The request failed, please try again later!')
+
         try:
             # response_data = public.httpPost(self.__APIURL + '/' + dname, self.__PDATA)
             response_data = public.httpPost(self.__APIURL + '/' + dname, data=self.__PDATA, headers=url_headers)
+
             # public.print_log("###******************** response_data: {}".format(response_data))
             # public.print_log("******************** url: {}".format(self.__APIURL + '/' + dname))
             # public.print_log("******************** data: {}".format(self.__PDATA))
+            # public.print_log("******************** url_headers: {}".format(url_headers))
         except Exception as ex:
             raise public.error_conn_cloud(str(ex))
+
         try:
             result = json.loads(response_data)
         except:
+            # public.print_log("@@@@@@@@@@@@@@@@@@@3333333333333333333333333")
             pass
         return result
 
@@ -1523,7 +1509,7 @@ class panelSSL:
         dns_class._type = 1
         if not dns_class:
             return public.returnMsg(False,
-                                    "操作失败，请检查密钥是否正确.  The operation failed. Please check that the key is correct")
+                                    "The operation failed. Please check that the key is correct")
 
         # 申请前删除caa记录
         root, zone = public.get_root_domain(domain)
@@ -1533,7 +1519,7 @@ class panelSSL:
             pass
         try:
             dns_class.create_dns_record(public.de_punycode(domain), dns_value)
-            return public.returnMsg(True, '添加成功')
+            return public.returnMsg(True, 'Added successfully')
         except:
             return public.returnMsg(False, public.get_error_info())
 
@@ -1553,7 +1539,7 @@ class panelSSL:
 
         if not siteRunPath:
             return public.returnMsg(False,
-                                    '获取网站路径失败，请检查网站是否存在.  Failed to get the website path. Please check if the website exists')
+                                    'Failed to get the website path. Please check if the website exists')
 
         verify_path = siteRunPath + '/.well-known/pki-validation'
         if not os.path.exists(verify_path):  os.makedirs(verify_path)
@@ -1564,7 +1550,7 @@ class panelSSL:
         public.writeFile(verify_file, check_val)
         if not os.path.exists(verify_file):
             return public.returnMsg(False,
-                                    '创建验证文件失败，请检测是否写入被拦截. Failed to create the validation file. Check if the write was blocked')
+                                    'Failed to create the validation file. Check if the write was blocked')
 
         res = {}
         msg = [' domain name [{}] validation file cannot be accessed correctly'.format(domain),

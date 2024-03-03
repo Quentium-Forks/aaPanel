@@ -13,7 +13,7 @@ _tips = [
     "Modify X11Forwarding to no in [/etc/ssh/sshd_config]",
     ]
 _help = ''
-
+_remind = 'This can be used to enforce SSH login security and speed up SSH connections. Notethe fix turns off X11 graphical forwarding, so do not configure it if you need to use it. '
 
 def check_run():
     conf = '/etc/ssh/sshd_config'

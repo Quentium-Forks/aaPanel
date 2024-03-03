@@ -15,7 +15,7 @@ _tips = [
     "Execute [source ~/.bashrc] to make the configuration take effect",
 ]
 _help = ''
-
+_remind = 'This scheme can make ls command list more detailed file information and reduce the risk of rm command deleting files by mistake, but it may affect the original operation habits.'
 
 def check_run():
     '''
@@ -28,15 +28,15 @@ def check_run():
     if not os.path.exists(cfile):
         return True, 'Risk-free'
     conf = public.readFile(cfile)
-    rep1 = 'alias(\s*)ls(\s*)=(\s*)[\'\"]ls(\s*)-.*[alh].*[alh].*[alh]'
-    tmp1 = re.search(rep1, conf)
-    if not tmp1:
-        result_list.append('ls')
+    # rep1 = 'alias(\s*)ls(\s*)=(\s*)[\'\"]ls(\s*)-.*[alh].*[alh].*[alh]'
+    # tmp1 = re.search(rep1, conf)
+    # if not tmp1:
+    #     result_list.append('ls')
     rep2 = 'alias(\s*)rm(\s*)=(\s*)[\'\"]rm(\s*)-.*[i?].*'
     tmp2 = re.search(rep2, conf)
     if not tmp2:
         result_list.append('rm')
-    if result_list:
+    if len(result_list) > 0:
         return False, '{} The command does not have an alias configured or is configured incorrectly'.format('、'.join(result_list))
     else:
         return True, 'Risk-free'

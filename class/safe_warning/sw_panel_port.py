@@ -25,7 +25,7 @@ _tips = [
     "Note: Servers with [Security Group] should release the new port in the [Security Group] in advance to prevent the new port cannot be opened"
     ]
 _help = ''
-
+_remind = 'This solution can strengthen the panel protection and reduce the risk of the panel being attacked. '
 def check_run():
     '''
         @name 开始检测

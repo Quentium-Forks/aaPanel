@@ -13,7 +13,7 @@ _tips = [
     "Add ServerSignature Off and ServerTokens Prod to the [httpd.conf] file",
 ]
 _help = ''
-
+_remind = 'This solution can enhance the protection of your server and reduce the risk of your website being compromised. '
 
 def check_run():
     '''

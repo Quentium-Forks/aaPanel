@@ -27,7 +27,7 @@ _tips = [
     "Fix: modify umask to 027",
 ]
 _help = ''
-
+_remind = 'This scheme can strengthen the control of user permissions and avoid excessive user privileges. '
 def check_run():
       # 判断是否存在/etc/profile文件
     if os.path.exists("/etc/profile"):

@@ -23,7 +23,7 @@ _tips = [
     "Enable it in [Settings] - [Notification]"
 ]
 _help = ''
-
+_remind = 'This solution can strengthen the panel protection and reduce the risk of the panel being attacked. '
 def check_run():
     '''
         @name 面板登录告警是否开启

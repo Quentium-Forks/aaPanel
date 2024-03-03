@@ -23,6 +23,7 @@ class panelPlugin:
     __exists_names = {}
     __plugin_s_list = []
     __official_url = 'https://brandnew.aapanel.com'
+    # __official_url = 'http://dev.aapanel.com'
     pids = None
     ROWS = 15
     

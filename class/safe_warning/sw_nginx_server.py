@@ -24,7 +24,7 @@ _tips = [
     "Tips：server_tokens off;"
 ]
 _help = ''
-
+_remind = 'This solution enhances server protection and reduces the risk of your website being compromised. '
 def check_run():
     '''
         @name 检测nginx版本泄露

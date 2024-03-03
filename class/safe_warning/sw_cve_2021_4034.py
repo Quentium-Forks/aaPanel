@@ -25,7 +25,7 @@ _tips = [
     "Update polkit components"
 ]
 _help = ''
-
+_remind = 'There is a risk to upgrade the software version. It is strongly recommended that the server do a snapshot backup first, in case the operation fails to restore in time! '
 
 
 def check_run():

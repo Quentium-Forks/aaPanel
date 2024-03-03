@@ -13,7 +13,7 @@ _tips = [
     "systemctl stop telnet.socket stop telnet service"
 ]
 _help = ''
-
+_remind = 'This scheme shuts down the insecure telnet service, reducing the risk of data leakage. If the business requires telnet, this risk term is ignored. '
 
 def check_run():
     result = public.ExecShell('systemctl is-active telnet.socket')[0].strip()

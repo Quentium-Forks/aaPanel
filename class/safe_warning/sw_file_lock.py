@@ -40,5 +40,5 @@ def check_run():
     if result_list:
         return False, '以下文件未配置适当的底层属性：{}'.format('、'.join(result_list))
     else:
-        return True, '无风险'
+        return True, 'Risk-free'
 

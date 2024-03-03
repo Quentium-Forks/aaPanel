@@ -28,28 +28,28 @@ def check_run():
     if openssl[0] == '1':
         if openssl[1] == '0' and openssl[2][0] == '2':
             if len(openssl[2]) < 3:
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             elif not openssl[2][1].islower():
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             elif openssl[2][1] < 'z':
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             elif openssl[2][1] == 'z' and openssl[2][2] < 'f':
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             else:
-                return True, '无风险'
+                return True, 'Risk-free'
         elif openssl[1] == '1' and openssl[2][0] == '1':
             if len(openssl[2]) < 2:
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             elif not openssl[2][1].islower():
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             elif openssl[2][1] < 'p':
-                return False, '当前openssl版本存在安全风险，需更新到安全版本'
+                return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
             else:
-                return True, '无风险'
+                return True, 'Risk-free'
     elif openssl[0] == '3' and openssl[1] == '0':
         if openssl[2][0] < '4':
-            return False, '当前openssl版本存在安全风险，需更新到安全版本'
+            return False, 'There are security risks in the current version of openssl; you need to update to a secure version'
         else:
-            return True, '无风险'
+            return True, 'Risk-free'
     else:
-        return True, '无风险'
+        return True, 'Risk-free'

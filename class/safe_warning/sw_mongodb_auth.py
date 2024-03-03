@@ -13,7 +13,7 @@ _tips = [
     "Turn on the security authentication switch in the aaPanel Databases MongoDB",
 ]
 _help = ''
-
+_remind = 'This is a great way to protect your database against hackers trying to steal data from your mongo database. '
 
 def check_run():
     '''

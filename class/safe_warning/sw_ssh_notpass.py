@@ -26,7 +26,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This scheme prevents the server from logging in with an empty password. Note that the server cannot login with an empty password after the repair. Ensure that the login password is configured synchronously for related business access. '
 
 
 def check_run():

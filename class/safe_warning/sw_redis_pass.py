@@ -25,7 +25,7 @@ _tips = [
     "2.Please change your password in time"
     ]
 _help = ''
-
+_remind = 'This solution reduces the risk of server intrusion by strengthening the database login password. '
 
 def check_run():
     try:

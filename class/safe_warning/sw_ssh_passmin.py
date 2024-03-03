@@ -27,7 +27,7 @@ _tips = [
     "PASS_MIN_DAYS 7 needs to execute the command at the same time to set the expiration time of the root password. The command is as follows: chage --mindays 7 root",
 ]
 _help = ''
-
+_remind = 'This solution sets the number of days after the SSH login password is changed, it cannot be changed again. '
 
 def check_run():
     try:

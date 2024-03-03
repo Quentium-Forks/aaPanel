@@ -27,7 +27,7 @@ _tips = [
     "PASS_MAX_DAYS 90 You need to execute the command to set the root password expiration time at the same time. The command is as follows: chage --maxdays 90 root",
 ]
 _help = ''
-
+_remind = 'This solution reduces the risk of a breach by setting an expiration date for the root login password. Note that the repair scheme will invalidate the root password after the expiration date, so it is necessary to modify the password before the expiration date. If the modification is not timely, it may affect the operation of some services. '
 
 def check_run():
     try:

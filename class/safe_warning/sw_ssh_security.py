@@ -27,7 +27,7 @@ _tips = [
     "minlen=9",
     ]
 _help = ''
-
+_remind = 'This solution enforces a minimum login password length, reducing the risk of server blow-up. '
 
 
 def check_run():

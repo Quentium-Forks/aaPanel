@@ -29,7 +29,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = "This solution reduces the risk of a breach by changing the default SSH login port. Noteafter the fix, you'll need to change the SSH port that the relevant business logs on to. "
 
 def check_run():
     '''

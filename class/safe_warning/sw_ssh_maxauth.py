@@ -26,7 +26,7 @@ _tips = [
 ]
 
 _help = ''
-
+_remind = 'This reduces the risk of server intrusion by reducing the maximum number of SSH connections. Note Before fixing, confirm the number of simultaneous connections that SSH needs to support to prevent affecting normal business operations. '
 
 
 def check_run():

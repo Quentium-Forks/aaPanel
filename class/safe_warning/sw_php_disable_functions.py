@@ -31,7 +31,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = 'This solution can strengthen the protection of the website and reduce the risk of server intrusion. '
 def check_run():
     path ="/www/server/php"
     #获取目录下的文件夹

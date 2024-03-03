@@ -26,7 +26,7 @@ _tips = [
     "Authentication should be turned on to authenticate or turn off the Docker Api"
 ]
 _help = ''
-
+_remind = "This solution fixes Docker's unauthorized access vulnerability, preventing attackers from using Docker to break into the server. We need to restrict API access to ensure that it does not affect the original website business operation. "
 
 #
 def get_local_ip():

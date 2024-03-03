@@ -15,7 +15,7 @@ _tips = [
     "auth required pam_tally2.so onerr=fail deny=5 unlock_time=300 even_deny_root root_unlock_time=300"
 ]
 _help = ''
-
+_remind = 'This reduces the risk of a server being blown up. Be sure to remember your login password, though, in case you get locked out of your account for five minutes because of too many failed login attempts. '
 
 def check_run():
     '''

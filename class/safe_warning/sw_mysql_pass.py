@@ -23,7 +23,7 @@ _tips = [
     "If a weak password is detected, please change the password in time"
 ]
 _help = ''
-
+_remind = 'This scheme increases the strength of the database password and reduces the risk of being successfully exploded. '
 
 def check_run():
     '''

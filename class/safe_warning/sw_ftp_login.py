@@ -13,7 +13,7 @@ _tips = [
     "Modify the value of NoAnonymous to yes in the [/www/server/pure-ftpd/etc/pure-ftpd.conf] configuration file",
 ]
 _help = ''
-
+_remind = 'This scheme can enhance the FTP server protection, prevent illegal intrusion into the server. Unable to log in to the FTP server using Anonymous after configuration. '
 
 def check_run():
 

@@ -14,7 +14,7 @@ _tips = [
     "Follow the prompts to find the risk file and delete it"
 ]
 _help = ''
-
+_remind = 'This solution removes all vulnerable files, preventing them from being exploited by hackers to gain access to the server. You can backup files before deleting them to prevent them from affecting the operation of your website. '
 
 def check_run():
     '''

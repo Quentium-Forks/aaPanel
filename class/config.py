@@ -2801,25 +2801,65 @@ class config:
     # 检查是否提交过问卷
     def check_nps(self, get):
         if 'product_type' not in get:
-            public.returnMsg(False, '参数错误')
+            public.returnMsg(False, 'Parameter error')
+        ikey = 'check_nps'
+        result = cache.get(ikey)
+        if result:
+            return result
 
         url = "https://www.aapanel.com/api/panel/nps/check"
-        user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
 
         data = {
             'product_type': get.get('product_type', 1),
-            'server_id':  user_info['server_id'],
+            #'server_id':  user_info['server_id'],
         }
+
+
+        try:
+            user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+            data['server_id'] = user_info['server_id']
+
+        except:
+            pass
         res = public.httpPost(url, data)
         try:
             res = json.loads(res)
         except:
             pass
 
-        if res['success']:
-            return public.returnMsg(True, '已提交过问卷')
 
-        return public.returnMsg(False, '未提交过问卷')
+
+        # 判断运行天数
+        safe_day = 0
+        cur_timestamp = int(time.time())
+        # if os.path.exists("data/%s_nps_time.pl" % software_name):
+        if os.path.exists("/www/server/panel/data/panel_nps_time.pl"):
+            try:
+                # nps_time = float(public.ReadFile("/www/server/panel/data/panel_nps_time.pl"))
+                nps_time = float(public.ReadFile("data/panel_nps_time.pl"))
+                safe_day = int((cur_timestamp - nps_time) / 86400)
+
+
+                # public.print_log("###################### 时间{}".format(cur_timestamp))
+
+            except:
+                public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
+        else:
+            public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
+        datas = {'nonce': res['nonce'],
+                 'success': res['success'],
+                 'res': {
+                     'safe_day': safe_day,
+                     'is_submit': res['res']
+                    }
+                 }
+
+        cache.set(ikey, datas, 3600)
+        # if res['success']:
+            # return public.returnMsg(True, 'Questionnaire has been submitted')
+
+        # return public.returnMsg(False, 'No questionnaire has been submitted')
+        return datas
 
     def get_nps_new(self, get):
         """
@@ -2843,7 +2883,7 @@ class config:
             return res
 
         except:
-            return public.returnMsg(False, "获取问卷失败")
+            return public.returnMsg(False, "Failed to obtain questionnaire")
 
     def write_nps_new(self, get):
         '''
@@ -2852,12 +2892,12 @@ class config:
             @param feedback 反馈内容
         '''
         if 'product_type' not in get:
-            public.returnMsg(False, '参数错误')
+            public.returnMsg(False, 'Parameter error')
 
         # if 'questions' not in get:
         #     public.returnMsg(False, '参数错误')
         if 'rate' not in get:
-            public.returnMsg(False, '参数错误')
+            public.returnMsg(False, 'Parameter error')
 
         # try:
         # if not hasattr(get, 'software_name'):
@@ -2866,20 +2906,46 @@ class config:
         # software_name = get['software_name']
         # public.WriteFile("data/{}_nps.pl".format(software_name), "1")
 
-        user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+        data = {
+            # 'action': "submit",
+            # 'uid': user_info['uid'],  # 用户ID
+            # 'access_key': user_info['access_key'],  # 用户密钥
+            # 'is_paid': get['is_paid'],  # 是否付费
+            # 'phone_back': get['back_phone'],  # 是否回访
+            # 'feedback': get['feedback']  # 反馈内容
+            # 'reason_tags': get['reason_tags'],  # 问题标签
+            'rate': get.get('rate', 1),  # 评分  1~10
+            'product_type': get.get('product_type', 1),  # 产品类型
+            #'server_id': user_info['server_id'],  # 服务器ID
+            'questions': get['questions'],  # 问题列表
+            'panel_version': public.version(),  # 面板版本
+
+        }
+        url_headers = {
+            # "authorization": "bt {}".format(user_info['token'])
+        }
+
+        try:
+            user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+            data[ 'server_id']= user_info['server_id']
+            url_headers = {
+                "authorization": "bt {}".format(user_info['token'])
+            }
+        except:
+            pass
         # public.print_log("user_info@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(user_info))
         url = 'https://www.aapanel.com/api/panel/nps/submit'
         if not hasattr(get, 'questions'):
-            return public.returnMsg(False, "questions 参数错误")
+            return public.returnMsg(False, "questions Parameter error")
         else:
             try:
                 content = json.loads(get.questions)
                 for _, i in content.items():
                     if len(i) > 512:
                         # public.ExecShell("rm -f data/{}_nps.pl".format(software_name))
-                        return public.returnMsg(False, "提交的文本太长，请调整后重新提交（MAX：512）")
+                        return public.returnMsg(False, "The submitted text is too long, please adjust and resubmit (MAX: 512)")
             except:
-                return public.returnMsg(False, "questions 参数错误")
+                return public.returnMsg(False, "questions Parameter error")
         # if not hasattr(get, 'product_type'):
         #     return public.returnMsg(False, "参数错误")
         # if not hasattr(get, 'rate'):
@@ -2893,24 +2959,6 @@ class config:
         # if not hasattr(get, 'phone_back'):
         #     get.feedback = ""
 
-        data = {
-            # 'action': "submit",
-            # 'uid': user_info['uid'],  # 用户ID
-            # 'access_key': user_info['access_key'],  # 用户密钥
-            # 'is_paid': get['is_paid'],  # 是否付费
-            # 'phone_back': get['back_phone'],  # 是否回访
-            # 'feedback': get['feedback']  # 反馈内容
-            # 'reason_tags': get['reason_tags'],  # 问题标签
-            'rate': get.get('rate', 1),  # 评分  1~10
-            'product_type': get.get('product_type', 1),  # 产品类型
-            'server_id': user_info['server_id'],  # 服务器ID
-            'questions': get['questions'],  # 问题列表
-            'panel_version': public.version(),  # 面板版本
-
-        }
-        url_headers = {
-            "authorization": "bt {}".format(user_info['token'])
-        }
         res = public.httpPost(url, data=data, headers=url_headers)
         try:
             res = json.loads(res)
@@ -2918,12 +2966,12 @@ class config:
             pass
 
         if res['success']:
-            return public.returnMsg(True, "提交成功")
+            return public.returnMsg(True, "Submitted successfully")
 
         # public.print_log("data**********************************   {}".format(data))
         # public.print_log("url**********************************   {}".format(url))
         # public.print_log("提交问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
-        return public.returnMsg(False, res['res'] if 'res' in res else "提交失败")
+        return public.returnMsg(False, res['res'] if 'res' in res else "Submission Failed")
 
 
     # # nps问卷

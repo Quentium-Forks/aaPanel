@@ -23,7 +23,7 @@ _tips = [
     "Open it in [Monitor] - [System Monitor]"
 ]
 _help = ''
-
+_remind = 'Enable server monitoring, you can record the recent operation of the server, to facilitate the troubleshooting of system anomalies. '
 def check_run():
     '''
         @name 面板未开启监控

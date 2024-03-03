@@ -15,7 +15,7 @@ _tips = [
     "Add or modify remember=5 after [password sufficient] in [/etc/pam.d/system-auth] file"
 ]
 _help = ''
-
+_remind = 'This scheme enhances server access control protection by limiting the number of times login passwords are reused. '
 
 def check_run():
     '''

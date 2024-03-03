@@ -12,7 +12,7 @@ _tips = [
     "Use the chmod +t [file name] command to modify the permissions of the file",
 ]
 _help = ''
-
+_remind = 'This solution prevents system users from accidentally deleting files on the server. '
 
 def check_run():
     '''

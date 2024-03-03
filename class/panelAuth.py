@@ -19,6 +19,7 @@ class panelAuth:
     __product_bay_path = 'data/product_bay.pl'
     __product_id = '100000011'
     __official_url = 'https://brandnew.aapanel.com'
+    # __official_url = 'http://dev.aapanel.com'
 
     def create_serverid(self,get):
         try:
@@ -350,3 +351,20 @@ class panelAuth:
         if not data['success']:
             return public.return_msg_gettext(False, 'Apply Failed')
         return public.return_msg_gettext(True,'Apply successfully')
+
+    # 获取专业版特权信息  或插件信息?
+    def get_plugin_remarks(self, get):
+
+        if not hasattr(get, 'product_id'):
+            return public.return_msg_gettext(False, 'product_id Parameter ERROR!')
+        product_id = get.product_id
+
+        ikey = 'plugin_remarks' + product_id
+        if ikey in session:
+            return session.get(ikey)
+        url = '{}/api/panel/get_advantages/{}'.format(self.__official_url, product_id)
+        data = requests.get(url).json()
+        # public.print_log(" ###############%%%%%%%%%%%%%%%%%%%% {}".format(data))
+        if not data: return public.returnMsg(False, 'Failed to connect to the server!')
+        session[ikey] = data
+        return data

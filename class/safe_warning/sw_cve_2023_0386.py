@@ -16,7 +16,7 @@ _tips = [
     "If it Ubuntu 22.04, execute [apt install linux-image] to check the installable version number, select version number higher than 5.15.0-70, execute [apt install linux-image-version_number] again, and restart the server"
 ]
 _help = ''
-
+_remind = 'The above kernel upgrade operation has certain risks, it is strongly recommended that the server do a snapshot backup first, in case the operation fails to restore in time! '
 
 # https://nvd.nist.gov/vuln/detail/CVE-2023-0386
 def check_run():

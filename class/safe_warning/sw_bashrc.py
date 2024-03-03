@@ -27,7 +27,7 @@ _tips = [
     "Solution: Modify the /etc/bashrc file permission to 027",
 ]
 _help = ''
-
+_remind = 'This scheme can strengthen the protection of system user rights, but it may affect the original operation habits.'
 
 
 def check_run():

@@ -41,6 +41,10 @@ class process_network_total:
             @author hwliang
             @return void
         '''
+        # 标记只安装一次
+        tip_file= '{}/data/install_pcap.pl'.format(public.get_panel_path())
+        if os.path.exists(tip_file): return
+
         if os.path.exists('/usr/bin/apt'):
             os.system("apt install libpcap-dev -y")
         elif os.path.exists('/usr/bin/dnf'):
@@ -51,10 +55,11 @@ class process_network_total:
                 f.close()
                 if red_body.find('CentOS Linux release 8.') != -1:
                     rpm_file = '/root/libpcap-1.9.1.rpm'
-                    down_url = "wget -O {} https://repo.almalinux.org/almalinux/8/PowerTools/x86_64/os/Packages/libpcap-devel-1.9.1-5.el8.x86_64.rpm --no-check-certificate -T 10".format(rpm_file)
-                    print(down_url)
-                    os.system(down_url)
-                    os.system("rpm -ivh {}".format(rpm_file))
+                    down_url = "wget -O {} https://node.aapanel.com/src/libpcap-devel-1.9.1-5.el8.x86_64.rpm  --no-check-certificate -T 10".format(
+                        rpm_file)
+                    if os.path.exists(rpm_file):
+                        os.system(down_url)
+                        os.system("rpm -ivh {}".format(rpm_file))
                     if os.path.exists(rpm_file): os.remove(rpm_file)
                 else:
                     os.system("dnf install libpcap-devel -y")
@@ -63,6 +68,8 @@ class process_network_total:
         elif os.path.exists('/usr/bin/yum'):
             os.system("yum install libpcap-devel -y")
         os.system("btpip install pypcap")
+        # 写入标记文件
+        public.writeFile(tip_file, 'True')
 
     def start(self):
         '''

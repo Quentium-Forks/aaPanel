@@ -13,7 +13,7 @@ _tips = [
     "Modify the value of MinUID to 100 in the [/www/server/pure-ftpd/etc/pure-ftpd.conf] configuration file",
 ]
 _help = ''
-
+_remind = 'This solution can be used to enhance the protection of your FTP server. After configuration, the root user cannot login ftp, use with caution. '
 
 def check_run():
     if os.path.exists('/www/server/pure-ftpd/etc/pure-ftpd.conf'):

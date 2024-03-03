@@ -13,7 +13,7 @@ _tips = [
     "docker version查看docker版本是否小于18.09.2，runc版本小于1.0-rc6",
 ]
 _help = ''
-
+_remind = 'An attacker can use this vulnerability to gain access to the server. '
 
 # https://nvd.nist.gov/vuln/detail/CVE-2019-5736#match-7231264
 def check_run():
@@ -22,7 +22,7 @@ def check_run():
         @return tuple (status<bool>,msg<string>)
     '''
     docker = public.ExecShell("docker version --format=\'{{ .Server.Version }}\'")[0].strip()
-    if 'command not found' in docker or '未找到命令' in docker:
+    if 'command not found' in docker or 'Command not found' in docker:
         return True, 'Risk-free，docker is not installed'
     if not re.search('\d+.\d+.\d+', docker):
         return True, 'Risk-free'

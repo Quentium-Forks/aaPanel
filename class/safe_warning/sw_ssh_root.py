@@ -27,7 +27,7 @@ _tips = [
     "PermitRootLogin no",
 ]
 _help = ''
-
+_remind = 'SSH remote login as root is not possible after this solution is fixed'
 
 
 def check_run():

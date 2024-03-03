@@ -27,7 +27,7 @@ _tips = [
     "minclass=3",
 ]
 _help = ''
-
+_remind = 'This scheme strengthens the complexity of the server login password and reduces the risk of being successfully exploded. '
 
 def check_run():
     try:

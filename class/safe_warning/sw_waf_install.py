@@ -27,7 +27,7 @@ _tips = [
     ]
 
 _help = ''
-
+_remind = "WAF firewall is the first line of defense to protect the server, can block external network attacks, to ensure the safe and stable operation of the website. "
 
 def check_run():
     '''

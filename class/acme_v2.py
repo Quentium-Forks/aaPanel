@@ -907,6 +907,12 @@ fullchain.pem       Paste into certificate input box
         cert_init = self.get_cert_init(args.pem_file)
         if not cert_init:
             return public.return_msg_gettext(False, 'Certificate information acquisition failed!')
+        api_path = './config/dns_api.json'
+        api_init = './config/dns_api_init.json'
+        if not os.path.exists(api_path):
+            if os.path.exists(api_init):
+                import shutil
+                shutil.copyfile(api_init, api_path)
         cert_init['dnsapi'] = json.loads(public.readFile(self._dnsapi_file))
         return cert_init
 

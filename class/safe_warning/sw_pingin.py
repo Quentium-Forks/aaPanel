@@ -22,8 +22,8 @@ _level = 0                                  # 风险级别： 1.提示(低)  2.�
 _date = '2020-08-05'                        # 最后更新时间
 _ignore = os.path.exists("data/warning/ignore/sw_ping_in.pl")
 _tips = [
-    "在【安全】页面中开启【禁Ping】功能",
-    "注意：开启后无法通过ping通服务器IP或域名，请根据实际需求设置"
+    "Enable Disable Ping in Security page ",
+    "Note: You cannot ping the server IP or domain name after opening, please set it according to your actual needs"
     ]
 
 _help = ''
@@ -40,8 +40,8 @@ def check_run():
         conf = public.readFile(cfile)
         if conf:
             if int(conf)!=1:
-                return False,'当前未开启【禁Ping】功能，存在服务器被ICMP攻击或被扫的风险'
+                return False,'The "Ban Ping" function is not enabled at present, there is a risk that the server is attacked by ICMP or swept'
         else:
-            return True,"无风险"
+            return True,"Risk-free"
     except:
-        return True,"无风险"
+        return True,"Risk-free"

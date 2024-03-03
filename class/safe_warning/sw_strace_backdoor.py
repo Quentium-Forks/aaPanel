@@ -15,7 +15,7 @@ _tips = [
     "If the process is filtered out, use the kill -9 [pid] command to stop the process"
 ]
 _help = ''
-
+_remind = 'detects the existence of hacker intrusion on the server, and the hacker behavior can be interrupted in time through the scheme command to prevent the server from being further invaded and controlled. '
 
 def check_run():
     '''
