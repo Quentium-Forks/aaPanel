@@ -112,6 +112,10 @@ class panelAuth:
         env_info = public.fetch_env_info()
         params['environment_info'] = json.dumps(env_info)
         params['server_id'] = env_info['install_code']
+
+        # 添加购买来源
+        # params['source'] = get.source
+
         data = self.send_cloud('{}/api/order/product/create'.format(self.__official_url), params)
         if not data['success']:
             return public.return_msg_gettext(False,data['res'])
@@ -206,7 +210,7 @@ class panelAuth:
             url_headers = {"Content-Type": "application/json",
                            "authorization": "bt {}".format(userInfo['token'])
                            }
-            resp = requests.post(cloudURL, params=params, headers=url_headers)
+            resp = requests.post(cloudURL, params =params, headers=url_headers)
             resp = resp.json()
             if not resp['res']: return None
             return resp

@@ -39,8 +39,8 @@ class site_push:
         data['ps'] = ''
         data['version'] = '1.0'
         data['date'] = '2020-08-10'
-        data['author'] = '宝塔'
-        data['help'] = 'http://www.bt.cn/bbs'
+        data['author'] = 'aaPanel'
+        data['help'] = 'http://www.aapanel.com'
         return data
 
     """
@@ -667,8 +667,8 @@ class site_push:
             for m_module in data['module'].split(','):
                 if m_module == 'sms': continue
 
-                s_list = [">告警类型：木马检测告警",">通知内容：<font color=#ff0000>发现疑似木马文件 {} 个</font>".format(len(f_list)),">文件列表：[{}]".format('、'.join(f_list))]
-                sdata = public.get_push_info('宝塔面板木马检测告警',s_list)
+                s_list = [">alert type:Trojan detects alarms",">Content of notification: <font color=#ff0000> Found suspected Trojan files {}</font>".format(len(f_list)),">listed files:[{}]".format('、'.join(f_list))]
+                sdata = public.get_push_info('aaPanel trojan detects alarms',s_list)
                 result[m_module] = sdata
             return result
 

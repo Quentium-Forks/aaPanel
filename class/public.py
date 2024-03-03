@@ -126,7 +126,7 @@ def HttpPost(url,data,timeout = 6,headers = {}):
     s_body = res.text
     return s_body
 
-def httpPost(url,data,timeout=6):
+def httpPost(url,data,headers={},timeout=6):
     """
         @name 发送POST请求
         @author hwliang<hwl@bt.cn>
@@ -135,7 +135,7 @@ def httpPost(url,data,timeout=6):
         @param timeout 超时时间默认60秒
         @return string
     """
-    return HttpPost(url,data,timeout)
+    return HttpPost(url,data,timeout,headers)
 
 def check_home():
     return True
@@ -6600,3 +6600,33 @@ def check_sys_write():
         @return bool
     '''
     return stop_syssafe()
+
+
+def get_root_domain(domain_name):
+    '''
+        @name 根据域名查询根域名和记录值
+        @author cjxin<2020-12-17>
+        @param domain {string} 被验证的根域名
+        @return void
+    '''
+    top_domain_list = ['.ac.cn', '.ah.cn', '.bj.cn', '.com.cn', '.cq.cn', '.fj.cn', '.gd.cn',
+                       '.gov.cn', '.gs.cn', '.gx.cn', '.gz.cn', '.ha.cn', '.hb.cn', '.he.cn',
+                       '.hi.cn', '.hk.cn', '.hl.cn', '.hn.cn', '.jl.cn', '.js.cn', '.jx.cn',
+                       '.ln.cn', '.mo.cn', '.net.cn', '.nm.cn', '.nx.cn', '.org.cn', '.cn.com']
+    old_domain_name = domain_name
+    top_domain = "." + ".".join(domain_name.rsplit('.')[-2:])
+    new_top_domain = "." + top_domain.replace(".", "")
+    is_tow_top = False
+    if top_domain in top_domain_list:
+        is_tow_top = True
+        domain_name = domain_name[:-len(top_domain)] + new_top_domain
+
+    if domain_name.count(".") > 1:
+        zone, middle, last = domain_name.rsplit(".", 2)
+        if is_tow_top:
+            last = top_domain[1:]
+        root = ".".join([middle, last])
+    else:
+        zone = ""
+        root = old_domain_name
+    return root, zone

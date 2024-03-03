@@ -2796,3 +2796,287 @@ class config:
                     pass
                 data[key] = x
         return data
+
+
+    # 检查是否提交过问卷
+    def check_nps(self, get):
+        if 'product_type' not in get:
+            public.returnMsg(False, '参数错误')
+
+        url = "https://www.aapanel.com/api/panel/nps/check"
+        user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+
+        data = {
+            'product_type': get.get('product_type', 1),
+            'server_id':  user_info['server_id'],
+        }
+        res = public.httpPost(url, data)
+        try:
+            res = json.loads(res)
+        except:
+            pass
+
+        if res['success']:
+            return public.returnMsg(True, '已提交过问卷')
+
+        return public.returnMsg(False, '未提交过问卷')
+
+    def get_nps_new(self, get):
+        """
+        获取问卷
+        """
+        try:
+            # 官网接口 需替换
+            url = "https://www.aapanel.com/api/panel/nps/questions"
+            data = {
+                'product_type': get.get('product_type', 1),
+                # 'action': "list",
+                # 'version': get.get('version', -1)
+            }
+            # request发送post请求并指定form_data参数
+            res = public.httpPost(url, data)
+            # public.print_log("获取问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
+            try:
+                res = json.loads(res)
+            except:
+                pass
+            return res
+
+        except:
+            return public.returnMsg(False, "获取问卷失败")
+
+    def write_nps_new(self, get):
+        '''
+            @name nps 提交
+            @param rate 评分
+            @param feedback 反馈内容
+        '''
+        if 'product_type' not in get:
+            public.returnMsg(False, '参数错误')
+
+        # if 'questions' not in get:
+        #     public.returnMsg(False, '参数错误')
+        if 'rate' not in get:
+            public.returnMsg(False, '参数错误')
+
+        # try:
+        # if not hasattr(get, 'software_name'):
+        #     public.returnMsg(False, '参数错误')
+
+        # software_name = get['software_name']
+        # public.WriteFile("data/{}_nps.pl".format(software_name), "1")
+
+        user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+        # public.print_log("user_info@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(user_info))
+        url = 'https://www.aapanel.com/api/panel/nps/submit'
+        if not hasattr(get, 'questions'):
+            return public.returnMsg(False, "questions 参数错误")
+        else:
+            try:
+                content = json.loads(get.questions)
+                for _, i in content.items():
+                    if len(i) > 512:
+                        # public.ExecShell("rm -f data/{}_nps.pl".format(software_name))
+                        return public.returnMsg(False, "提交的文本太长，请调整后重新提交（MAX：512）")
+            except:
+                return public.returnMsg(False, "questions 参数错误")
+        # if not hasattr(get, 'product_type'):
+        #     return public.returnMsg(False, "参数错误")
+        # if not hasattr(get, 'rate'):
+        #     return public.returnMsg(False, "参数错误")
+        # if not hasattr(get, 'reason_tags'):
+        #     get['reason_tags'] = "1"
+        # if not hasattr(get, 'is_paid'):
+        #     get['is_paid'] = 0  # 是否付费
+        # if not hasattr(get, 'phone_back'):
+        #     get.phone_back = 0
+        # if not hasattr(get, 'phone_back'):
+        #     get.feedback = ""
+
+        data = {
+            # 'action': "submit",
+            # 'uid': user_info['uid'],  # 用户ID
+            # 'access_key': user_info['access_key'],  # 用户密钥
+            # 'is_paid': get['is_paid'],  # 是否付费
+            # 'phone_back': get['back_phone'],  # 是否回访
+            # 'feedback': get['feedback']  # 反馈内容
+            # 'reason_tags': get['reason_tags'],  # 问题标签
+            'rate': get.get('rate', 1),  # 评分  1~10
+            'product_type': get.get('product_type', 1),  # 产品类型
+            'server_id': user_info['server_id'],  # 服务器ID
+            'questions': get['questions'],  # 问题列表
+            'panel_version': public.version(),  # 面板版本
+
+        }
+        url_headers = {
+            "authorization": "bt {}".format(user_info['token'])
+        }
+        res = public.httpPost(url, data=data, headers=url_headers)
+        try:
+            res = json.loads(res)
+        except:
+            pass
+
+        if res['success']:
+            return public.returnMsg(True, "提交成功")
+
+        # public.print_log("data**********************************   {}".format(data))
+        # public.print_log("url**********************************   {}".format(url))
+        # public.print_log("提交问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
+        return public.returnMsg(False, res['res'] if 'res' in res else "提交失败")
+
+
+    # # nps问卷
+    # def stop_nps(self, get):
+    #     if 'software_name' not in get:
+    #         public.returnMsg(False, '参数错误')
+    #     if get.software_name == "panel":
+    #         self._stop_panel_nps()
+    #     else:
+    #         public.WriteFile("data/%s_nps.pl" % get.software_name, "")
+    #     return public.returnMsg(True, '关闭成功')
+
+    # def get_nps(self, get):
+    #     if 'software_name' not in get: public.returnMsg(False, '参数错误')
+    #     software_name = get.software_name
+    #     if software_name == "panel":
+    #         return self._get_panel_nps()
+    #     data = {'safe_day': 0}
+    #     # conf = self.get_config(None)
+    #     # 判断运行天数
+    #     if os.path.exists("data/%s_nps_time.pl" % software_name):
+    #         try:
+    #             nps_time = float(public.ReadFile("data/%s_nps_time.pl" % software_name))
+    #             data['safe_day'] = int((time.time() - nps_time) / 86400)
+    #
+    #         except:
+    #             public.WriteFile("data/%s_nps_time.pl" % software_name, "%s" % time.time())
+    #     else:
+    #         public.WriteFile("data/%s_nps_time.pl" % software_name, "%s" % time.time())
+    #
+    #     if not os.path.exists("data/%s_nps.pl" % software_name):
+    #         # 如果安全运行天数大于5天 并且没有没有填写过nps的信息
+    #         data['nps'] = False
+    #     else:
+    #         data['nps'] = True
+    #     return data
+
+    # def write_nps(self, get):
+    #     '''
+    #         @name nps 提交
+    #         @param rate 评分
+    #         @param feedback 反馈内容
+    #
+    #     '''
+    #     if 'product_type' not in get: public.returnMsg(False, '参数错误')
+    #     if 'software_name' not in get: public.returnMsg(False, '参数错误')
+    #     software_name = get.software_name
+    #     product_type = get.product_type
+    #     import json, requests
+    #     api_url = 'https://www.bt.cn/api/v2/contact/nps/submit'
+    #     user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
+    #     if 'rate' not in get:
+    #         return public.returnMsg(False, "参数错误")
+    #     if 'feedback' not in get:
+    #         get.feedback = ""
+    #     if 'phone_back' not in get:
+    #         get.phone_back = 0
+    #     else:
+    #         if get.phone_back == 1:
+    #             get.phone_back = 1
+    #         else:
+    #             get.phone_back = 0
+    #
+    #     if 'questions' not in get:
+    #         return public.returnMsg(False, "参数错误")
+    #
+    #     try:
+    #         get.questions = json.loads(get.questions)
+    #     except:
+    #         return public.returnMsg(False, "参数错误")
+    #
+    #     data = {
+    #         "uid": user_info['uid'],
+    #         "access_key": user_info['access_key'],
+    #         "server_id": user_info['server_id'],
+    #         "product_type": product_type,
+    #         "rate": get.rate,
+    #         "feedback": get.feedback,
+    #         "phone_back": get.phone_back,
+    #         "questions": json.dumps(get.questions)
+    #     }
+    #     try:
+    #         requests.post(api_url, data=data, timeout=10).json()
+    #         if software_name == "panel":
+    #             self._stop_panel_nps(is_complete=True)
+    #         else:
+    #             public.WriteFile("data/{}_nps.pl".format(software_name), "1")
+    #     except:
+    #         pass
+    #     return public.returnMsg(True, "提交成功")
+
+
+
+
+    # @staticmethod
+    # def _get_panel_nps_data():
+    #     panel_path = public.get_panel_path()
+    #     try:
+    #         nps_file = "{}/data/btpanel_nps_data".format(panel_path)
+    #         if os.path.exists(nps_file):
+    #             with open(nps_file, mode="r") as fp:
+    #                 nps_data = json.load(fp)
+    #         else:
+    #             time_file = "{}/data/panel_nps_time.pl".format(panel_path)
+    #             post_nps_done = "{}/data/panel_nps.pl".format(panel_path)
+    #             if not os.path.exists(time_file):
+    #                 install_time = time.time()
+    #             else:
+    #                 with open(time_file, mode="r") as fp:
+    #                     install_time = float(fp.read())
+    #             nps_data = {
+    #                 "time": install_time,
+    #                 "status": "complete" if os.path.exists(post_nps_done) else "waiting",
+    #                 "popup_count": 0
+    #             }
+    #
+    #             with open(nps_file, mode="w") as fp:
+    #                 fp.write(json.dumps(nps_data))
+    #     except:
+    #         nps_data = {
+    #             "time": time.time(),
+    #             "status": "waiting",
+    #             "popup_count": 0
+    #         }
+    #
+    #     return nps_data
+    #
+    # @staticmethod
+    # def _save_panel_nps_data(nps_data):
+    #     panel_path = public.get_panel_path()
+    #     nps_file = "{}/data/btpanel_nps_data".format(panel_path)
+    #     with open(nps_file, mode="w") as fp:
+    #         fp.write(json.dumps(nps_data))
+    #
+    # def _get_panel_nps(self):
+    #     nps_data = self._get_panel_nps_data()
+    #     safe_day = int((time.time() - nps_data["time"]) / 86400)
+    #     res = {'safe_day': safe_day}
+    #     if nps_data["status"] == "complete":
+    #         res["nps"] = False
+    #     elif nps_data["status"] == "stopped":
+    #         res["nps"] = False
+    #     else:
+    #         if safe_day >= 10:
+    #             res["nps"] = True
+    #     return res
+    #
+    # def _stop_panel_nps(self, is_complete: bool = False):
+    #     nps_data = self._get_panel_nps_data()
+    #     if is_complete:
+    #         nps_data["status"] = "complete"
+    #     else:
+    #         nps_data["status"] = "stopped"
+    #
+    #     self._save_panel_nps_data(nps_data)
+

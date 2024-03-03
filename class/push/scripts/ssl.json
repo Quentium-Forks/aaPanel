@@ -1,7 +1,7 @@
 {
 	"interval": 600,
 	"type": "ssl",
-	"title": "网站证书(SSL)到期",
+	"title": "Site Certificate (SSL) expiration",
 	"project": "all_site",
 	"cycle": 15,
 	"push_count": 1,

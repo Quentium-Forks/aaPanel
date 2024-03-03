@@ -1,7 +1,7 @@
 {
 	"interval": 600,
 	"type": "site_endtime",
-	"title": "网站到期",
+	"title": "Expiration of website",
 	"cycle": 7,
 	"push_count": 1,
 	"module": "",

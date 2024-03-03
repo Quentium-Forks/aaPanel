@@ -6020,3 +6020,20 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
     def reset_wp_db(self,get):
         return one_key_wp.one_key_wp().reset_wp_db(get)
+
+    @staticmethod
+    def test_domains_api(get):
+        try:
+            domains = json.loads(get.domains.strip())
+        except (json.JSONDecodeError, AttributeError, KeyError):
+            return public.returnMsg(False, "参数错误")
+        try:
+            from panelDnsapi import DnsMager
+            public.print_log("开始测试域名解析---- {}")
+            # public.print_log("开始测试域名解析---- {}".format(domains[0]))
+
+            return DnsMager().test_domains_api(domains)
+        except:
+            pass
+
+

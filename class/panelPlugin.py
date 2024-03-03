@@ -2130,8 +2130,15 @@ class panelPlugin:
         try:
             if not public.path_safe_check("%s/%s" % (get.name,get.s)): return public.return_msg_gettext(False,'Requested method [{}] does not exist!')
             path = self.__install_path + '/' + get.name
+
+            # aaa = path + '/'+get.name+'_main.py'
+            # public.print_log("@@@@@@@@@@@@@@@@@aaa {}".format(aaa))
+
             if not os.path.exists(path + '/'+get.name+'_main.py'):
                 if os.path.exists(path+'/index.php'):
+                    # bbb = path+'/index.php'
+                    # public.print_log("@@@@@@@@@@@@@@@@@bbb {}".format(bbb))
+
                     import panelPHP
                     return panelPHP.panelPHP(get.name).exec_php_script(get)
                 return public.return_msg_gettext(False,'This plugin does NOT have extend function!')
