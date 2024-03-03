@@ -574,13 +574,11 @@ var logs = {
         $.each(data.list, function (key, val){
           list.push(val.log_file)
         })
-        $(this).addClass('active').siblings().removeClass('active')
-				console.log('logAuditPages111');
+        $(this).addClass('active').siblings().removeClass('active');
         that.getSysLogs({log_name: data.log_file, list: list, p:1})
       })
 
       $('#logAuditPages').unbind('click').on('click', 'a', function (){
-				console.log('logAuditPages');
         var page = $(this).data('page')
         that.getSysLogs({log_name: that.data.log_name, list: that.data.list, p: page})
         return false
@@ -626,9 +624,10 @@ var logs = {
         data: {data:JSON.stringify(that.data)}
       }, function (rdata) {
         if(typeof rdata[0] === 'string'){
-          $('#logAuditPre').show().siblings().hide()
+					$('#logAuditPre').show().siblings().hide()
           that.renderLogsAuditCommand(rdata)
         }else{
+					console.log(1);
           $('#logAuditTable,#logAuditPages').show()
           $('#logAuditPre').hide()
           that.renderLogsAuditTable({ p:page }, rdata)

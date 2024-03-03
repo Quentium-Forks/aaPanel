@@ -3984,21 +3984,20 @@ bt.soft = {
     	},
       create_order: function(data, callback) {
         if (data.pid) {
-          var loadT = bt.load("Getting product information!");
+          // var loadT = bt.load("Getting product information!");
           bt.soft.get_panel_ssl_status(function (res) {
-            loadT.close()
+            // loadT.close()
             if (res.status) {
-              var _cycle_unit = $('#libPay-content .li-con .active  span').attr("data-unit"),
-              _pay_channel = $('#libPay-mode .pay-cycle-btn span').text().indexOf('Stripe') > -1?'2':'10'
-              requestNmae = data.serial_no?'renew_product_auth':'get_buy_code'
-              data.cycle_unit = _cycle_unit;
+              // var _cycle_unit = $('#libPay-content .li-con .active  span').attr("data-unit"),
+              // _pay_channel = $('#libPay-mode .pay-cycle-btn span').text().indexOf('Stripe') > -1?'2':'10'
+              requestNmae = data.serial_no?'renew_product_auth':'get_buy_code';
               if(!data.serial_no) {
                 data.charge_type = 1
               }else{
-                data.pay_channel = _pay_channel
+                data.pay_channel = 2
               }
               bt.send(requestNmae, 'auth/'+requestNmae, data, function (rdata) {
-                loadT.close()
+                // loadT.close()
                 if (callback) callback(rdata);
               })
             } else {
@@ -4137,14 +4136,16 @@ bt.soft = {
   },
   // 产品支付视图(配置参数)
   product_pay_view: function (config) {
-    if (!bt.get_cookie('bt_user_info')) {
+		if (!bt.get_cookie('bt_user_info')) {
       bt.pub.bind_btname(function () {
         window.location.reload();
       });
       return false;
     }
-    if (config.renew === -1) config.renew = false
+
+		if (config.renew === -1) config.renew = false
     if (typeof config == "string") config = JSON.parse(config);
+
     config = $.extend({
       plugin: null,
       renew: null,
@@ -4153,115 +4154,539 @@ bt.soft = {
       pro: parseInt(bt.get_cookie('pro_end')) || -1,
       ltd: parseInt(bt.get_cookie('ltd_end')) || -1
     }, config);
-      var totalNum = config.totalNum ? config.totalNum : '';
-      if (totalNum) {
-          bt.set_cookie('pay_source', parseInt(totalNum));
-      }
-    var title = '',that = this,endTime = null;
-    if (!config.is_alone) {
-      // 条件：当前为插件
-      if (config.plugin) {
-        title = (!config.renew ? 'Buy ' : '续费') + config.name;
-        ndTime = !config.renew ? config.renew : null
-      } else if (config.pro == -1 && config.ltd == -1) { // 条件：专业版和企业版都没有购买过
-        title = 'Upgrade to Pro, all plugins are free to use';
-      } else if (config.ltd > 0) { // 条件：企业版续费
-        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
-        endTime = config.ltd;
-      } else if (config.pro > 0 || config.pro == -2) { // 条件：专业版续费
-        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
-        endTime = config.pro;
-      } else if (config.ltd == -2) {
-        title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
-        endTime = config.ltd;
-      }
-    } else {
-      title = (config.ltd > 0 ? '续费' : '购买') + '宝塔企业版';
-    }
+
+		var totalNum = config.totalNum ? config.totalNum : '';
+		if (totalNum) {
+			bt.set_cookie('pay_source', parseInt(totalNum));
+		}
+
+		var that = this;
+
     bt.open({
       type: 1,
-      title: title,
-      area: ['680px', '760px'],
+			title: false,
+			skin: 'libPay-view',
+      area: ['1024px', '600px'],
       shadeClose: false,
       content: '\
-                <div class="libPay plr15" id="pay_product_view" ' + (config.totalNum ? 'data-index="'+config.totalNum+'"' : '') + '>\
-                    <div class="libPay-item" style="margin-bottom:20px">\
-                        <span class="bindUser">Account: <span></span></span>\
-                        <span class="endTime">Expire date: <span></span></span>\
-                    </div>\
-                    <div class="libPay-item" id="libPay-type">\
-                        <div class="li-tit c3">Type</div>\
-                        <div class="li-con c5"></div>\
-                    </div>\
-                    <div class="libPay-item" id="libPay-mode">\
-                        <div class="li-tit c4">Payment method</div>\
-                        <div class="li-con c5"></div>\
-                    </div>\
-                    <div class="libPay-item" id="libPay-content">\
-                        <div class="li-tit c4">Choose your plan</div>\
-                        <div class="li-con c5"></div>\
-                    </div>\
-                    <div class="libPay-item" id="libPay-pay"></div>\
-                    <div class="libPay-mask"></div>\
-                </div>\
-            ',
+			<div class="libPay-content-box pro">\
+				<div class="libPay-product-introduce">\
+					<div class="pro-left-introduce pro">\
+						<div class="pro-left-title">\
+							<div></div>\
+							<span></span>\
+						</div>\
+						<div class="pro-left-list">\
+							<div class="pro-left-list-title"></div>\
+							<div class="pro-left-list-content"></div>\
+						</div>\
+						<div class="pro-price-herf">\
+							<a class="privilege_contrast" href="https://aapanel.com/new/pricing.html" target="_blank" rel="noreferer noopener">Feature contrast</a>\
+						</div>\
+					</div>\
+				</div>\
+				<div class="libPay-product-content">\
+					<div class="libPay-menu"></div>\
+					<div id="pay_product_view">\
+						<div class="libPay-layer-item aShow">\
+							<div class="libPay-line-item proTname" style="margin-bottom: 20px">Choose your plan</div>\
+							<div class="libPay-line-item proP" id="libPay-theme-price">\
+								<div class="switch-cycle-left hide"><span class="glyphicon glyphicon-chevron-left"></span></div>\
+								<ul class="pay-pro-cycle"></ul>\
+								<div class="switch-cycle-right hide"><span class="glyphicon glyphicon-chevron-right"></span>\
+							</div>\
+						</div>\
+						<div class="libPay-line-item libPay-mode">\
+							<div class="libPay-qcode-left">\
+								<div class="pay-radio-type">\
+									<div class="pay-type-btn active" data-condition="stripe">\
+										<label class="pay-type-label"><span class="pay-radio-tit">Stripe</span></label>\
+									</div>\
+									<div class="pay-type-btn" data-condition="voucher">\
+										<label class="pay-type-label"><span class="pay-radio-tit">Voucher</span></label>\
+									</div>\
+									<div class="pay-type-btn" data-condition="authorization">\
+										<label class="pay-type-label"><span class="pay-radio-tit">Authorization</span></label>\
+									</div>\
+									<div class="pay-type-other"></div>\
+								</div>\
+							</div>\
+							<div class="libPay-qcode-right">\
+								<div class="libPay-qcode-right-head"></div>\
+								<div class="libPay-qcode-item">\
+									<div class="cloading">Loading, please wait!</div>\
+									<div class="pay-box">\
+										<div class="userinfo">\
+											<div class="info_label">Account: </div>\
+											<div class="info_value">--</div>\
+											<a class="btlink" href="javascript:;" style="text-decoration: underline">Change</a>\
+										</div>\
+										<div class="pay-price">\
+											<span class="price-label">Total: </span>\
+											<span class="libPayTotal"><span style="font-size: 18px; margin-right: 2px">$</span>0</span>\
+											<span class="libPayCycle">1 year/<i>1 unit</i><span class="org_price">OP: $0</span></span>\
+										</div>\
+										<button class="btn btn-success btn-pay" id="checkout-button">Pay Now</button>\
+									</div>\
+								</div>\
+								<div class="libPay-qcode-item hide">\
+									<div class="li-tit c4">Vouchers</div>\
+									<ul class="pay-btn-group voucher-group"></ul>\
+									<div class="text-center">\
+										<button class="btn btn-success btn-sm f16" id="use-voucher" style="width: 200px; height: 40px;">Pay</button>\
+									</div>\
+								</div>\
+								<div class="libPay-qcode-item hide">\
+									<div class="li-tit c4">Authorization information</div>\
+									<ul class="pay-btn-group auth-group"></ul>\
+									<div class="text-center">\
+										<button class="btn btn-success btn-sm f16" id="use-auth" style="width: 200px; height: 40px;">Authorization</button>\
+									</div>\
+								</div>\
+							</div>\
+						</div>\
+					</div>\
+				</div>\
+			</div>',
+			end: function () {
+				bt.clear_cookie('pay_source');
+			},
       success: function ($layer, index) {
         $.getScript('https://js.stripe.com/v3/');
-        var bt_user_info = bt.get_cookie('bt_user_info');
-        if (!bt_user_info) {
-          bt.pub.get_user_info(function (res) {
-            $('.bindUser span').html(res.data.username + '<a href="javascript:;" class="btlink ml5">Change</a>');
-          });
-        } else {
-          $('.bindUser span').html(JSON.parse(bt_user_info).data.username + '<a href="javascript:;" class="btlink ml5">Change</a>');
-        }
-        if (endTime != null) {
-          $('.endTime span').html(endTime > parseInt(new Date().getTime() / 1000) ? bt.format_data(endTime) : '<i style="color:red;font-style:inherit">Expired</i>');
-        } else {
-          $('.endTime').hide();
-        }
-        $('.bindUser').on('click', 'a', function () {
-          bt.pub.bind_btname(function () {
-            bt.soft.product_pay_view(config);
-          });
-        });
-        var arry = [];
-        //config.name = '堡塔企业级防篡改';
-        if (config.plugin) arry.push({
-          title: config.name,
-          name: config.name,
-          ps: 'Plug-in only',
-          pid: config.pid,
-          renew: config.renew || false,
-          active: ((config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd < 0) ? true : false)
-        });
-        if ((((config.pro > 0 || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) || config.limit == 'pro' || (config.ltd < 0 && config.pro == -1)) && config.type != 12 && ((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))) {
-          arry.push({
-            title: '<span class="pro-font-icon"></span>',
-            name: '',
-            pid: '100000058',
-            ps: 'Recommended',
-            renew: config.renew || false,
-            active: (((config.type == 8 && !config.plugin) || config.limit == 'pro' || (config.pro > 0 || config.pro == -2)) && config.ltd < 0 && (config.ltd == -2 ? (config.pro == -2 ? false : true) : true))
-          });
-        }
 
-        // if((((config.ltd > 0 || config.ltd == -2 || config.pro == -2) || (config.ltd == -1 && config.pro == -1) || config.limit == 'ltd') && (config.pro < 0 || (config.pro >= 0 && config.ltd >0))) || (config.is_alone && config.pid == 100000032)){
-        // 	arry.push({title:'<span class="ltd-font-icon"></span>',name:'宝塔面板企业版',ps:'推荐企业购买',pid:100000032,recommend:true,active:((config.type == 12 && !config.plugin && config.ltd > 0) || config.limit == 'ltd' || (config.renew == config.ltd && config.ltd > 0)? true:false)});
-        // }
-        // if(config.type == 12 && config.pro >= 0 && config.ltd < 0) $('.pro-tips').html('温馨提示：专业版升级企业版需要手动结算当前专业版授权，<a href="https://www.bt.cn/bbs/thread-50342-1-1.html" target="_blank" class="btlink">《专业版和企业版切换教程》</a>').css('color','red');
-        $('#libPay-type .li-con').append(that.product_pay_swicth('type', arry));
-        if (config.source) bt.set_cookie('pay_source', config.source);
-        that.each(arry, function (index, item) {
-          if (item.active) {
-            that.product_pay_page_refresh($.extend({condition: 1}, item));
-          }
-        });
+				var layerThat = this;
+
+				layerThat.renderUserInfo();
+				layerThat.renderProductMenu();
+
+				var init = () => {
+					var removeLoad =  layerThat.addLoading('.libPay-layer-item');
+					layerThat.renderFeature();
+					layerThat.renderAuthList(function (rdata) {
+						if (rdata.length > 0) {
+							cutTab('authorization');
+							layerThat.renderProductPrice(function () {
+								removeLoad()
+							});
+						} else {
+							layerThat.renderVoucher(function (rdata) {
+								if (rdata.length > 0) {
+									cutTab('voucher');
+								}
+								layerThat.renderProductPrice(function () {
+									removeLoad()
+								});
+							});
+						}
+					});
+				}
+
+				init();
+
+				$('.switch-cycle-right').click(function () {
+					var num = $(this).prev().children().length;
+					var width = 196;
+					var remainder =  num % 4; // 获取余数
+					$(this).prev().css('transform','translateX(-'+(remainder * width ) + 'px)')
+					$('.switch-cycle-left').removeClass('hide')
+					$('#libPay-theme-price').css('padding-left','30px')
+					$(this).addClass('hide')
+				});
+
+				$('.switch-cycle-left').click(function (ev) {
+					if(bt.del_seven_coupon){
+						var $children = $('.pay-pro-cycle').children()
+						if($($children[0]).data('data').nums.length == 1){
+							$($children[0]).remove()
+							bt.del_seven_coupon = false
+						}
+					}
+					$('#libPay-theme-price').removeAttr('style')
+					$('.switch-cycle-right').removeClass('hide')
+					$(this).next().removeAttr('style')
+					$(this).addClass('hide')
+				});
+
+				$('.pay-btn-group').on('click', 'li', function () {
+					$(this).addClass('active').siblings('.active').removeClass('active');
+				});
+				
+				// 切换菜单
+				$('.libPay-menu').on('click', '.libPay-menu-type', function () {
+					$(this).addClass('active').siblings('.active').removeClass('active');
+					init();
+				});
+
+				// 产品周期切换
+				$('#libPay-theme-price .pay-pro-cycle').on('click', 'li', function () {
+					$(this).addClass('active').siblings('.active').removeClass('active');
+					var condition = $('.libPay-qcode-left .pay-type-btn.active').data('condition');
+					if (condition === 'stripe') {
+						layerThat.renderTotalPrice();
+					}
+				});
+
+				// 点击支付
+				$('#checkout-button').click(function () {
+					var config = $(this).data('data');
+					var loadT = bt.load('Getting the session ID,Please waiting!');
+					var stripe = Stripe(config.stripe_publishable_key);
+					that.pro.get_check_out_info(config.order_no, function (res) {
+						loadT.close();
+						if (res.id) {
+							stripe.redirectToCheckout({ sessionId: res.id });
+						} else {
+							layer.msg('Payment order failed, please contact administrator!', { icon: 2 });
+						}
+					});
+				});
+
+				// 切换tab
+				function cutTab(condition) {
+					var $el = $('.libPay-qcode-left .pay-type-btn[data-condition="' + condition + '"]');
+					var index = $el.index();
+					$el.addClass('active').siblings('.active').removeClass('active');
+					$('.libPay-qcode-right .libPay-qcode-item').eq(index).removeClass('hide').siblings('.libPay-qcode-item').addClass('hide');
+				}
+
+				// 支付方式切换
+				$('.libPay-qcode-left .pay-type-btn').click(function () {
+					var condition = $(this).data('condition');
+					cutTab(condition);
+
+					var condition = $(this).data('condition');
+					switch (condition) {
+						case 'stripe':
+							layerThat.renderTotalPrice();
+							break;
+						case 'voucher':
+							layerThat.renderVoucher();
+							break;
+						case 'authorization':
+							layerThat.renderAuthList();
+							break;
+					}
+				});
+
+				// 切换用户
+				$('.libPay-qcode-item .userinfo a').click(function () {
+					bt.pub.bind_btname(function () {
+						// bt.soft.product_pay_view(config);
+						window.location.reload();
+					});
+				});
+
+				// 使用抵扣卷
+				$('#use-voucher').click(function () {
+					if ($(this).hasClass('disabled')) return false;
+
+					var data = $('.voucher-group .active').data();
+					if (!data.serial_no) {
+						layer.msg('No vouchers');
+						return false;
+					}
+					bt.soft.pro.create_order_voucher(data.pid, data.code, data.id, data.cycle, data.cycle_unit, data.charge_type, function (rdata) {
+						layer.closeAll();
+						bt.set_cookie('force', 1);
+						if (soft) soft.flush_cache();
+						bt.msg(rdata);
+						if (rdata.status) {
+							getPaymentStatus();
+						}
+					});
+				});
+
+				// 授权
+				$('#use-auth').click(function () {
+					if ($(this).hasClass('disabled')) return false;
+
+					var _serial_no = $('.auth-group .active').attr('data-id');
+					if (typeof _serial_no == 'undefined') return false;
+					var loadU = bt.load('Under licensing!');
+					bt.send('auth_activate', 'auth/auth_activate', { serial_no: _serial_no }, function (res) {
+						loadU.close();
+						if (res) {
+							layer.msg(res.msg, { icon: res.status ? 1 : 2 });
+							if (res.status) {
+								window.location.reload();
+							}
+						}
+					});
+				});
       },
-			end:function(){
-				clearInterval(bt.soft.pub.wxpayTimeId);
-				bt.clear_cookie('pay_source');
-			}
+			addLoading: function (elem) {
+				var $el = $(elem);
+				$el.children().addClass('hide');
+				if ($el.children('.cloading').length === 0) {
+					$el.append('<div class="cloading">Loading, please wait!</div>');
+				}
+				return function removeLoad () {
+					$el.children('.cloading').remove();
+					$el.children().removeClass('hide');
+				}
+			},
+			getConfig: function () {
+				var data = $('.libPay-menu .libPay-menu-type.active').data();
+				return data;
+			},
+			// 渲染菜单
+			renderProductMenu: function () {
+				var menus = []
+				if (config.plugin) {
+					menus.push({
+						title: config.name,
+						name: config.name,
+						ps: 'Plug-in only',
+						desc: config.ps,
+						pid: config.pid,
+						renew: config.renew || false,
+						is_pro: false,
+						active: (config.pro < 0 && config.ltd < 0) || (config.type == 12 && config.ltd < 0) ? true : false,
+					});
+				}
+				if (
+					(((config.pro > 0 || config.pro == -2 || config.ltd < 0) && ((config.ltd > 0 && config.ltd != config.pro) || config.ltd < 0) && config.type != 12) ||
+						config.limit == 'pro' ||
+						(config.ltd < 0 && config.pro == -1)) &&
+					config.type != 12 &&
+					((config.ltd < 0 && config.pro > 0) || (config.ltd < 0 && config.pro < 0))
+				) {
+					menus.push({
+						title: 'PRO',
+						name: '',
+						pid: '100000058',
+						ps: 'Recommended',
+						renew: config.renew || false,
+						is_pro: true,
+						active:
+							((config.type == 8 && !config.plugin) || config.limit == 'pro' || config.pro > 0 || config.pro == -2) && config.ltd < 0 && (config.ltd == -2 ? (config.pro == -2 ? false : true) : true),
+					});
+				}
+
+				var $el = null;
+				$.each(menus, function (index, item) {
+					$el = $('<div class="libPay-menu-type ' + (item.is_pro ? 'lib_pro' : '') + ' ' + (item.active ? 'active' : '') + '">\
+						<p>\
+							' + (item.is_pro ? '<span class="glyphicon glyphicon-vip" style="margin-right: 8px"></span>' : '') + '<span>' + item.title + '</span>\
+						</p>\
+						<p>' + item.ps + '</p>\
+					</div>').data(item);
+					$('.libPay-menu').append($el);
+				});
+			},
+			renderFeature: function () {
+				var config = this.getConfig();
+				
+				if (config.is_pro) {
+					$('.pro-left-introduce .pro-left-title>div').html('<span class="glyphicon glyphicon-vip" style="margin-right: 7px"></span><span>' + config.title + '</span>');
+					$('.pro-left-introduce .pro-left-title>span').removeClass('hide').html(config.ps);
+					$('.pro-left-list-title').text('Pro Feature: ');
+					$('.pro-price-herf').removeClass('hide');
+					bt.send('get_plugin_remarks', 'auth/get_plugin_remarks', { product_id: '100000058' }, function (rdata) {
+						var html = '';
+						$.each(rdata.res, function (index, item) {
+							html += '<div class="pro-introduce"><span class="glyphicon glyphicon-ok"></span><span>' + item + '</span></div>';
+						});
+						$('.pro-left-list-content').removeAttr('style').html(html);
+					});
+				} else {
+					$('.pro-left-introduce .pro-left-title>div').html('<span>' + config.title + '</span>');
+					$('.pro-left-introduce .pro-left-title>span').addClass('hide').html(config.ps);
+					$('.pro-left-list-title').text('Plug-in description: ');
+					$('.pro-left-list-content').css({
+						'width': '186px',
+						'line-height': '23px'
+					}).html(config.desc);
+					$('.pro-price-herf').addClass('hide');
+				}
+			},
+			// 渲染产品价格
+			renderProductPrice: function (callback) {
+				var layerThat = this;
+
+				var config = layerThat.getConfig();
+
+				that.get_product_discount_cache(config, function (rdata) {
+
+					if (callback) callback(rdata);
+
+					// 大于4个显示左右切换按钮
+					var num = rdata.length;
+					if (num > 4) {
+						$('.switch-cycle-right').removeClass('hide');
+					} else {
+						$('.switch-cycle-right,.switch-cycle-left').addClass('hide');
+					}
+
+					
+					// 遍历渲染产品价格
+					var html = '';
+					$('#libPay-theme-price .pay-pro-cycle').empty()
+					that.each(rdata, function (key, item) {
+						var keys = item.cycle;
+						var priceByDay = (item.price / ((item.cycle / (item.cycle_unit === 'year' ? 1 : 12)) * 365)).toFixed(2);
+						var cycleUnit =  item.cycle  + ' ' + item.cycle_unit + (item.cycle > 1 ? 's' : '')
+						
+						html = '\
+						<li class="pay-cycle-btns '+ (key === 0 ? 'active' : '') + '" data-type="' + keys + '">\
+							<div class="pay-head-price">\
+								<div class="new-price">\
+									<div class="libPrice">$<i>' + (item.price).toFixed(2) + '</i></div>\
+									<div class="cycle">/' + cycleUnit + '</div>\
+								</div>\
+								<p>OP: $' + item.market_price + '</p>\
+							</div>\
+							<div class="pay-foo-price">As low as $' + priceByDay + '/day</div>\
+							' + (item.discount_rate != 1 ? '<em>' + (100 - item.discount_rate * 100) + '% off</em>' : '') + '\
+						</li>';
+						$('#libPay-theme-price .pay-pro-cycle').append($(html).data($.extend({
+							pid: config.pid,
+							dom_index: key
+						}, item)));
+					});
+
+					layerThat.renderTotalPrice();
+				});
+			},
+			// 渲染用户信息
+			renderUserInfo: function () {
+				var bt_user_info = bt.get_cookie('bt_user_info');
+				if (!bt_user_info) {
+					bt.pub.get_user_info(function (res) {
+						$('.libPay-qcode-right .userinfo .info_value').html(res.data.username);
+					});
+				} else {
+					$('.libPay-qcode-right .userinfo .info_value').html(JSON.parse(bt_user_info).data.username);
+				}
+			},
+			renderEndTime: function () {
+				var endTime = null;
+				if (!config.is_alone) {
+					// 条件：当前为插件
+					if (config.plugin) {
+						title = (!config.renew ? 'Buy ' : '续费') + config.name;
+						ndTime = !config.renew ? config.renew : null;
+					} else if (config.pro == -1 && config.ltd == -1) {
+						// 条件：专业版和企业版都没有购买过
+						title = 'Upgrade to Pro, all plugins are free to use';
+					} else if (config.ltd > 0) {
+						// 条件：企业版续费
+						title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+						endTime = config.ltd;
+					} else if (config.pro > 0 || config.pro == -2) {
+						// 条件：专业版续费
+						title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+						endTime = config.pro;
+					} else if (config.ltd == -2) {
+						title = 'Renew ' + (config.name == '' ? '宝塔专业版' : config.name);
+						endTime = config.ltd;
+					}
+				} else {
+					title = (config.ltd > 0 ? '续费' : '购买') + '宝塔企业版';
+				}
+				if (endTime != null) {
+					$('.endTime span').html(endTime > parseInt(new Date().getTime() / 1000) ? bt.format_data(endTime) : '<i style="color:red;font-style:inherit">Expired</i>');
+				} else {
+					$('.endTime').hide();
+				}
+			},
+			// 渲染总价格
+			renderTotalPrice: function () {
+				var condition = $('.libPay-qcode-left .pay-type-btn.active').data('condition');
+				if (condition !== 'stripe') {
+					return;
+				}
+
+				var layerThat = this;
+				var removeLoad = layerThat.addLoading('.libPay-qcode-item:not(.hide)');
+				var config = $('#libPay-theme-price .pay-pro-cycle .active').data();
+				var param = { pid: config.pid, cycle: config.cycle, cycle_unit: config.cycle_unit };
+				param.source = parseInt(bt.get_cookie('pay_source') || 0);
+				if (param.source === 0) {
+					if ($('.btpro-gray').length == 1) {
+						// 是否免费版
+						param.source = 27;
+					} else {
+						param.source = 28;
+					}
+				}
+				if (!param.pid) delete param.pid;
+				if (bt.get_cookie('serial_no') != null) param.serial_no = config.serial_no || bt.get_cookie('serial_no');
+				that.pro.create_order(param, function (rdata) {
+					removeLoad();
+					if (rdata.status === false) {
+						bt.set_cookie('force', 1);
+						if (soft) soft.flush_cache();
+						layer.msg(rdata.msg, { icon: 2 });
+						return;
+					}
+
+					var cycle = config.cycle + ' ' + config.cycle_unit + (config.cycle > 1 ? 's' : '');
+					var unit = config.num + ' unit' + (config.num > 1 ? 's' : '');
+					$('.libPayTotal').html('<span style="font-size: 18px; margin-right: 2px">$</span>' + rdata.price);
+					$('.libPayCycle').html(cycle + '/' + unit + ' <span class="org_price">OP: $' + rdata.market_price + '</span>');
+
+					$('#checkout-button').data('data', rdata);
+				});
+			},
+			// 渲染抵扣卷
+			renderVoucher: function (callback) {
+				var layerThat = this;
+				var config = layerThat.getConfig();
+				var removeLoad = layerThat.addLoading('.libPay-qcode-item:not(.hide)');
+				bt.soft.pro.get_voucher(config.pid, function (rdata) {
+					removeLoad();
+
+					if (callback) callback(rdata);
+
+					$('.voucher-group').empty();
+					if (rdata == null && !Array.isArray(rdata)) rdata = [];
+					if (rdata.length == 0) {
+						$('.voucher-group').addClass('hide');
+						$('#use-voucher').addClass('disabled').text('No vouchers');
+						return;
+					}
+
+					var $li = null
+					that.each(rdata, function (index, item) {
+						var name = (item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : item.cycle + that.pro.conver_unit(item.cycle_unit));
+						$li = $('<li class="pay-cycle-btn ' + (index === 0 ? 'active' : '') + '"><span>' + name + '</span></li>').data($.extend({ pid: config.pid }, item));
+						$('.voucher-group').append($li);
+					});
+
+					$('.voucher-group').removeClass('hide');
+					$('#use-voucher').removeClass('disabled').text('Pay');
+				})
+			},
+			// 渲染授权列表
+			renderAuthList: function (callback) {
+				var layerThat = this;
+				var config = layerThat.getConfig();
+				var removeLoad = layerThat.addLoading('.libPay-qcode-item:not(.hide)');
+				bt.send('get_product_auth', 'auth/get_product_auth', { page: 1, pageSize: 15, pid: config.pid }, function (rdata) {
+					removeLoad();
+
+					if (callback) callback(rdata);
+
+					$('.auth-group').empty();
+					if (rdata == null && !Array.isArray(rdata)) rdata = [];
+					if (rdata.length == 0) {
+						$('.auth-group').addClass('hide');
+						$('#use-auth').addClass('disabled').text('No authorization');
+						return;
+					}
+
+					var html = '';
+					$.each(rdata, function (index, item) {
+						if (config.pid == item.product_id) {
+							html += '<li class="pay-cycle-btn  ' + (index == 0 ? 'active' : '') + '" data-id="' + item.serial_no + '" style="width:180px"><span>' + bt.format_data(item.end_time) + '</span></li>';
+						}
+					});
+					$('.auth-group').append(html);
+					$('.auth-group').removeClass('hide');
+					$('#use-auth').removeClass('disabled').text('Authorization');
+				})
+			},
 		});
 	},
     product_cache:{}, //产品周期缓存
@@ -4415,6 +4840,7 @@ bt.soft = {
                 }
                 var paream = {pid:config.pid,cycle:config.cycle};
                 paream.source = parseInt(bt.get_cookie('pay_source') || 0)
+								console.log(paream.source)
                 if (paream.source === 0) {
                     if ($('.btpro-gray').length == 1) {  // 是否免费版
                         paream.source = 27;

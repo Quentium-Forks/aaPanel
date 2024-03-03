@@ -505,6 +505,10 @@
 		justify-content: space-between;
 	}
 
+	#logAudit .tootls_group::after {
+		display: none;
+	}
+
 	.logAuditContent {
 		padding: 0 0 0 15px;
 		margin-left: 15px;
@@ -590,6 +594,33 @@
     align-items: center;
     cursor: pointer;
 	}
+	.bt-search {
+		position: relative;
+	}
+	.bt-search .search-input {
+		height: 30px;
+		line-height: 30px;
+		border-radius: 2px;
+		border: 1px solid #ccc;
+		outline: none;
+		padding-left: 8px;
+		vertical-align: top;
+		width: 200px;
+	}
+	.bt-search .search-input:focus {
+		border-color: #20a53a;
+	}
+
+	.bt-search .glyphicon-search {
+		height: 28px;
+		line-height: 28px;
+		padding: 0 10px;
+		color: #888;
+		position: absolute;
+		right: 0;
+		font-size: 14px;
+		cursor: pointer;
+	}
 </style>
 <div class="main-content">
 	<div class="container-fluid" style="padding-bottom: 50px;">
@@ -668,7 +699,7 @@
 					<div class="logAuditTab"></div>
 					<div class="logAuditContent">
 						<div id="logAuditTable"></div>
-						<div id="logAuditPages" class="page" style="display: flex;justify-content: flex-end"></div>
+						<!-- <div id="logAuditPages" class="page" style="display: flex;justify-content: flex-end"></div> -->
 						<div id="logAuditPre" style="display: none;"></div>
 					</div>
 				</div>

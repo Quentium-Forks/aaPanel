@@ -1416,7 +1416,7 @@ var index = {
             // 推荐安装软件
             try {
                 var recomConfig = product_recommend.get_recommend_type(1)
-                if(recomConfig){
+								if(recomConfig){
                     var pay_status = product_recommend.get_pay_status();
                     for (var i = 0; i < recomConfig['list'].length; i++) {
                         const item = recomConfig['list'][i];
@@ -1821,6 +1821,23 @@ var index = {
             }
         });
     },
+		getScanSpeed: function (sele, msg, url) {
+			var that = this;
+			if (!$(sele).length) return;
+			bt_tools.send({url: url}, function (rdata) {
+				var percentage = rdata.percentage;
+				body = '<p>'+ msg +'<img src="/static/img/ing.gif"></p>\
+				<div class="bt-progress"><div class="bt-progress-bar" style="width:'+ percentage + '%">\
+				<span class="bt-progress-text" style="left: '+ (percentage < 21 ? 3 : percentage - 16 ) +'%;">' + percentage + '%</span></div></div>';
+				$(sele).prev().hide();
+				$(sele).css({ "margin-left": "-37px", "width": "380px" });
+				$(sele).parents(".layui-layer").css({ "margin-left": "-100px" });
+				$(sele).html(body);
+				setTimeout(function () {
+					that.getScanSpeed(sele, msg, url);
+				}, 200);
+			})
+		},
     /**
      * @description 获取时间简化缩写
      * @param {Numbre} dateTimeStamp 需要转换的时间戳
@@ -1833,15 +1850,15 @@ var index = {
         if(diffValue < 0) return  'Just';
         var monthC = diffValue / month,weekC = diffValue / (7 * day),dayC = diffValue / day,hourC = diffValue / hour,minC = diffValue / minute;  
         if(monthC >= 1) {  
-            result = "" + parseInt(monthC) + "month ago";  
+            result = "" + parseInt(monthC) + " month ago";  
         } else if(weekC >= 1) {  
-            result = "" + parseInt(weekC) + "weeks ago";  
+            result = "" + parseInt(weekC) + " weeks ago";  
         } else if(dayC >= 1) {  
-            result = "" + parseInt(dayC) + "days ago";  
+            result = "" + parseInt(dayC) + " days ago";  
         } else if(hourC >= 1) {  
-            result = "" + parseInt(hourC) + "hours ago";  
+            result = "" + parseInt(hourC) + " hours ago";  
         } else if(minC >= 1) {  
-            result = "" + parseInt(minC) + "minutes ago";  
+            result = "" + parseInt(minC) + " mins ago";
         } else{  
             result = "Just";  
         }     
@@ -1852,142 +1869,620 @@ var index = {
      * @return 无返回值
     */
     reader_warning_view:function(){
-        var that = this;
-        function reader_warning_list(data){
-            var html = '',scan_time = '',arry =  [['risk','Risk'],['security','Security'],['ignore','Ignore']],level = [['Low risk','#e8d544'],['Medium risk','#E6A23C'],['High risk','red']]
-            bt.each(arry,function(index,item){
-                var data_item = data[item[0]],data_title = item[1];
-                html += '<li class="module_item '+ item[0] +'">'+
-                        '<div class="module_head">'+
-                            '<span class="module_title">'+ data_title +'</span>'+
-                            '<span class="module_num">'+ data_item.length +'</span>'+
-                            '<span class="module_cut_show">'+ (item[index] == 'risk' && that.warning_num > 0?'<i>Collapse</i><span class="glyphicon glyphicon-menu-up" aria-hidden="false"></span>':'<i>Details</i><span class="glyphicon glyphicon-menu-down" aria-hidden="false"></span>') +'</span>'+
-                        '</div>'+
-                        (function(index,item){
-                            var htmls = '<ul class="module_details_list '+ (item[0] == 'risk' && that.warning_num > 0?'active':'') +'">';
-                            bt.each(data_item,function(indexs,items){
-                                scan_time = items.check_time;
-                                htmls += '<li class="module_details_item">'+
-                                    '<div class="module_details_head">'+
-                                        '<span class="module_details_title">'+ items.ps +'<i>（Checked: '+ (that.get_simplify_time(items.check_time) || 'Just') +', time: '+ ( items.taking>1?( items.taking +'Sec'):((items.taking * 1000).toFixed(2) +'ms')) +'）</i></span>'+
-                                        '<span class="operate_tools">'+ (item[0] != 'security'?('<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-model="'+ items.m_name +'" data-title="'+ items.title +'" '+ (item[0]=='ignore'?'class=\"btlink\"':'') +' data-type="'+item[0]+'">'+ (item[0] != 'ignore'?'Ignore':'Remove') +'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="'+ items.m_name +'" data-title="'+ items.title +'">Check</a>'):'<a href="javascript:;" class="btlink cut_details">Detail</a>') +'</span>' +
-                                    '</div>'+
-                                    '<div class="module_details_body">'+
-                                        '<div class="module_details_line">'+
-                                            '<div class="module_details_block"><span class="line_title">Test type: </span><span class="line_content">'+ items.title +'</span></div>'+
-                                            '<div class="module_details_block"><span class="line_title">Risk level: </span><span class="line_content" style="color:'+ level[items.level-1][1] +'">'+ level[items.level-1][0] +'</span></div>'+
-                                        '</div>'+
-                                        '<div class="module_details_line"><span class="line_title">Risk detail: </span><span class="line_content">'+ items.msg +'</span></div>'+
-                                        '<div class="module_details_line"><span class="line_title">'+ (item[0] != 'security'?'Solution: ':'Suggest: ') +'</span><span class="line_content">'+ 
-                                        (function(){
-                                            var htmlss = '';
-                                            bt.each(items.tips,function(indexss,itemss){
-                                                htmlss +='<i>'+ (indexss+1) +'、'+ itemss  +'</i></br>';
-                                            });
-                                            return htmlss;
-                                        }()) +'</span></div>'+
-                                        (items.help != ''?('<div class="module_details_line"><span class="line_title">Help: </span><span class="line_content"><a href="'+ items.help +'" target="_blank" class="btlink">'+items.help +'</span></div>'):'') +
-                                    '</div>'+
-                                '</li>';
-                            });
-                            htmls += '</ul>';
-                            return htmls;
-                        }(index,item))
-                    +'</li>'
-            });
-            $('.warning_scan_body').html(html);
-            $('.warning_scan_time').html('Checked: &nbsp;'+ bt.format_data(scan_time));
-        }
-        bt.open({
-            type:'1',
-            title:'Security risk',
-            area:['850px','700px'],
-            skin:'warning_scan_view',
-            content:'<div class="warning_scan_view">'+
-                '<div class="warning_scan_head">'+
-                    '<span class="warning_scan_ps">'+ (that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, Suggested repair!'):'This scan check no risks, please keep it!') +'</span>'+
-                    '<span class="warning_scan_time"></span>'+
-                    '<button class="warning_again_scan">Retest</button>'+
-                '</div>'+
-                '<ol class="warning_scan_body"></ol>'+
-            '</div>',
-            success:function(){
-                $('.warning_again_scan').click(function(){
-                    var loadT = layer.msg('Re detecting security risks, please wait...',{icon:16});
-                    that.get_warning_list(true,function(){
-                        layer.msg('Scan succeeded',{icon:1});
-                        reader_warning_list(that.warning_list);
-                    });
-                });
-                $('.warning_scan_body').on('click','.module_item .module_head',function(){
-                    var _parent = $(this).parent(),_parent_index = _parent.index(),_list = $(this).next();
-                    if(parseInt($(this).find('.module_num').text()) > 0){
-                        if(_list.hasClass('active')){
-                            _list.css('height',0);
-                            $(this).find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down');
-                            setTimeout(function(){  
-                                _list.removeClass('active').removeAttr('style');
-                            },500);
-                        }else{
-                            $(this).find('.module_cut_show i').text('Collapse').next().removeClass('glyphicon-menu-down').addClass('glyphicon-menu-up');
-                            _list.addClass('active');
-                            var details_list = _list.parent().siblings().find('.module_details_list');
-                            details_list.removeClass('active');
-                            details_list.prev().find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down')
-                        }
-                    }
-                });
-                $('.warning_scan_body').on('click','.operate_tools a',function(){
-                    var index = $(this).index(),data = $(this).data();
-                    switch(index){
-                        case 0:
-                            if($(this).hasClass('active')){
-                                $(this).parents('.module_details_head').next().hide();
-                                $(this).removeClass('active').text('Detail');
-                            }else{
-                                var item = $(this).parents('.module_details_item'),indexs = item.index();
-                                $(this).addClass('active').text('Collapse');
-                                item.siblings().find('.module_details_body').hide();
-                                item.siblings().find('.operate_tools a:eq(0)').removeClass('active').text('Detail');
-                                $(this).parents('.module_details_head').next().show();
-                                $('.module_details_list').scrollTop(indexs * 41);
-                            }
-                        break;
-                        case 1:
-                            if(data.type != 'ignore'){
-                                bt.confirm({title:'Ignore risk',msg:'Confirm to ignore [ '+ data.title +' ] risk?'},function(){
-                                    that.warning_set_ignore(data.model,function(res){
-                                        that.get_warning_list(false,function(){
-                                            bt.msg(res)
-                                            reader_warning_list(that.warning_list);
-                                        });
-                                    });
-                                }); 
-                            }else{
-                                that.warning_set_ignore(data.model,function(res){
-                                    that.get_warning_list(false,function(){
-                                        bt.msg(res)
-                                        reader_warning_list(that.warning_list);
-                                        setTimeout(function(){
-                                            $('.module_item.ignore').click();
-                                        },100)
-                                    });
-                                });  
-                            }
-                        break;
-                        case 2:
-                            that.waring_check_find(data.model,function(res){
-                                that.get_warning_list(false,function(){
-                                    bt.msg(res)
-                                    reader_warning_list(that.warning_list);
-                                });
-                            });
-                        break;
-                    }
-                });
-                reader_warning_list(that.warning_list);
-            }
-        })
+			var that = this;
+				if(!that.warning_num && that.warning_num !== 0) {
+					layer.msg("正在获取安全风险项，请稍后 ...",{icon:0});
+					return false;
+				}
+				function reader_warning_list (data) {
+					var html = '', scan_time = '', arry = [['risk', 'Risk'], ['security', 'Security'], ['ignore', 'Ignore']], level = [['Low risk', '#e8d544'], ['Medium risk', '#E6A23C'], ['High risk', 'red']]
+					bt.each(arry, function (index, item) {
+						var data_item = data[item[0]], data_title = item[1];
+						html += '<li class="module_item ' + item[0] + '">' +
+								'<div class="module_head">' +
+								'<span class="module_title">' + data_title + '</span>' +
+								'<span class="module_num">' + data_item.length + '</span>' +
+								'<span class="module_cut_show">' + (item[index] == 'risk' && that.warning_num > 0 ? '<i>Collapse</i><span class="glyphicon glyphicon-menu-up" aria-hidden="false"></span>' : '<i>Details</i><span class="glyphicon glyphicon-menu-down" aria-hidden="false"></span>') + '</span>' +
+								'</div>' +
+								(function (index, item) {
+									var htmls = '<ul class="module_details_list ' + (item[0] == 'risk' && that.warning_num > 0 ? 'active' : '') + '">';
+									bt.each(data_item, function (indexs, items) {
+									if (!items.cve_id) {
+										scan_time = items.check_time;
+										htmls += '<li class="module_details_item">' +
+												'<div class="module_details_head">' +
+												'<span class="module_details_title"  title="' + items.ps + '">\
+													' + items.ps + '</span>\
+												<i class="module_details_tips">(&nbsp;Checked: ' + (that.get_simplify_time(items.check_time) || 'Just') + ', Time: ' + (items.taking > 1 ? (items.taking + 'Sec') : ((items.taking * 1000).toFixed(2) + 'ms')) + '&nbsp;, Level: ' + (function (level) {
+														var level_html = '';
+														switch (level) {
+															case 3:
+																level_html += '<span style="color:red">High</span>';
+																break;
+															case 2:
+																level_html += '<span style="color:#E6A23C">Medium</span>';
+																break;
+															case 1:
+																level_html += '<span style="color:#e8d544">Low</span>';
+																break;
+														}
+														return level_html;
+													}(items.level)) + ')</i>' +
+												'<span class="operate_tools">' + (item[0] != 'security' ? ('<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-model="' + items.m_name + '" data-title="' + items.title + '" ' + (item[0] == 'ignore' ? 'class=\"btlink\"' : '') + ' data-type="' + item[0] + '">' + (item[0] != 'ignore' ? 'Ignore' : 'Remove') + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="' + items.m_name + '" data-title="' + items.title + '">Check</a>') : '<a href="javascript:;" class="btlink cut_details">Detail</a>') + '</span>' +
+												'</div>' +
+												'<div class="module_details_body">' +
+												'<div class="module_details_line">' +
+												'<div class="module_details_block"><span class="line_title">Test type: </span><span class="line_content">' + items.title + '</span></div>' +
+												'<div class="module_details_block"><span class="line_title">Risk level: </span><span class="line_content" style="color:' + level[items.level - 1][1] + '">' + level[items.level - 1][0] + '</span></div>' +
+												'</div>' +
+												'<div class="module_details_line"><span class="line_title">Risk detail: </span><span class="line_content">' + items.msg + '</span></div>' +
+												'<div class="module_details_line"><span class="line_title">' + (item[0] != 'security' ? 'Solution: ' : 'Suggest: ') + '</span><span class="line_content">' +
+												(function () {
+													var htmlss = '';
+													bt.each(items.tips, function (indexss, itemss) {
+														htmlss += '<i>' + (indexss + 1) + '. ' + itemss + '</i></br>';
+													});
+													return htmlss;
+												}()) + '</span></div>' +
+												'<div class="module_details_line"><span class="line_title">Tips: </span><span class="line_content">'+ items.remind +'</span></div>'+
+												(items.help != '' ? ('<div class="module_details_line"><span class="line_title">Help: </span><span class="line_content"><a href="' + items.help + '" target="_blank" class="btlink">' + items.help + '</span></div>') : '') +
+												'</div>' +
+												'</li>';
+									} else {
+										htmls +=
+											'<li class="module_details_item">' +
+											'<div class="module_details_head">' +
+											'<span class="module_details_title" title="' + items.vuln_name + '">' + items.vuln_name + '</span>\
+											<i class="module_details_tips">(&nbsp;Checked: ' +
+											(that.get_simplify_time(items.check_time) || 'Just') +
+											'&nbsp;, Level: ' +
+											(function (level) {
+												var level_html = '';
+												switch (level) {
+													case 3:
+														level_html += '<span style="color:red">High</span>';
+														break;
+													case 2:
+														level_html += '<span style="color:#E6A23C">Medium</span>';
+														break;
+													case 1:
+														level_html += '<span style="color:#e8d544">Low</span>';
+														break;
+												}
+												return level_html;
+											})(items.level) +
+											'）</i>' +
+											'<span class="operate_tools">' +
+											(item[0] != 'security'
+												? '<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-title="' +
+													items.vuln_name +
+													'" data-id="' +
+													items.cve_id +
+													'" ' +
+													(item[0] == 'ignore' ? 'class="btlink"' : '') +
+													' data-type="' +
+													'vuln' +
+													'">' +
+													(item[0] != 'ignore' ? 'Ignore' : 'Remove') +
+													'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-type="' +
+													'vuln' +
+													'" data-id="' +
+													items.cve_id +
+													'">Check</a>'
+												: '<a href="javascript:;" class="btlink cut_details">Detail</a>') +
+											'</span>' +
+											'</div>' +
+											'<div class="module_details_body">' +
+											'<div class="module_details_line">' +
+											'<div class="module_details_block"><span class="line_title">Vulnerability Number: </span><span class="line_content">' +
+											items.cve_id +
+											'</span></div>' +
+											'<div class="module_details_block"><span class="line_title">Risk level: </span><span class="line_content" style="color:' +
+											level[items.level - 1][1] +
+											'">' +
+											level[items.level - 1][0] +
+											'</span></div>' +
+											'</div>' +
+											'<div class="module_details_line"><span class="line_title">Software involved: </span><span class="line_content">' +
+											(function () {
+												var htmlss = '';
+												bt.each(items.soft_name, function (indexss, itemss) {
+													htmlss += '<i>' + indexss + '&nbsp;:&nbsp;' + itemss + '</i></br>';
+												});
+												return htmlss;
+											})() +
+											'</span></div>' +
+											'<div class="module_details_line"><span class="line_title">' +
+											(item[0] != 'security' ? 'Solution: ' : 'Suggest: ') +
+											'</span><span class="line_content">' +
+											items.vuln_solution +
+											'</span></div>' +
+											'</div>' +
+											'</li>';
+									}
+								});
+
+									htmls += '</ul>';
+									return htmls;
+								}(index, item))
+								+ '</li>'
+					});
+					$('.warning_scan_body').html(html);
+					scan_time = Date.now() / 1000;
+					// $('.warning_scan_time').html('Checked:&nbsp;' + bt.format_data(scan_time)+'<a class="btlink" href="/project/security/report/html" target="_Blank" style="margin-left: 6px;text-decoration: underline;">>>Obtain test report </a>' );
+					$('.warning_scan_time').html('Checked:&nbsp;' + bt.format_data(scan_time));
+				}
+				var dialog_forbid_data;
+				var danger_check_data = [];
+				bt.open({
+					type: '1',
+					title: 'Security risk',
+					area: ['850px', '700px'],
+					skin: 'warning_scan_view',
+					content: '<div class="warning_scan_view" style="height: 100%;">' +
+							'<div class="warning_scan_head">' +
+							'<span class="warning_scan_ps">' + (that.warning_num > 0 ? ('This scan check <i>' + that.warning_num + '</i> risks, Suggested repair!') : 'This scan check no risks, please keep it!') + '</span>' +
+							'<span class="warning_scan_time"></span>' +
+							'<button class="warning_auto_repair">Repair</button>' +
+							'<button class="warning_again_scan" style="right:160px;">Retest</button>' +
+							'</div>' +
+							'<ol class="warning_scan_body" style="min-height: 528px;"></ol>' +
+							'</div>',
+					success: function () {
+						//检测按钮
+						$('.warning_again_scan').click(function () {
+							var loadT = bt.load("<div class='myspeed'>Re detecting security risks, please wait...</div>");
+							setTimeout(function () {
+								that.getScanSpeed('.myspeed','Security risks are being redetected, please wait', '/warning?action=get_scan_bar')
+							},50)
+							that.get_warning_list(true, function () {
+								layer.msg('Scan succeeded', { icon: 1 });
+								reader_warning_list(that.warning_list);
+									if (that.warning_list.risk.length == 0) {
+											$('.warning_auto_repair').css('display', 'none')
+											$('.warning_again_scan').css('right', '20px')
+									}else{
+											$('.warning_auto_repair').css('display', 'inline')
+											$('.warning_again_scan').css('right', '160px')
+									}
+							});
+						});
+						bt_tools.send({url:'/warning?action=get_list'},function(warInfo) {
+							// 显示数据
+							if (that.warning_list.risk.length == 0) {
+								$('.warning_auto_repair').css('display', 'none')
+								$('.warning_again_scan').css('right', '20px')
+							}
+							//一键修复按钮
+							$('.warning_auto_repair').click(function () {
+								dialog_forbid_data = [];
+								danger_check_data = [];
+								$.each(that.warning_list.risk, function (index_c, item_c) {
+									//可修复项
+									if (!item_c.cve_id) {
+										if ($.inArray(item_c.m_name, warInfo.is_autofix) != -1) {
+												danger_check_data.push(item_c);
+										} else {
+												dialog_forbid_data.push(item_c);
+										}
+									}else{
+										if ($.inArray(item_c.cve_id, warInfo.is_autofix) != -1) {
+											item_c['title'] = 'System vulnerability'
+											item_c['ps']=item_c.vuln_name
+											danger_check_data.push(item_c);
+										} else {
+											item_c['ps']=item_c.vuln_name
+											dialog_forbid_data.push(item_c);
+										}
+									}
+
+								});
+
+								var contentHtml =
+									'<div class="dialog">\
+										<div class="forbid">\
+											<div class="forbid_title">\
+												<div>\
+													<span>There are <span style="font-weight:600">' + dialog_forbid_data.length + '</span> risks that cannot be repaired with one click</span>\
+													<span class="btlink">\
+														<a class="btlink" id="look_detail">Detail</a>\
+														<div class="daily_details_mask bgw hide"></div>\
+													</span>\
+												</div>\
+											</div>\
+											<div class="forbid_content">\
+												<p>\
+												The above <span style="font-weight:600">' + dialog_forbid_data.length + '</span> items may lead to normal website access and abnormal service operation after one-click repair (please repair manually)\
+												</p>\
+											</div>\
+										</div>\
+										<div class="auto_content">\
+											<div>\
+												<span id="choose_auto_repair">Please select the risk items to be repaired (selected: <span id="danger_length" style="font-weight:600">' + 0 + '</span>)</span>\
+												<div id="auto_repair"></div>\
+											</div>\
+										</div>\
+										<div class="confirm_button">\
+											<span style="font-size:12px;color:#f39c12;margin-right:8px">If you have installed [System hardening], please turn them off before repairing</span>\
+											<span id="is_ltd" style="font-size:12px;color:#f39c12;margin-right:8px">For Professional Version only, please <span class="btlink openLtd">Upgrade now</span></span>\
+											<button id="confirm_button" class="button-link">Repair</button>\
+										</div>\
+									</div>';
+
+								if (!dialog_forbid_data.length || !danger_check_data.length) height = true
+								var check_data
+								var height = false
+								layer.open({
+									title: 'One-click repair confirm information',
+									content: contentHtml,
+									btn: false,
+									closeBtn: 2,
+									area: height ? ['640px', '380px'] : ['640px', '480px'],
+									success: function (layero, index) {
+										check_data = bt_tools.table({
+											el: '#auto_repair',
+											data: danger_check_data,
+											load: true,
+											height: '178px',
+											column: [
+												{
+													type: 'checkbox',
+													width: 20
+												},
+												{
+													fid: 'title',
+													title: 'Test Type',
+												},
+												{
+													fid: 'ps',
+													title: 'Risk Item',
+												},
+												{
+													fid: 'level',
+													title: 'Risk Level',
+													width: 100,
+													template: function (row) {
+														return row.level == 1 ? '<span style="color:#e8d544">High</span>' : row.level == 2 ? '<span style="color:#E6A23C">Medium</span>' : '<span style="color:red">Low</span>'
+													}
+												}
+											]
+										});
+										// 判定表格选中长度
+										$('#auto_repair tbody input,#auto_repair thead input').change(function () {
+											$('#danger_length').text(check_data.checkbox_list.length)
+											if (check_data.checkbox_list.length) {
+												$('#confirm_button').attr('disabled', false)
+												$('#confirm_button').css('background-color', '#20a53a')
+											} else {
+												$('#confirm_button').attr('disabled', true)
+												$('#confirm_button').css('background-color', 'rgb(203, 203, 203)')
+											}
+										})
+										// 不存在不可修复项时
+										if (!dialog_forbid_data.length) {
+											$('#choose_auto_repair').html('Please select the risk items to be repaired (selected: <span id="danger_length" style="font-weight:600">' + 0 + '</span>)</span>')
+											$('.forbid').css('display', 'none')
+											$('.dialog').find('hr').css('display', 'none')
+										}
+										if (!danger_check_data.length) {
+											$('.dialog').find('hr').css('display', 'none')
+											$('#choose_auto_repair').html('There are no currently repairable risk items!')
+											$('#confirm_button').attr('disabled', true)
+											$('#confirm_button').css('background-color', 'rgb(203, 203, 203)')
+										}
+										// 一键修复
+										$('#confirm_button').click(function (e) {
+											if (check_data.checkbox_list.length != 0) {
+												var danger_selected_data = []
+												$.each(check_data.checkbox_list, function (index, item) {
+													danger_selected_data.push(danger_check_data[item].m_name||danger_check_data[item].cve_id);
+												});
+												that.auto_repair(danger_selected_data, that.warning_list);
+											} else {
+												layer.msg('No risk items are currently selected!',{ type:1 })
+												e.stopPropagation();
+												e.preventDefault();
+											}
+										})
+										// 查看详情列表
+										var _details = '<div class="divtable daliy_details_table" style="width: 420px; border: 1px solid #ddd;"><table class="table table-hover" id="daliy_details_table" style="border: none;">',
+												thead = '', _tr = '';
+										$.each(dialog_forbid_data, function (index, item) {
+											_tr += '<tr><td style="width:34px;height:25px;text-align:center">' + (index + 1) + '</td><td><span class="overflow_hide" style="width:230px" title="' + item.m_name + '">' + item.ps + '</span></td></tr>'
+										})
+										thead = '<thead><tr><th colspan="2">The following ' + dialog_forbid_data.length + ' items cannot be repaired with one click</th></tr></thead>'
+										_details += thead + '<tbody>' + _tr + '</tbody></table></div>';
+
+										$('.daily_details_mask').html(_details);
+
+										$('#look_detail').on('click', function (e) {
+											$('.daily_details_mask').prev('a').css('color', '#23527c');
+											if (e.target.localName == 'a') {
+												if ($('.daily_details_mask').hasClass('hide')) {
+													$('.daily_details_mask').removeClass('hide').css({right: 20, top: 50})
+												} else {
+													$('.daily_details_mask').addClass('hide')
+													$('.daily_details_mask').prev('a').removeAttr('style')
+												}
+											}
+											bt.fixed_table('daliy_details_table');
+											$(document).click(function (ev) {
+												$('.daily_details_mask').addClass('hide').prev('a').removeAttr('style')
+												ev.stopPropagation();
+											})
+											e.stopPropagation();
+										});
+
+										$('i[data-checkbox=all]').click()
+
+										// 是否为专业版
+										var ltd = parseInt(bt.get_cookie('pro_end') || -1);
+										if (ltd > 0) {
+											$('#is_ltd').css('display', 'none');
+										} else {
+											$('#is_ltd').prev().hide()
+											$('#confirm_button').attr('disabled', true)
+											$('#confirm_button').css('background-color', 'rgb(203, 203, 203)')
+										}
+
+										$('.openLtd').click(function () {
+											var item = {
+												ps: 'Provide automatic repair solutions for security problems such as vulnerabilities and settings in the scanning server system, and perform automatic one-click repair for risk items scanned',
+												description: ['Automatic Repair Scheme', 'Repair result display'],
+												pluginName: 'Risk one-click repair',
+												preview: false,
+												imgSrc: 'https://www.bt.cn/Public/new/plugin/introduce/home/autoRepair.png'
+											}
+											bt.soft.product_pay_view({ totalNum: 68, limit: 'pro', closePro: true, pluginName: item.pluginName, fun: function () {
+												product_recommend.recommend_product_view(item, undefined, 'pro', 68, 'pro', true)
+											}});
+										})
+									},
+								});
+							});
+							// 3个大的下来的点击事件
+							$('.warning_scan_body').on('click', '.module_item .module_head', function () {
+								var _parent = $(this).parent(), _parent_index = _parent.index(), _list = $(this).next();
+								if (parseInt($(this).find('.module_num').text()) > 0) {
+									if (_list.hasClass('active')) {
+										_list.css('height', 0);
+										$(this).find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down');
+										setTimeout(function () {
+											_list.removeClass('active').removeAttr('style');
+										}, 500);
+									} else {
+										$(this).find('.module_cut_show i').text('Collapse').next().removeClass('glyphicon-menu-down').addClass('glyphicon-menu-up');
+										_list.addClass('active');
+										var details_list = _list.parent().siblings().find('.module_details_list');
+										details_list.removeClass('active');
+										details_list.prev().find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down')
+									}
+								}
+							});
+							$('.warning_repair_scan').click(function () {
+								bt.onlineService();
+							});
+							// 右边的操作
+							$('.warning_scan_body').on('click', '.operate_tools a', function () {
+								var index = $(this).index(), data = $(this).data();
+								switch (index) {
+									case 0:
+										if ($(this).hasClass('active')) {
+											$(this).parents('.module_details_head').next().hide();
+											$(this).removeClass('active').text('Detail');
+										} else {
+											var item = $(this).parents('.module_details_item'), indexs = item.index();
+											$(this).addClass('active').text('Collapse');
+											item.siblings().find('.module_details_body').hide();
+											item.siblings().find('.operate_tools a:eq(0)').removeClass('active').text('Detail');
+											$(this).parents('.module_details_head').next().show();
+											$('.module_details_list').scrollTop(indexs * 41);
+										}
+
+										break;
+									case 1:
+										if (data.type != 'ignore') {
+											bt.confirm({ title: 'Ignore risk', msg: 'Confirm to ignore [' + data.title + '] risk?' }, function () {
+												if (data.type != 'vuln') {
+														that.warning_set_ignore(data.model, function (res) {
+															that.get_warning_list(false, function () {
+																if (!that.warning_list.risk.length) {
+																	$('.warning_auto_repair').css('display', 'none')
+																	$('.warning_again_scan').css('right', '40px')
+																}
+																bt.msg(res)
+																reader_warning_list(that.warning_list);
+															});
+														});
+												} else {
+													// console.log('漏洞的');
+													that.bug_set_ignore(data.id, function (res) {
+														that.get_warning_list(false, function () {
+															if (!that.warning_list.risk.length) {
+																$('.warning_auto_repair').css('display', 'none');
+																$('.warning_again_scan').css('right', '40px');
+															}
+															bt.msg(res);
+															reader_warning_list(that.warning_list);
+														});
+													});
+												}
+											});
+										} else {
+											that.warning_set_ignore(data.model, function (res) {
+												that.get_warning_list(false, function () {
+													bt.msg(res)
+													reader_warning_list(that.warning_list);
+													if (that.warning_list.risk.length) {
+														$('.warning_auto_repair').css('display', 'inline')
+														$('.warning_again_scan').css('right', '160px')
+													}
+													setTimeout(function () {
+														$('.module_item.ignore').click();
+													}, 100)
+												});
+											});
+										}
+										break;
+									case 2:
+										if (data.type != 'vuln') {
+											that.waring_check_find(data.model, function (res) {
+												that.get_warning_list(false, function () {
+														bt.msg(res);
+													reader_warning_list(that.warning_list);
+												});
+											});
+										} else {
+											that.bug_check_find(data.id, function (res) {
+												that.get_warning_list(false, function () {
+													bt.msg(res);
+													reader_warning_list(that.warning_list);
+												});
+											});
+										}
+										break;
+								}
+							});
+							reader_warning_list(that.warning_list);
+						})
+					}
+				});
+        // var that = this;
+        // function reader_warning_list(data){
+        //     var html = '',scan_time = '',arry =  [['risk','Risk'],['security','Security'],['ignore','Ignore']],level = [['Low risk','#e8d544'],['Medium risk','#E6A23C'],['High risk','red']]
+        //     bt.each(arry,function(index,item){
+        //         var data_item = data[item[0]],data_title = item[1];
+        //         html += '<li class="module_item '+ item[0] +'">'+
+        //                 '<div class="module_head">'+
+        //                     '<span class="module_title">'+ data_title +'</span>'+
+        //                     '<span class="module_num">'+ data_item.length +'</span>'+
+        //                     '<span class="module_cut_show">'+ (item[index] == 'risk' && that.warning_num > 0?'<i>Collapse</i><span class="glyphicon glyphicon-menu-up" aria-hidden="false"></span>':'<i>Details</i><span class="glyphicon glyphicon-menu-down" aria-hidden="false"></span>') +'</span>'+
+        //                 '</div>'+
+        //                 (function(index,item){
+        //                     var htmls = '<ul class="module_details_list '+ (item[0] == 'risk' && that.warning_num > 0?'active':'') +'">';
+        //                     bt.each(data_item,function(indexs,items){
+        //                         scan_time = items.check_time;
+        //                         htmls += '<li class="module_details_item">'+
+        //                             '<div class="module_details_head">'+
+        //                                 '<span class="module_details_title">'+ items.ps +'<i>（Checked: '+ (that.get_simplify_time(items.check_time) || 'Just') +', time: '+ ( items.taking>1?( items.taking +'Sec'):((items.taking * 1000).toFixed(2) +'ms')) +'）</i></span>'+
+        //                                 '<span class="operate_tools">'+ (item[0] != 'security'?('<a href="javascript:;" class="btlink cut_details">Detail</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" data-model="'+ items.m_name +'" data-title="'+ items.title +'" '+ (item[0]=='ignore'?'class=\"btlink\"':'') +' data-type="'+item[0]+'">'+ (item[0] != 'ignore'?'Ignore':'Remove') +'</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:;" class="btlink" data-model="'+ items.m_name +'" data-title="'+ items.title +'">Check</a>'):'<a href="javascript:;" class="btlink cut_details">Detail</a>') +'</span>' +
+        //                             '</div>'+
+        //                             '<div class="module_details_body">'+
+        //                                 '<div class="module_details_line">'+
+        //                                     '<div class="module_details_block"><span class="line_title">Test type: </span><span class="line_content">'+ items.title +'</span></div>'+
+        //                                     '<div class="module_details_block"><span class="line_title">Risk level: </span><span class="line_content" style="color:'+ level[items.level-1][1] +'">'+ level[items.level-1][0] +'</span></div>'+
+        //                                 '</div>'+
+        //                                 '<div class="module_details_line"><span class="line_title">Risk detail: </span><span class="line_content">'+ items.msg +'</span></div>'+
+        //                                 '<div class="module_details_line"><span class="line_title">'+ (item[0] != 'security'?'Solution: ':'Suggest: ') +'</span><span class="line_content">'+ 
+        //                                 (function(){
+        //                                     var htmlss = '';
+        //                                     bt.each(items.tips,function(indexss,itemss){
+        //                                         htmlss +='<i>'+ (indexss+1) +'、'+ itemss  +'</i></br>';
+        //                                     });
+        //                                     return htmlss;
+        //                                 }()) +'</span></div>'+
+        //                                 (items.help != ''?('<div class="module_details_line"><span class="line_title">Help: </span><span class="line_content"><a href="'+ items.help +'" target="_blank" class="btlink">'+items.help +'</span></div>'):'') +
+        //                             '</div>'+
+        //                         '</li>';
+        //                     });
+        //                     htmls += '</ul>';
+        //                     return htmls;
+        //                 }(index,item))
+        //             +'</li>'
+        //     });
+        //     $('.warning_scan_body').html(html);
+        //     $('.warning_scan_time').html('Checked: &nbsp;'+ bt.format_data(scan_time));
+        // }
+        // bt.open({
+        //     type:'1',
+        //     title:'Security risk',
+        //     area:['850px','700px'],
+        //     skin:'warning_scan_view',
+        //     content:'<div class="warning_scan_view">'+
+        //         '<div class="warning_scan_head">'+
+        //             '<span class="warning_scan_ps">'+ (that.warning_num>0?('This scan check <i>'+ that.warning_num +'</i> risks, Suggested repair!'):'This scan check no risks, please keep it!') +'</span>'+
+        //             '<span class="warning_scan_time"></span>'+
+        //             '<button class="warning_again_scan">Retest</button>'+
+        //         '</div>'+
+        //         '<ol class="warning_scan_body"></ol>'+
+        //     '</div>',
+        //     success:function(){
+        //         $('.warning_again_scan').click(function(){
+        //             var loadT = layer.msg('Re detecting security risks, please wait...',{icon:16});
+        //             that.get_warning_list(true,function(){
+        //                 layer.msg('Scan succeeded',{icon:1});
+        //                 reader_warning_list(that.warning_list);
+        //             });
+        //         });
+        //         $('.warning_scan_body').on('click','.module_item .module_head',function(){
+        //             var _parent = $(this).parent(),_parent_index = _parent.index(),_list = $(this).next();
+        //             if(parseInt($(this).find('.module_num').text()) > 0){
+        //                 if(_list.hasClass('active')){
+        //                     _list.css('height',0);
+        //                     $(this).find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down');
+        //                     setTimeout(function(){  
+        //                         _list.removeClass('active').removeAttr('style');
+        //                     },500);
+        //                 }else{
+        //                     $(this).find('.module_cut_show i').text('Collapse').next().removeClass('glyphicon-menu-down').addClass('glyphicon-menu-up');
+        //                     _list.addClass('active');
+        //                     var details_list = _list.parent().siblings().find('.module_details_list');
+        //                     details_list.removeClass('active');
+        //                     details_list.prev().find('.module_cut_show i').text('Detail').next().removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down')
+        //                 }
+        //             }
+        //         });
+        //         $('.warning_scan_body').on('click','.operate_tools a',function(){
+        //             var index = $(this).index(),data = $(this).data();
+        //             switch(index){
+        //                 case 0:
+        //                     if($(this).hasClass('active')){
+        //                         $(this).parents('.module_details_head').next().hide();
+        //                         $(this).removeClass('active').text('Detail');
+        //                     }else{
+        //                         var item = $(this).parents('.module_details_item'),indexs = item.index();
+        //                         $(this).addClass('active').text('Collapse');
+        //                         item.siblings().find('.module_details_body').hide();
+        //                         item.siblings().find('.operate_tools a:eq(0)').removeClass('active').text('Detail');
+        //                         $(this).parents('.module_details_head').next().show();
+        //                         $('.module_details_list').scrollTop(indexs * 41);
+        //                     }
+        //                 break;
+        //                 case 1:
+        //                     if(data.type != 'ignore'){
+        //                         bt.confirm({title:'Ignore risk',msg:'Confirm to ignore [ '+ data.title +' ] risk?'},function(){
+        //                             that.warning_set_ignore(data.model,function(res){
+        //                                 that.get_warning_list(false,function(){
+        //                                     bt.msg(res)
+        //                                     reader_warning_list(that.warning_list);
+        //                                 });
+        //                             });
+        //                         }); 
+        //                     }else{
+        //                         that.warning_set_ignore(data.model,function(res){
+        //                             that.get_warning_list(false,function(){
+        //                                 bt.msg(res)
+        //                                 reader_warning_list(that.warning_list);
+        //                                 setTimeout(function(){
+        //                                     $('.module_item.ignore').click();
+        //                                 },100)
+        //                             });
+        //                         });  
+        //                     }
+        //                 break;
+        //                 case 2:
+        //                     that.waring_check_find(data.model,function(res){
+        //                         that.get_warning_list(false,function(){
+        //                             bt.msg(res)
+        //                             reader_warning_list(that.warning_list);
+        //                         });
+        //                     });
+        //                 break;
+        //             }
+        //         });
+        //         reader_warning_list(that.warning_list);
+        //     }
+        // })
     },
     /**
      * @description 安全风险指定模块检查
@@ -2006,6 +2501,132 @@ var index = {
         
     },
 
+		/**
+			* @description:  安全风险一键修复
+			* @param {*} params 选中的修复项的数组
+			* @param {*} data 原先的数组
+			* @return {*}
+			*/
+		auto_repair: function (params, data) {
+			var that = this
+			var res_data = [];
+			var loadT = bt.load('<div class="repair_speed">Fixing the security risk, please wait...</div>')
+			setTimeout(function () {
+				that.getScanSpeed('.repair_speed','Fixing security risks', '/safe/security/get_repair_bar')
+			}, 50)
+			$.post(
+				'/safe/security/set_security',
+				{ data: JSON.stringify({ m_name: params }) },
+				function (rdata) {
+					if(rdata.msg == 'The current features are exclusive to the professional edition'){
+						layer.msg(rdata.msg)
+						return
+					}
+					var res_item = {};
+					res_data = [];
+					$.each(rdata.success, function (index, item) {
+						res_item.status = item.result.status;
+						res_item.type = item.result.type;
+						res_item.msg = item.result.msg;
+						res_item.m_name = item.m_name;
+						res_data.push(res_item);
+						res_item = {};
+					});
+					$.each(rdata.failed, function (index, item) {
+						res_item.status = item.result.status;
+						res_item.type = item.result.type;
+						res_item.msg = item.result.msg;
+						res_item.m_name = item.m_name;
+						res_data.push(res_item);
+						res_item = {};
+					});
+					if (rdata.cannot_automatically.length) {
+						$.each(rdata.cannot_automatically, function (index, item) {
+							res_item.m_name = item;
+							res_item.status = 'ignore'
+							res_data.push(res_item);
+							res_item = {};
+						});
+					}
+					var result_table ='<div><p style="margin-bottom:20px;font-size:16px">Repair result: Success <span style="color:#20a53a">'+ rdata.success.length + '</span> items, Fail <span style="color:red">' + rdata.failed.length + '</span> items, Ignore <span style="color:#b9b9b9">' + rdata.cannot_automatically.length + '</span> items</p><div id="auto_repair_result"></div></div>'+
+											'<div class="forbid_content"><p style="margin-bottom:20px;font-size:12px">After closing, risk items will be automatically re-detected. If you do not re-detect, please manually click the "Retest" button</br>If any item fails to be repaired, close the current window and repair the item manually based on the solution</div>';
+					layer.open({
+						title: 'Result',
+						content: result_table,
+						closeBtn: 2,
+						area: '540px',
+						btn: false,
+						success: function (layero, index) {
+							$('#auto_repair_result').empty();
+							bt_tools.table({
+								el: '#auto_repair_result',
+								data: res_data,
+								load: true,
+								height: '240px',
+								column: [
+									{
+										type: 'text',
+										title: 'Risk item',
+										template: function (row) {
+											var rowData;
+											$.each(data.risk, function (index_d, item_d) {
+											if (!item_d.cve_id) {
+													if (item_d.m_name == row.m_name) {
+														rowData = '<span>' + item_d.title + '</span>';
+													}
+											}else{
+													rowData = '<span>' + row.m_name + '</span>';
+											}
+
+											});
+											return rowData;
+										},
+									},
+									{
+										type: 'text',
+										title: 'Info (website or other)',
+										width:200,
+										template: function (row) {
+											if (row.type.length) {
+												if(Array.isArray(row.type)) {
+												var data = row.type.join(',')
+													return '<span  class="result_span">'+data+'</span>';
+												}
+												return '<span class="result_span">'+ row.type +'</span>'
+											} else {
+												return '<span>--</span>';
+											}
+										},
+									},
+									{
+										title: 'Opt',
+										type: 'text',
+										align: 'right',
+										template: function (row) {
+											if (row.status == false) {
+												return '<span style="color:red">Fail</span>';
+											} else if (row.status == true) {
+												return '<span style="color:#20a53a">Success</span>';
+											} else if (row.status == 'ignore') {
+												return '<span style="color:rgb(102, 102, 102)">Ignore risk</span>';
+											}
+										},
+									},
+								],
+							});
+						},
+						cancel: function (index, layers) {
+							res_data = [];
+							layer.close(index);
+							var loadT = layer.msg('Retesting for security risks, please wait...', {
+								icon: 16,
+							});
+							$('.warning_again_scan').click()
+						},
+					});
+				}
+			);
+		},
     /**
      * @description 安全风险指定模块是否忽略
      * @param {String} model_name 模块名称

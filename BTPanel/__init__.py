@@ -618,8 +618,10 @@ def panel_warning(pdata=None):
                 pass
         return result
 
-    defs = ('get_list', 'set_ignore', 'check_find')
-    if get.action in ['set_ignore', 'check_find']:
+    defs = ('get_list', 'set_ignore', 'check_find', 'check_cve', 'set_vuln_ignore', 'get_scan_bar', 'get_tmp_result',
+            'kill_get_list')
+
+    if get.action in ['set_ignore', 'check_find', 'set_vuln_ignore']:
         cache.delete(ikey)
     return publicObject(dataObject, defs, None, pdata)
 
@@ -1010,7 +1012,7 @@ def auth(pdata=None):
             'get_voucher', 'flush_pay_status', 'create_serverid', 'check_serverid',
             'get_plugin_list', 'check_plugin', 'get_buy_code', 'check_pay_status',
             'get_renew_code', 'check_renew_code', 'get_business_plugin',
-            'get_ad_list', 'check_plugin_end', 'get_plugin_price')
+            'get_ad_list', 'check_plugin_end', 'get_plugin_price', 'get_plugin_remarks')
     result = publicObject(toObject, defs, None, pdata)
     return result
 

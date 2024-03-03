@@ -7139,7 +7139,7 @@ $('.feedback-btn').remove();
         var item = obj;
         bt.open({
             type: 1,
-            area: ['860px', '683px'],
+            area: ['860px', '740px'],
             title: lan.site.website_change + ' [' + item.name + ']  --  ' + lan.site.addtime + ' [' + item.addtime + ']',
             closeBtn: 2,
             shift: 0,
@@ -7779,7 +7779,7 @@ domain_dns_list: [],       // dns域名列表
 									</div>\
 							</div>\
 							<div class="line">\
-									<span class="tname">'+ lan.public_backup.mobile_phone +'</span>\
+									<span class="tname">'+ lan.public_backup.mobile_phone_or_email +'</span>\
 									<div class="info-r">\
 											<input type="text" class="bt-input-text mr5" name="orgPhone" value="" placeholder="'+ lan.site.set_ssl.phone_pl +'" />\
 									</div>\
@@ -7914,12 +7914,12 @@ domain_dns_list: [],       // dns域名列表
 									(!rdata.csr ? 'hide' : '') +
 									'">' +
 									'<div class="state_info_flex">' +
-									'<div class="state_item"><span>' + lan.site.set_ssl.cert_type + '</span><span><a href="javascript:;" class="btlink cutSslType" data-type="' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.cert_type + ':</span><span><a href="javascript:;" class="btlink cutSslType" data-type="' +
 									(typeList[rdata.type] === lan.site.other_cert ? -1 : rdata.type) +
 									'">' +
 									(rdata.type === -1 ? lan.site.set_ssl.other_cert : typeList[rdata.type]) +
 									'</a></span></div>' +
-									'<div class="state_item"><span>' + lan.site.set_ssl.cert_brand + '</span><span class="ellipsis_text" title="' +
+									'<div class="state_item"><span>' + lan.site.set_ssl.cert_brand + ':</span><span class="ellipsis_text" title="' +
 									certificate.issuer +
 									'">' +
 									certificate.issuer +
@@ -8439,7 +8439,7 @@ domain_dns_list: [],       // dns域名列表
 						},
 					},
 					{
-						title: lan.site.set_ssl.menu2,
+						title: lan.site.set_ssl.menu2 + '<i class="ssl_recom_icon"></i>',
 						callback: function (robj) {
 							$.getScript('https://js.stripe.com/v3/');
 							robj = $('#webedit-con .tab-con');
@@ -8668,7 +8668,7 @@ domain_dns_list: [],       // dns域名列表
 										'<div class="alert alert-success" style="padding: 10px 15px;"><div class="business_line" ><div class="business_info business_advantage" style="padding-top:0"><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.enterprise_certificate +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.exceptional_application +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.anti_hijackingTampering +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.increase_seo +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.indemnity_guarantee +'</span></div><div class="business_advantage_item"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.refund_failure +'</span></div><div class="business_advantage_item" style="width:60%"><span class="advantage_icon glyphicon glyphicon glyphicon-ok"></span><span class="advantage_title">'+ lan.site.set_ssl.official_use +'</span></div></div></div></div>\
 																		<div class= "mtb10" >\
 																		<button class="btn btn-success btn-sm btn-title ssl_business_application" type="button">'+ lan.site.set_ssl.apply_certificate +'</button>\
-																		<div class="divtable mtb10 ssl_order_list"  style="height: 250px;overflow-y: auto;">\
+																		<div class="divtable mtb10 ssl_order_list"  style="height: 216px; overflow-y: auto;">\
 																				<table class="table table-hover" id="ssl_order_list" style="table-layout: fixed;">\
 																						<thead><tr><th width="130px">'+ lan.public_backup.domain +'</th><th  width="110px">'+ lan.site.set_ssl.certificate_type +'</th><th>'+ lan.site.set_ssl.expire_date +'</th><th style="width:130px;">'+ lan.public.status +'</th><th style="text-align:right;width:140px;">'+ lan.public.action +'</th></tr></thead>\
 																						<tbody><tr><td colspan="5" style="text-align:center"><img src="/static/images/loading-2.gif" style="width:15px;vertical-align: middle;"><span class="ml5" style="vertical-align: middle;">'+ lan.site.set_ssl.get_certificate_list +'...</span></td></tr></tbody>\
@@ -9249,158 +9249,161 @@ domain_dns_list: [],       // dns域名列表
 												skin: 'layer-business-ssl',
 												content:
 													'\
-												<span style="width:700px;display: inline-block;line-height: 30px;background: #F2DEDF;color: #A5374A;font-size: 12px;border-radius: 2px;position: relative;top: 25px;left: 50px;">\
-													<span class="glyphicon glyphicon-alert" style="color: #A5374A; margin-right: 10px;"></span>\
-													'+ lan.site.set_ssl.bus_cert_tip +'</span>\
-												<div>\
-													<div class="business_ssl_form bt_business_tab active">\
-														<div class="bt-form" style="padding: 30px 20px 20px;">\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.domain_num +'</span>\
-																<div class="info-r">\
-																	<div class="domain_number_group">\
-																		<div class="domain_number_reduce is_disable" data-type="reduce"></div>\
-																		<input type="number" class="domain_number_input" value="" />\
-																		<div class="domain_number_add"  data-type="add"></div>\
-																	</div>\
-																	<div class="unit mt5 domain_number_tips"></div>\
-																	<div class="tips_gray mt5"><p>'+ lan.site.set_ssl.select_domain_num +'</p></div>\
-																</div>\
-															</div>\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.cert_class +'</span>\
-																<div class="info-r">\
-																	<div class="inlineBlock" style="display:flex">\
-																		<div class="ssl_item ssl_type_item mr10" data-type="OV">\
-																			<div class="ssl_item_title">'+ lan.site.set_ssl.ov_cert +'</div>\
-																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_enterprise +'</div>\
-																		</div>\
-																		<div class="ssl_item ssl_type_item mr10" data-type="DV">\
-																			<em>Hot</em>\
-																			<div class="ssl_item_title">'+ lan.site.set_ssl.dv_cert +'</div>\
-																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_pseson +'</div>\
-																		</div>\
-																		<div class="ssl_item ssl_type_item mr10" data-type="EV">\
-																			<div class="ssl_item_title">'+ lan.site.set_ssl.ev_cert +'</div>\
-																			<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_large +'</div>\
-																		</div>\
-																	</div>\
-																	<div class="tips_gray ssl_type_tips"></div>\
-																</div>\
-															</div>\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.cert_brand +'</span>\
-																<div class="info-r">\
-																	<div class="inlineBlock business_brand_list">\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="Positive" title="Positive">Positive</div>\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="sslTrus" title="sslTrus">sslTrus</div>\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="CFCA" title="CFCA">CFCA</div>\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="Digicert" title="Digicert">Digicert</div>\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="GeoTrust" title="GeoTrust">GeoTrust</div>\
-																		<div class="ssl_item ssl_brand_item mr10" data-type="Sectigo" title="Sectigo">Sectigo</div>\
-																	</div>\
-																	<div class="tips_gray ssl_brand_tips"></div>\
-																</div>\
-															</div>\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.cert_type +'</span>\
-																<div class="info-r">\
-																	<div class="inlineBlock business_price_list">\
-																		<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.one_domain +'</div>\
-																		<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.more_domain +'</div>\
-																	</div>\
-																	<div class="tips_gray ssl_price_tips"></div>\
-																</div>\
-															</div>\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.pur_period +'</span>\
-																<div class="info-r">\
-																	<div class="inlineBlock business_year_list">\
-																		<div class="ssl_item ssl_year_item mr10" data-year="1">'+ lan.site.set_ssl.num_year_test(1) +'</div>\
-																		<div class="ssl_item ssl_year_item mr10" data-year="2">'+ lan.site.set_ssl.num_year_test(2) +'</div>\
-																		<div class="ssl_item ssl_year_item mr10" data-year="3">'+ lan.site.set_ssl.num_year_test(3) +'</div>\
-																		<div class="ssl_item ssl_year_item mr10" data-year="4">'+ lan.site.set_ssl.num_year_test(4) +'</div>\
-																		<div class="ssl_item ssl_year_item mr10" data-year="5">'+ lan.site.set_ssl.num_year_test(5) +'</div>\
-																	</div>\
-																	<div class="tips_gray mt5 ssl_year_tips"></div>\
-																</div>\
-															</div>\
-															<div class="line">\
-																<span class="tname">'+ lan.site.set_ssl.deploy_service +'</span>\
-																<div class="info-r">\
-																	<div class="inlineBlock">\
-																		<div class="ssl_item ssl_service_item mr10" data-install="0" style="width: 90px;">'+ lan.site.set_ssl.no_necess +'</div>\
-																			<div class="ssl_item ssl_service_item mr10 active" data-serviceprice="28.9" data-install="1" style="width: 90px;">'+ lan.site.set_ssl.deploy_service +'</div>\
-																			<span class="unit ssl_service_unit"></span>\
-																	</div>\
-																	<div class="tips_gray mt5 ssl_service_tips"></div>\
-																</div>\
-															</div>\
-														</div>\
-														<div class="business_ssl_btn">\
-															<div class="mr5">\
-																<div class="bname">'+ lan.site.set_ssl.goods_include +'：<span class="ml10"></span></div>\
-																<div>'+ lan.site.set_ssl.total_cost +'：<div class="present_price ml10">\
-																		<span>$278.66</span>/1year（'+ lan.site.set_ssl.in_service +'）\
-																	</div>\
-																	<div class="original_price">Original price$342/1year</div>\
-																</div>\
-															</div>\
-															<div class="inlineBlock ml10">\
-																<button type="button" class="business_ssl_pay">'+ lan.site.set_ssl.buy_now +'</button>\
-															</div>\
-														</div>\
+												<div style="height: 695px; overflow: auto; padding-top: 20px;">\
+													<div style="display: flex; align-items: center; justify-content: center; width: 700px; margin: 0 auto; padding: 10px 16px; background: #F2DEDF;color: #A5374A;font-size: 12px;border-radius: 2px;">\
+														<span class="glyphicon glyphicon-alert" style="color: #A5374A;"></span>\
+														<span style="width: 626px; margin-left: 16px;">'+ lan.site.set_ssl.bus_cert_tip +'</span>\
 													</div>\
-													<div class="bt_business_tab ssl_applay_info">\
-														<div class="guide_nav">\
-															<span class="active">'+ lan.site.set_ssl.wechat_pay +'</span>\
-															<span>'+ lan.site.set_ssl.Alipay_pay +'</span>\
-														</div>\
-														<div class="paymethod">\
-															<div class="pay-wx" id="PayQcode"></div>\
-														</div>\
-														<div class="lib-price-box text-center">\
-															<span class="lib-price-name f14"><b>'+ lan.site.set_ssl.total +'</b></span>\
-															<span class="price-txt">$<b class="sale-price"></b></span>\
-														</div>\
-														<div class="lib-price-detailed">\
-															<div class="info">\
-																<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
-																<span class="text-right"></span>\
+													<div>\
+														<div class="business_ssl_form bt_business_tab active">\
+															<div class="bt-form" style="padding: 8px 20px 8px;">\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.domain_num +'</span>\
+																	<div class="info-r">\
+																		<div class="domain_number_group">\
+																			<div class="domain_number_reduce is_disable" data-type="reduce"></div>\
+																			<input type="number" class="domain_number_input" value="" />\
+																			<div class="domain_number_add"  data-type="add"></div>\
+																		</div>\
+																		<div class="unit mt5 domain_number_tips"></div>\
+																		<div class="tips_gray mt5"><p>'+ lan.site.set_ssl.select_domain_num +'</p></div>\
+																	</div>\
+																</div>\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.cert_class +'</span>\
+																	<div class="info-r">\
+																		<div class="inlineBlock" style="display:flex">\
+																			<div class="ssl_item ssl_type_item mr10" data-type="OV">\
+																				<div class="ssl_item_title">'+ lan.site.set_ssl.ov_cert +'</div>\
+																				<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_enterprise +'</div>\
+																			</div>\
+																			<div class="ssl_item ssl_type_item mr10" data-type="DV">\
+																				<em>Hot</em>\
+																				<div class="ssl_item_title">'+ lan.site.set_ssl.dv_cert +'</div>\
+																				<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_pseson +'</div>\
+																			</div>\
+																			<div class="ssl_item ssl_type_item mr10" data-type="EV">\
+																				<div class="ssl_item_title">'+ lan.site.set_ssl.ev_cert +'</div>\
+																				<div class="ssl_item_ps">'+ lan.site.set_ssl.recom_large +'</div>\
+																			</div>\
+																		</div>\
+																		<div class="tips_gray ssl_type_tips"></div>\
+																	</div>\
+																</div>\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.cert_brand +'</span>\
+																	<div class="info-r">\
+																		<div class="inlineBlock business_brand_list">\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="Positive" title="Positive">Positive</div>\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="sslTrus" title="sslTrus">sslTrus</div>\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="CFCA" title="CFCA">CFCA</div>\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="Digicert" title="Digicert">Digicert</div>\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="GeoTrust" title="GeoTrust">GeoTrust</div>\
+																			<div class="ssl_item ssl_brand_item mr10" data-type="Sectigo" title="Sectigo">Sectigo</div>\
+																		</div>\
+																		<div class="tips_gray ssl_brand_tips"></div>\
+																	</div>\
+																</div>\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.cert_type +'</span>\
+																	<div class="info-r">\
+																		<div class="inlineBlock business_price_list">\
+																			<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.one_domain +'</div>\
+																			<div class="ssl_item ssl_price_item mr10">'+ lan.site.set_ssl.more_domain +'</div>\
+																		</div>\
+																		<div class="tips_gray ssl_price_tips"></div>\
+																	</div>\
+																</div>\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.pur_period +'</span>\
+																	<div class="info-r">\
+																		<div class="inlineBlock business_year_list">\
+																			<div class="ssl_item ssl_year_item mr10" data-year="1">'+ lan.site.set_ssl.num_year_test(1) +'</div>\
+																			<div class="ssl_item ssl_year_item mr10" data-year="2">'+ lan.site.set_ssl.num_year_test(2) +'</div>\
+																			<div class="ssl_item ssl_year_item mr10" data-year="3">'+ lan.site.set_ssl.num_year_test(3) +'</div>\
+																			<div class="ssl_item ssl_year_item mr10" data-year="4">'+ lan.site.set_ssl.num_year_test(4) +'</div>\
+																			<div class="ssl_item ssl_year_item mr10" data-year="5">'+ lan.site.set_ssl.num_year_test(5) +'</div>\
+																		</div>\
+																		<div class="tips_gray mt5 ssl_year_tips"></div>\
+																	</div>\
+																</div>\
+																<div class="line">\
+																	<span class="tname">'+ lan.site.set_ssl.deploy_service +'</span>\
+																	<div class="info-r">\
+																		<div class="inlineBlock">\
+																			<div class="ssl_item ssl_service_item mr10" data-install="0" style="width: auto; padding: 0 20px;">'+ lan.site.set_ssl.no_necess +'</div>\
+																				<div class="ssl_item ssl_service_item mr10 active" data-serviceprice="28.9" data-install="1" style="width: auto; padding: 0 20px;">'+ lan.site.set_ssl.deploy_service +'</div>\
+																				<span class="unit ssl_service_unit"></span>\
+																		</div>\
+																		<div class="tips_gray mt5 ssl_service_tips"></div>\
+																	</div>\
+																</div>\
 															</div>\
-															<div class="info">\
-																<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
-																<span class="text-right"></span>\
+															<div class="business_ssl_btn">\
+																<div class="mr5">\
+																	<div class="bname">'+ lan.site.set_ssl.goods_include +':<span class="ml10"></span></div>\
+																	<div>'+ lan.site.set_ssl.total_cost +':<div class="present_price ml10">\
+																			<span>$278.66</span>/1year（'+ lan.site.set_ssl.in_service +'）\
+																		</div>\
+																		<div class="original_price">Original price$342/1year</div>\
+																	</div>\
+																</div>\
+																<div class="inlineBlock ml10">\
+																	<button type="button" class="business_ssl_pay">'+ lan.site.set_ssl.buy_now +'</button>\
+																</div>\
 															</div>\
 														</div>\
-														<div class="lib-prompt">\
-															<span>'+ lan.site.set_ssl.wechat_swipe +'</span>\
-														</div>\
-													</div>\
-													<div class="bt_business_tab ssl_order_check" style="padding: 25px 60px 0 60px;">\
-														<div class="order_pay_title">'+ lan.site.set_ssl.pay_sus +'</div>\
-														<div class="lib-price-detailed">\
-															<div class="info">\
-																<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
-																<span class="text-right"></span>\
+														<div class="bt_business_tab ssl_applay_info">\
+															<div class="guide_nav">\
+																<span class="active">'+ lan.site.set_ssl.wechat_pay +'</span>\
+																<span>'+ lan.site.set_ssl.Alipay_pay +'</span>\
 															</div>\
-															<div class="info">\
-																<span class="text-left">'+ lan.site.set_ssl.com_price +'</span>\
-																<span class="text-right"></span>\
+															<div class="paymethod">\
+																<div class="pay-wx" id="PayQcode"></div>\
 															</div>\
-															<div class="info">\
-																<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
-																<span class="text-right"></span>\
+															<div class="lib-price-box text-center">\
+																<span class="lib-price-name f14"><b>'+ lan.site.set_ssl.total +'</b></span>\
+																<span class="price-txt">$<b class="sale-price"></b></span>\
+															</div>\
+															<div class="lib-price-detailed">\
+																<div class="info">\
+																	<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
+																	<span class="text-right"></span>\
+																</div>\
+																<div class="info">\
+																	<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
+																	<span class="text-right"></span>\
+																</div>\
+															</div>\
+															<div class="lib-prompt">\
+																<span>'+ lan.site.set_ssl.wechat_swipe +'</span>\
 															</div>\
 														</div>\
-														<div class="order_pay_btn">\
-															<a href="javascript:;">人工服务</a>\
-															<a href="javascript:;" data-type="info">'+ lan.site.set_ssl.com_info +'</a>\
-															<a href="javascript:;" data-type="clear">'+ lan.site.set_ssl.return_list +'</a>\
+														<div class="bt_business_tab ssl_order_check" style="padding: 25px 60px 0 60px;">\
+															<div class="order_pay_title">'+ lan.site.set_ssl.pay_sus +'</div>\
+															<div class="lib-price-detailed">\
+																<div class="info">\
+																	<span class="text-left">'+ lan.site.set_ssl.tar_name +'</span>\
+																	<span class="text-right"></span>\
+																</div>\
+																<div class="info">\
+																	<span class="text-left">'+ lan.site.set_ssl.com_price +'</span>\
+																	<span class="text-right"></span>\
+																</div>\
+																<div class="info">\
+																	<span class="text-left">'+ lan.site.set_ssl.order_time +'</span>\
+																	<span class="text-right"></span>\
+																</div>\
+															</div>\
+															<div class="order_pay_btn">\
+																<a href="javascript:;">人工服务</a>\
+																<a href="javascript:;" data-type="info">'+ lan.site.set_ssl.com_info +'</a>\
+																<a href="javascript:;" data-type="clear">'+ lan.site.set_ssl.return_list +'</a>\
+															</div>\
+															<ul class="help-info-text c7" style="padding:15px 0 0 70px;font-size:13px;">\
+																<li>'+ lan.site.set_ssl.buy_cert_tip1 +'</li>\
+															</ul>\
 														</div>\
-														<ul class="help-info-text c7" style="padding:15px 0 0 70px;font-size:13px;">\
-															<li>'+ lan.site.set_ssl.buy_cert_tip1 +'</li>\
-														</ul>\
 													</div>\
 												</div>',
 												// <div class="ssl_item ssl_service_item mr10" data-install="1" style="width: 90px;">'+ lan.site.set_ssl.deploy_service +'</div>\
@@ -9597,7 +9600,7 @@ domain_dns_list: [],       // dns域名列表
 														if (config.current_num > 1 || data_info.brand === 'Digicert') {
 															if (data_info.brand !== 'Digicert') ssl_price_item.eq(0).text('Universal domain');
 															if (data_info.brand === 'Digicert') ssl_price_item.eq(0).text('Single domain');
-															$('.domain_number_tips').html( lan.site.set_ssl.default_over(data_info.num) +'<span>$' + data_info.add_price + '/one/year</span>');
+															$('.domain_number_tips').html( lan.site.set_ssl.default_over(data_info.num) +'<span>$' + (data_info.add_price / 100).toFixed(2) + '/one/year</span>');
 														} else {
 															ssl_price_item.eq(0).text('Single domain');
 															$('.domain_number_tips').empty();
@@ -9607,14 +9610,14 @@ domain_dns_list: [],       // dns域名列表
 														var price_pack = parseFloat(parseFloat(data_info.price * year).toFixed(2)),
 															price_extra = data_info.add_price * cur_num * year;
 														$('.business_ssl_btn .bname span').html(
-															lan.site.set_ssl.default_domain(data_info.num) + '$' + price_pack /100 + '/' + year + 'year' + (cur_num ? lan.site.set_ssl.over_domain(cur_num) + '$' + price_extra + '/' + year + 'year' : '')
+															lan.site.set_ssl.default_domain(data_info.num) + '$' + (price_pack / 100) + '/' + year + 'year' + (cur_num ? lan.site.set_ssl.over_domain(cur_num) + '$' + (price_extra / 100) + '/' + year + 'year' : '')
 														);
 														$('.business_ssl_btn .present_price').html(pp_html);
 														$('.business_ssl_btn .original_price').html(op_html);
 													}
 
 													setTimeout(function () {
-														ssl_type_item.eq(0).click();
+														ssl_type_item.eq(1).click();
 													}, 50);
 													//证书分类切换
 													ssl_type_item.click(function () {
@@ -9995,7 +9998,7 @@ domain_dns_list: [],       // dns域名列表
 															</div>\
 													</div>\
 													<div class="line basics-clid">\
-															<span class="tname">'+ lan.public_backup.mobile_phone +'</span>\
+															<span class="tname">'+ lan.public_backup.mobile_phone_or_email +'</span>\
 															<div class="info-r">\
 															<select class="bt-input-text pre" style="width: 120px; margin-right:5px;" name="phonePre" placeholder="area code"></select>\
 																	<input type="text" class="bt-input-text mr5" style="width:270px;" name="mobile" value="' +
@@ -10269,7 +10272,7 @@ domain_dns_list: [],       // dns域名列表
 																			'</div>'+
 																			'</div>'+
 																			'<div class="line basics-clid">'+
-																			'<span class="tname">'+ lan.public_backup.mobile_phone +'</span>'+
+																			'<span class="tname">'+ lan.public_backup.mobile_phone_or_email +'</span>'+
 																			'<div class="info-r">'+
 																			'<select class="bt-input-text" style="width: 120px; margin-right:5px;"  value="' +form.phonePre +'" name="phonePre" placeholder="area code"></select>'+
 																			'<input type="text" class="bt-input-text mr5" style="width:275px;" name="mobile" value="' +form.mobile +'" placeholder="Mobile number. If empty, use current bound number" />'+
@@ -10529,7 +10532,7 @@ domain_dns_list: [],       // dns域名列表
 								} else {
 									robj.append('<div class="alert alert-warning" style="padding:10px">'+ lan.site.set_ssl.no_bind +'</div>');
 									var datas = [
-										{ title: lan.public.user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.public_backup.mobile_phone },
+										{ title: lan.public.user, name: 'bt_username', value: rdata.email, width: '260px', placeholder: lan.public_backup.mobile_phone_or_email },
 										{ title: lan.public.pass, type: 'password', name: 'bt_password', value: rdata.email, width: '260px' },
 										{
 											title: ' ',
@@ -11025,8 +11028,10 @@ domain_dns_list: [],       // dns域名列表
                         })
                     }
                 }
-            ]
+            ];
+
             bt.render_tab('ssl_tabs', tabs);
+
             // $('#ssl_tabs').append('<div class="ss-text pull-right mr30" style="position: relative;top:-4px"><em>' + lan.site.force_https + '</em><div class="ssh-item"><input class="btswitch btswitch-ios" id="toHttps" type="checkbox"><label class="btswitch-btn" for="toHttps"></label></div></div>');
             // $("#toHttps").attr('checked', rdata.httpTohttps);
             // $('#toHttps').click(function (sdata) {
@@ -11066,7 +11071,15 @@ domain_dns_list: [],       // dns域名列表
             //         $('#ssl_tabs span:eq(0)').trigger('click');
             //         break;
             // }
-            $('#ssl_tabs span:eq(0)').trigger('click');
+
+						$('#ssl_tabs span:eq(' + (rdata.status ? (rdata.csr ? 0 : 1) : 1) + ')').trigger('click');
+
+						$('.cutTabView').on('click', function () {
+							$('#ssl_tabs span:eq(1)').trigger('click');
+							setTimeout(function () {
+								$('.ssl_business_application').trigger('click');
+							}, 400);
+						});
         })
     },
     show_certificate_confirm: function (sitename, callback) {

@@ -4342,7 +4342,7 @@ var bt_file = {
     get_disk_list:function(callback){
         bt_tools.send('system/GetDiskInfo',function (res) {
             if (callback) callback(res);
-        },'Getting disk list, please wait...');
+        },'Getting disk list');
     },
 
     // 新建文件（文件和文件夹）
@@ -4474,7 +4474,7 @@ var bt_file = {
      * @return void
     */
     get_file_size: function (data, callback){
-        bt_tools.send('files/get_path_size',{path:data.path},callback,'Getting directory size, please wait...');
+        bt_tools.send('files/get_path_size',{path:data.path},callback,'Getting directory size');
     },
     /**
      * @description 获取目录大小

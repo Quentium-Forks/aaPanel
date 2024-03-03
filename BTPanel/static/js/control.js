@@ -1006,7 +1006,6 @@ var controlObj = {
      * 获取平均负载图表配置
      */
     get_load_option: function (startTime, endTime, yData, zData, aData, bData) {
-			console.log(1);
       var that = this;
       var option = this.get_default_option(startTime, endTime);
       var interval = ((endTime - startTime) / 3) * 1000;

@@ -653,7 +653,7 @@ var safety = {
 			column: [
 				// {type: 'checkbox', class: '', width: 20},
 				{fid: 'address', title: lan.security.firewall.source_ip, width: 150},
-				{fid: 'area', title: lan.security.firewall.ip_home + '&nbsp;' + (parseInt(bt.get_cookie('pro_end')) < 0?'<a href="javascript:;" class="btlink" onclick="bt.soft.updata_pro()">Pro</a>':''), template: function(row){
+				{fid: 'area', title: lan.security.firewall.ip_home + '&nbsp;' + (parseInt(bt.get_cookie('pro_end')) < 0?'<a href="javascript:;" class="btlink" onclick="bt.soft.updata_pro(116)">Pro</a>':''), template: function(row){
 					var area = row.area;
 					return '<span>'+ (area.continent || '') + (area.info || '--') +'</span>'
 				}},

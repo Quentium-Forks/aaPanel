@@ -1114,7 +1114,7 @@ var lan = {
 		"mysql_status_ps4":"If too low, increase innodb_buffer_pool_size",
 		"mysql_status_ps5":"If too low, increase query_cache_size",
 		"mysql_status_ps6":"If too high, increase tmp_table_size",
-		"mysql_status_ps7":"If too high, increase table_cache_size",
+		"mysql_status_ps7":"If too high, increase table_open_cache",
 		"mysql_status_ps8":"If not 0, please check index of database table",
 		"mysql_status_ps9":"If not 0, please check index of database table",
 		"mysql_status_ps10":"If too high, increase sort_buffer_size",
@@ -1771,9 +1771,9 @@ var lan = {
 			"certificate_type":"Certificate type",
 			"expire_date":"Expire date",
 			"get_certificate_list":"Please wait while obtaining the certificate list",
-			"bus_tip1":"If your site uses functions such as CDN, high-defense IP, reverse proxy, and 301 redirection, authentication may fail",
-			"bus_tip2":"Certificates can be purchased for many years, can only be issued once a year (valid for one year), and must be renewed within 30 days before expiration (renewal does not require verification of the domain name)",
-			"bus_tip3":"To apply for the certificate that uses www as the second-level domain name www.bt.cn, you need to bind and resolve the top-level domain name (bt.cn); otherwise, the verification fails",
+			"bus_tip1":"If your site uses CDN, high-defence IP, reverse proxy, 301 redirect, etc., it may lead to validation failure",
+			"bus_tip2":"Certificates can be purchased for many years, and can only be issued once a year (valid for one year), and need to be renewed within 30 days before expiration (domain verification is not required for renewal)",
+			"bus_tip3":"Apply for www.bt.cn certificate with www as the secondary domain name, binding and resolving the top-level domain (bt.cn) is required, otherwise the verification will fail",
 			"bus_tip4":"Compared with ordinary certificates, commercial certificates have higher security, compensation protection and support for wildcard and multi-domain names <a class=\"btlink\" href=\"https://forum.aapanel.com/d/19277-business-ssl-certificate-tutorial\" target=\"_blank\">how to validate the commercial certificate?</a>",
 			"no_cert":"No certificate",
 			"expire_date_text":function (day) {
@@ -1798,7 +1798,7 @@ var lan = {
 			"no_action":"no-operation",
 			"detail":"Detail",
 			"verification_result":"Verification result",
-			"bus_cert_tip":"Sites that contain illegal business information such as fraud, gambling, pornography, Trojan horses, and viruses are prohibited from applying for SSL certificates. If there is any violation, the application will be revoked and the account will be disabled",
+			"bus_cert_tip":"Sites that contain fraud, gambling, pornography, Trojan, virus and other illegal business information are prohibited from applying for SSL certificates. If there is any violation, the application will be revoked and the account will be suspended",
 			"domain_num":"Domain Count",
 			"select_domain_num":"Please select the number of domain names contained in the current certificate",
 			"cert_class":"Cert Type",
@@ -1841,24 +1841,24 @@ var lan = {
 			"click_view":"Click to view",
 			"deploy_cost":"Deployment service cost",
 			"default_over":function(num){
-				return 'The default contains '+ num +' domain names, exceeding the number per domain name'
+				return 'The default contains '+ num +' domain names, exceeding the number per domain name '
 			},
 			"or_price":"Original price",
 			"default_domain":function(num){
-				return 'The default contains '+ num +' domain names'
+				return 'The default contains '+ num +' domain '
 			},
 			"over_domain":function(num){
 				return '，over '+ num +' additional domain names'
 			},
 			"dis_tip":"The current certificate brand does not support wildcard certificates. Please select another brand certificate",
-			"single_tip1":"Only one second-level domain name or subdomain name can be bound, for example, bt.com, cloud.bt.com, or dnspod.cloud.bt.com.",
-			"single_tip2":"If you need to bind all subdomains of a peer, such as *.bt.com, purchase a universal domain certificate.",
+			"single_tip1":"Only one secondary domain or subdomain is supported, e.g. bt.com, cloud.bt.com, or dnspod.cloud.bt.com.",
+			"single_tip2":"If you need to bind all subdomains of a peer, e.g. *.bt.com, purchase a universal domain certificate.",
 			"more_tip1":"Domain names with wildcards, such as *.bt.com and *.cloud.bt.com, are universal domain names that contain all subdomain names of the same level.",
-			"more_tip2":"Note that universal domain names do not support cross-tiers, for example *.bt.com does not include *.cloud.bt.com support",
+			"more_tip2":"Note that universal domain names do not support cross-tiers, e.g. *.bt.com does not include *.cloud.bt.com support",
 			"buy_cert":"Purchase of business certificate",
 			"get_apply_cert":"Please wait while obtaining certificate information",
 			"cust_domain":"Customize the domain name",
-			"cust_place":"single domain name , for example, www.bt.cn",
+			"cust_place":"single domain, e.g. www.bt.cn",
 			"cust_tip1":"Before applying, please ensure that the domain name has been resolved, if it is not resolved, the review will fail (including the root domain name).",
 			"cust_tip2":"To apply for the certificate that uses www as the second-level domain name www.bt.cn, you need to bind and resolve the top-level domain name (bt.cn); otherwise, the verification fails",
 			"cust_tip3":"Optional name gift rules for SSL certificates:",

@@ -209,7 +209,7 @@
     		<script type="text/javascript" src="{{js_f}}"></script>
     	{% endfor %}
       <script type="text/javascript">
-// 评分
+			// 评分
 			var id = 0;
 			$('.feedback').hover(function () {
 				$('.toolbar-right .service').attr('style', '')
@@ -594,7 +594,10 @@
 				})
 			})
 			if(!isNps) {
-				$('.toolbar-right .feedback').click()
+				$.post('/config?action=check_nps',{ product_type: 1 },function(rdata){
+					var npsStatus = rdata.res;
+					if(npsStatus.is_submit && npsStatus.safe_day >= 3) $('.toolbar-right .feedback').click();
+				});
 			}
         $("#setBox").click(function() {
           if ($(this).prop("checked")) {
@@ -712,6 +715,56 @@
           '{{g.cdn_url}}/js/clipboard.min.js'
         ], function(e) {});
         task_stat();
+
+				// 获取支付状态
+				function getPaymentStatus(){
+					bt.send('get_pd', 'ajax/get_pd', {}, function (res) {
+						var tab = $('.pos-box .tab-list'),
+								proHTML = '',
+								_index = res[1] > 0 ? 1 : 2,
+								is_pay = res[1] >= 0 || res[2] > 0, //是否购买
+								advanced = res[1] == 0 || res[1] > 0 ? 'pro':'ltd';
+
+						bt.set_cookie('pro_end', res[1]);
+						bt.set_cookie('ltd_end', res[2]);
+
+						// 已购买
+						if (is_pay) {
+							proHTML = '<div class="product-buy" style="margin-right:0;font-size: 12px;">Expire: <span style="vertical-align: initial">' + (res[1] === 0?'永久授权':((res[1] === -2 && res[2] === -2)?'Expired':bt.format_data(res[_index],'yyyy-MM-dd'))+ '&nbsp;&nbsp;<a class="btlink" href="javascript:;" onclick="product_recommend.pay_product_sign(\''+ advanced +'\',81,\''+ advanced +'\')">RENEW</a>')+'</span></div>'
+						} else {
+							proHTML = '<div class="product-buy" style="margin-right:0;"><button type="button" class="btn btn-success btn-xs" style="vertical-align: 1px;" onclick="product_recommend.pay_product_sign(\'pro\',80,\'pro\')">Upgrade now</button></div>';
+						}
+						
+						$(window).resize(function () {
+							if ($(window).innerWidth() < 1080) {
+								$('.recommend-immediate-icon').next().addClass('hide');
+							} else {
+								$('.recommend-immediate-icon').next().removeClass('hide');
+							}
+						});
+
+						if ((tab.children().length * 105 + 306.28) < tab.parent().width()) {
+							tab.parent().css({display:'flex','justify-content':'space-between'});
+
+							var _html = '<div class="authState" style="line-height: 45px;padding-right: 20px;"><span class="'+(!is_pay? 'btpro-gray' : 'bt'+advanced)+'" '+ (is_pay ? 'onclick="product_recommend.pay_product_sign(\''+ advanced +'\',90,\''+ advanced +'\')"' : 'onclick="product_recommend.pay_product_sign(\'pro\',80,\'pro\')"') +' style="vertical-align: bottom;"></span><div style="display: inline-block;font-size: 12px;color:#666" class=" product_version mr10">'+(!is_pay?'FREE&nbsp;&nbsp;':'')+' {{session["version"]}}</div> ' + proHTML +'</div>';
+
+							if(tab.next().hasClass('authState')) tab.next().remove();
+
+							tab.after(_html);
+						}
+					})
+				}
+
+				if (bt.get_cookie('bt_user_info') == null || bt.get_cookie('bt_user_info') == '') {
+					bt.pub.get_user_info(function (userInfo) {
+						if (userInfo.status) {
+							bt.set_cookie('bt_user_info', JSON.stringify(userInfo));
+							getPaymentStatus();
+						}
+					})
+				} else {
+					getPaymentStatus();
+				}
       </script>
     {% endblock %}
   </div>

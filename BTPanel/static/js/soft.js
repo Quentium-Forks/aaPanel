@@ -336,7 +336,8 @@ var soft = {
                                     type:item.type,
                                     plugin:true,
                                     renew:item.endtime,
-                                    totalNum:buy_type
+                                    totalNum:buy_type,
+																		ps: item.ps
                                 }) +')\'>' + re_msg + '</a>';
                             } else {
                                 pay_opt = '<a class="btlink" onclick="bt.soft.re_plugin_pay_other(\'' + item.title + '\',\'' + item.pid + '\',' + re_status + ',' + item.price + ')">' + re_msg + '</a>';
