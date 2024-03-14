@@ -1,0 +1,9 @@
+{
+  "https://registry.docker-cn.com": "Official Docker China image accelerator",
+  "https://mirror.ccs.tencentyun.com": "Tencent cloud image acceleration station",
+  "https://ung2thfc.mirror.aliyuncs.com": "Ali Cloud image acceleration station",
+  "https://docker.mirrors.ustc.edu.cn": "University of Science and Technology of China Mirror Acceleration Station",
+  "https://0bcbbd64c600f5e70f8ac0156b43a3e0.mirror.swr.myhuaweicloud.com": "Huawei Image Acceleration Station",
+  "http://hub-mirror.c.163.com": "NetEase Mirror Acceleration Station",
+  "https://docker.mirrors.sjtug.sh": "Shanghai Jiao Tong University Mirror Acceleration Station"
+}

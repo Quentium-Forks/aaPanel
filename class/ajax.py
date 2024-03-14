@@ -674,7 +674,7 @@ class ajax:
 
 
 
-
+    #  更新面板
     def UpdatePanel(self,get):
         try:
             if not public.IsRestart(): return public.return_msg_gettext(False,'Please run the program when all install tasks finished!')
@@ -727,6 +727,9 @@ class ajax:
                     updateInfo['ignore'] = json.loads(public.readFile(no_path))
                 except:
                     pass
+
+            # 重启面板 默认开启系统监控
+            public.writeFile('data/control.conf', '30')
 
             #检查是否需要升级
             if not hasattr(get,'toUpdate'):
@@ -1625,14 +1628,44 @@ class ajax:
         """
             @name 获取推荐列表
         """
+        # spath = '{}/data/pay_type.json'.format(public.get_panel_path())
+        # if not os.path.exists(spath):
+        #     public.run_thread(self.download_pay_type,(spath,))
+        # try:
+        #     data = json.loads(public.readFile("data/pay_type.json"))
+        # except:
+        #     public.run_thread(self.download_pay_type, (spath,))
+        #     data = {}
+        #
+        # import panelPlugin
+        # plu_panel = panelPlugin.panelPlugin()
+        # plugin_list = plu_panel.get_cloud_list()
+        # if not 'pro' in plugin_list: plugin_list['pro'] = -1
+        #
+        # for item in data:
+        #     if 'list' in item:
+        #         item['list'] = self.__get_home_list(item['list'], item['type'], plugin_list, plu_panel)
+        #         if item['type'] == 1:
+        #             if len(item['list']) > 4: item['list'] = item['list'][:4]
+        #     # if item['type'] == 0 and plugin_list['pro'] >= 0:
+        #     #     item['show'] = False
+        #
+        # return data
+
         spath = '{}/data/pay_type.json'.format(public.get_panel_path())
+        if os.path.exists(spath) and os.path.getsize(spath) <= 0:
+            os.remove(spath)
+
         if not os.path.exists(spath):
-            public.run_thread(self.download_pay_type,(spath,))
+            public.run_thread(self.download_pay_type, (spath,))
         try:
             data = json.loads(public.readFile("data/pay_type.json"))
-        except:
+        except json.decoder.JSONDecodeError:
+            os.remove(spath)
             public.run_thread(self.download_pay_type, (spath,))
-            data = {}
+            data = json.loads(public.readFile("data/pay_type.json"))
+        except Exception:
+            data = self.get_default_pay_type()
 
         import panelPlugin
         plu_panel = panelPlugin.panelPlugin()
@@ -1641,12 +1674,103 @@ class ajax:
 
         for item in data:
             if 'list' in item:
-                item['list'] = self.__get_home_list(item['list'], item['type'], plugin_list, plu_panel)
+                item['list'] = self.__get_home_list(item['list'], item['type'],
+                                                    plugin_list, plu_panel)
                 if item['type'] == 1:
                     if len(item['list']) > 4: item['list'] = item['list'][:4]
             # if item['type'] == 0 and plugin_list['pro'] >= 0:
             #     item['show'] = False
         return data
+
+
+    @staticmethod
+    def get_default_pay_type():
+        spath = '{}/data/default_pay_type.json'.format(public.get_panel_path())
+        default = [{"type": -1}, {"type": -1}, {"type": -1}, {"type": -1},
+                   {"type": -1}, {
+            "type": 5,
+            "describe": "网站-设置推荐",
+            "show": True,
+            "list": [
+                {
+                    "title": "防火墙",
+                    "name": "btwaf",
+                    "pay": "46",
+                    "pluginName": "Nginx网站防火墙",
+                    "ps": "有效拦截SQL 注入、XSS跨站、恶意代码、网站挂马等常见攻击，过滤恶意访问，降低数据泄露的风险，保障网站的可用性。",
+                    "preview": "https://www.bt.cn/new/product_nginx_firewall.html",
+                    "dependent": "nginx",
+                    "pluginType": "pro",
+                    "eventList": [
+                        {
+                            "event": "site_waf_config('$siteName')",
+                            "version": "5.2.0"
+                        }
+                    ]
+                },
+                {
+                    "title": "防火墙",
+                    "name": "btwaf_httpd",
+                    "pay": "46",
+                    "pluginName": "网站防火墙",
+                    "ps": "有效拦截SQL 注入、XSS跨站、恶意代码、网站挂马等常见攻击，过滤恶意访问，降低数据泄露的风险，保障网站的可用性。",
+                    "preview": "https://www.bt.cn/new/product_nginx_firewall.html",
+                    "dependent": "apache",
+                    "pluginType": "pro",
+                    "eventList": [
+                        {
+                            "event": "site_waf_config('$siteName')",
+                            "version": "5.2.0"
+                        }
+                    ]
+                },
+                {
+                    "title": "统计",
+                    "name": "total",
+                    "pay": "47",
+                    "pluginName": "网站监控报表",
+                    "ps": "快速分析网站运行状况，实时精确统计网站流量、ip、uv、pv、请求、蜘蛛等数据，网站SEO优化利器",
+                    "preview": "https://www.bt.cn/new/product_website_total.html",
+                    "dependent": "apache",
+                    "pluginType": "pro",
+                    "eventList": [
+                        {
+                            "event": "WebsiteReport('$siteName')",
+                            "version": "5.0"
+                        }
+                    ]
+                },
+                {
+                    "title": "统计",
+                    "name": "total",
+                    "pay": "47",
+                    "pluginName": "网站监控报表",
+                    "ps": "快速分析网站运行状况，实时精确统计网站流量、ip、uv、pv、请求、蜘蛛等数据，网站SEO优化利器",
+                    "preview": "https://www.bt.cn/new/product_website_total.html",
+                    "dependent": "nginx",
+                    "pluginType": "pro",
+                    "eventList": [
+                        {
+                            "event": "WebsiteReport('$siteName')",
+                            "version": "5.0"
+                        }
+                    ]
+                }
+            ]
+        }, {"type": -1}, {"type": -1}]
+        if os.path.isfile(spath):
+            try:
+                res_data = json.loads(public.readFile(spath))
+                if isinstance(res_data, list):
+                    return res_data
+            except json.JSONDecodeError:
+                pass
+            # 再次出错时，保障网站列表可以展示
+            return default
+        return default
+
+
+
 
     def __get_home_list(self, sList, stype, plugin_list, plu_panel):
         """

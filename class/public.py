@@ -2286,11 +2286,12 @@ def check_ip_panel():
         if client_ip_long >= limit_ip['min'] and client_ip_long <= limit_ip['max']:
             return False
 
-    errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-    try:
-        errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-    except IndexError:pass
-    return error_not_login(errorStr,True)
+    # errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
+    # try:
+    #     errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_IP_H1'),getMsg('PAGE_ERR_IP_P1',(GetClientIp(),)),getMsg('PAGE_ERR_IP_P2'),getMsg('PAGE_ERR_IP_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
+    # except IndexError:pass
+    # return error_not_login(errorStr,True)
+    return error_403(None)
 
 #检查面板域名
 def check_domain_panel():
@@ -2300,11 +2301,13 @@ def check_domain_panel():
         client_ip = GetClientIp()
         if client_ip in ['127.0.0.1','localhost','::1']: return False
         if tmp.strip().lower() != domain.strip().lower():
-            errorStr = ReadFile('./BTPanel/templates/' + GetConfigValue('template') + '/error2.html')
-            try:
-                errorStr = errorStr.format(getMsg('PAGE_ERR_TITLE'),getMsg('PAGE_ERR_DOMAIN_H1'),getMsg('PAGE_ERR_DOMAIN_P1'),getMsg('PAGE_ERR_DOMAIN_P2'),getMsg('PAGE_ERR_DOMAIN_P3'),getMsg('NAME'),getMsg('PAGE_ERR_HELP'))
-            except:pass
-            return error_not_login(errorStr,True)
+            if check_client_info():
+                try:
+                    from flask import render_template
+                    return render_template('error2.html')
+                except:pass
+
+            return error_403(None)
     return False
 
 #是否离线模式
@@ -4542,17 +4545,30 @@ def is_apache_nginx():
     setup_path = get_setup_path()
     return os.path.exists(setup_path + '/apache') or os.path.exists(setup_path + '/nginx')
 
-def error_not_login(e = None,_src = None):
+def error_not_login(e=None, _src=None):
     '''
         @name 未登录时且未输入正确的安全入口时的响应
         @author hwliang<2021-12-16>
         @return Response
     '''
-    from BTPanel import Response,render_template,redirect
+    from BTPanel import Response, render_template, redirect, request
+    client_status = check_client_info()
+    x_http_token = request.headers.get('x-http-token')
+    if client_status == 1:
+        if x_http_token:
+            result = {"status": False, "code": -8888, "redirect": get_admin_path(),
+                      "msg": "The current login session has been invalid, please login again!"}
+            return Response(json.dumps(result), mimetype='application/json', status=200)
+        return redirect(get_admin_path())
+    elif client_status == 2:
+        if x_http_token:
+            result = {"status": False, "code": -8888, "redirect": "/login", "msg": "The current login session has been invalid, please login again!"}
+            return Response(json.dumps(result), mimetype='application/json', status=200)
+        return render_template('autherr.html')
 
     try:
         abort_code = read_config('abort')
-        if not abort_code in [None,1,0,'0','1']:
+        if not abort_code in [None, 1, 0, '0', '1']:
             if abort_code == 404: return error_404(e)
             if abort_code == 403: return error_403(e)
             return Response(status=int(abort_code))
@@ -4565,7 +4581,7 @@ def error_not_login(e = None,_src = None):
     if _src:
         return e
     else:
-        return render_template('autherr.html')
+        return error_404(e)
 
 def error_403(e):
     from BTPanel import Response,session
@@ -6630,3 +6646,416 @@ def get_root_domain(domain_name):
         zone = ""
         root = old_domain_name
     return root, zone
+
+def check_area_panel():
+    '''
+    @name: 检查地区限制
+    @return:
+    '''
+    import contextlib
+    areas_dict = get_limit_area()
+
+    # 关闭状态直接返回false
+    if areas_dict["limit_area_status"] == "false": return False
+    # 2024/1/3 下午 2:23 兼容配置文件如果为空或者地区为空或配置文件异常，则直接跳过验证
+    if len(areas_dict["limit_area"]) == 0: return False
+    if len(areas_dict["limit_area"]["city"]) == 0:
+        if "province" in areas_dict["limit_area"] and len(areas_dict["limit_area"]["province"]) == 0:
+            if "country" in areas_dict["limit_area"] and len(areas_dict["limit_area"]["country"]) == 0:
+                return False
+
+    client_ip = GetClientIp()
+    # 本地访问直接返回false
+    if client_ip in ['127.0.0.1', 'localhost', '::1']: return False
+    ip_area_dict = get_ip_location(client_ip)
+    # 没有查询到地区返回false，内网地址直接返回false
+    if not ip_area_dict: return False
+    if ip_area_dict.raw["country"]["country"] == "Internal network address": return False
+    try:
+        error_str = "<h2>{}</h2> {}</br> {}</br> {}".format(
+            getMsg('PAGE_ERR_IP_AREA_H1'),
+            getMsg('PAGE_ERR_IP_AREA_P1', ("{} {} {}".format(
+                ip_area_dict.raw["country"]["country"],
+                ip_area_dict.raw["country"]["province"],
+                ip_area_dict.raw["country"]["city"]
+            ),)),
+            getMsg('PAGE_ERR_IP_AREA_P2'),
+            getMsg('PAGE_ERR_IP_AREA_P3')
+        )
+
+        # 仅允许allow列表中的地区,其他地区都不可以访问
+        if areas_dict["limit_type"] == "allow":
+            for city in areas_dict["limit_area"]["city"]:
+                if len(ip_area_dict.raw["country"]["city"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["city"].strip() in city["name"]:
+                    return False
+
+            for province in areas_dict["limit_area"]["province"]:
+                if len(ip_area_dict.raw["country"]["province"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["province"].strip() in province["name"]:
+                    return False
+
+            for country in areas_dict["limit_area"]["country"]:
+                if len(ip_area_dict.raw["country"]["country"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["country"].strip() in country["name"]:
+                    return False
+
+            return error_str
+
+        # 仅禁止deny列表中的地区,其他地区都可以访问
+        if areas_dict["limit_type"] == "deny":
+            for city in areas_dict["limit_area"]["city"]:
+                if len(ip_area_dict.raw["country"]["city"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["city"].strip() in city["name"]:
+                    return error_str
+
+            for province in areas_dict["limit_area"]["province"]:
+                if len(ip_area_dict.raw["country"]["province"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["province"].strip() in province["name"]:
+                    return error_str
+
+            for country in areas_dict["limit_area"]["country"]:
+                if len(ip_area_dict.raw["country"]["country"].strip()) == 0:
+                    break
+
+                if ip_area_dict.raw["country"]["country"].strip() in country["name"]:
+                    return error_str
+    except:
+        import traceback
+        print(traceback.format_exc())
+    return False
+
+
+def get_ip_location(ip_address):
+    '''
+    获取ip地址的地理位置
+    @param ip_address:
+    @return:
+    '''
+    try:
+        from geoip2 import database
+    except:
+        ExecShell("{}/pyenv/bin/pip install -U pip".format(get_panel_path()))
+        ExecShell("{}/pyenv/bin/pip install geoip2".format(get_panel_path()))
+        writeFile('data/restart.pl', 'True')
+        from geoip2 import database
+
+    data_path = '{}/config/GeoLite2-City.mmdb'.format(get_panel_path())
+    reader = database.Reader(data_path)
+    response = reader.city(ip_address)
+    reader.close()
+    return response
+
+
+def get_limit_area():
+    '''
+    获取地区限制列表
+    @return:
+    '''
+    empty_content = {
+        "limit_area": {
+            "city": [],
+            "province": [],
+            "country": []
+        },
+        "limit_area_status": "false",
+        "limit_type": "deny"
+    }
+    try:
+        areas_file = 'data/limit_area.json'
+        if not os.path.exists(areas_file): return empty_content
+
+        try:
+            areas_dict = json.loads(ReadFile(areas_file))
+        except json.decoder.JSONDecodeError:
+            return empty_content
+
+        return areas_dict
+    except:
+        public.get_error_info()
+    return empty_content
+
+# 密码复杂度验证
+def check_password_safe(password: str) -> bool:
+    '''
+        @name 密码复杂度验证
+        @param password(string) 密码
+        @return bool
+    '''
+    # 是否检测密码复杂度
+
+    # 密码长度验证
+    if len(password) < 8: return False
+
+    num = 0
+    # 密码是否包含数字
+    if re.search(r'[0-9]+', password): num += 1
+    # 密码是否包含小写字母
+    if re.search(r'[a-z]+', password): num += 1
+    # 密码是否包含大写字母
+    if re.search(r'[A-Z]+', password): num += 1
+    # 密码是否包含特殊字符
+    if re.search(r'[^\w\s]+', password): num += 1
+    # 密码是否包含以上任意3种组合
+    if num < 3: return False
+    return True
+
+
+def show_menu(menu_id, status):
+    """
+    设置显示隐藏菜单
+    :param menu_id: 菜单id
+    :param status: 0 | 1
+    :return:
+    """
+
+    show_menu_file = '/www/server/panel/config/show_menu.json'
+    hide_menu_file = '/www/server/panel/config/hide_menu.json'
+    defanlt_data = ['memuA', 'memuAsite', 'memuAftp', 'memuAdatabase', 'memuDocker', 'memuAcontrol', 'memuAfirewall', 'memuAfiles', 'memuAlogs', 'memuAxterm', 'memuAcrontab', 'memuAsoft',
+                    'memuAconfig', 'dologin']
+    show_menu_data = defanlt_data
+    if os.path.exists(show_menu_file):
+        show_menu_data = json.loads(ReadFile(show_menu_file))
+
+    # 获取之前设置的隐藏页面
+    try:
+        if os.path.exists(hide_menu_file):
+            hide_menu = ReadFile(hide_menu_file)
+            show_menu_data = [i for i in show_menu_data if i not in hide_menu]
+            ExecShell("rm -rf {}".format(hide_menu_file))
+            WriteFile(show_menu_file, json.dumps(show_menu_data))
+    except:
+        pass
+    if status == 1 and menu_id not in show_menu_data:
+        show_menu_data.append(menu_id)
+    elif status == 0 and menu_id in show_menu_data:
+        show_menu_data.remove(menu_id)
+    WriteFile(show_menu_file, json.dumps(show_menu_data))
+    return returnMsg(True, '设置成功')
+
+def task_service_status():
+    '''
+        @name 检查后台任务服务状态
+        @return bool
+    '''
+    pid_file = '{}/logs/task.pid'.format(get_panel_path())
+    if not os.path.exists(pid_file): return False
+    pid = readFile(pid_file)
+    if not pid: return False
+    if not os.path.exists('/proc/{}'.format(pid)): return False
+    return True
+
+
+def reload_panel():
+    '''
+        @name 重载面板
+        @return void
+    '''
+
+    # 重载面板
+    WriteFile('{}/data/reload.pl'.format(get_panel_path()), 'True')
+    if not task_service_status():
+        ExecShell("bash {}/init.sh start")
+
+
+# 2024/1/24 上午 10:38 通用响应对象
+def returnResult(code=0, status=True, msg="OK", data=None, timestamp=None, args=None):
+    '''
+    通用响应对象
+    @param code: 0:成功 1:失败 2:警告 ...
+    @param status:
+    @param msg: 只传msg,不传需要前端处理的数据
+    @param data: 只传需要前端处理的数据
+    @param timestamp: 秒级时间戳
+    @return:
+
+    使用示例：
+    成功：return dp.returnResult(data=data)
+    失败：return dp.returnResult(code=1, status=False, msg="获取失败!", data=[])
+    失败：return dp.returnResult(code=1, status=False, msg="获取失败!")
+    警告：return dp.returnResult(code=2, status=False, msg="警告，xxxxxxxxxxx!")
+    ...
+    '''
+    import time
+    if timestamp is None:
+        timestamp = int(time.time())
+
+    log_message = json.loads(ReadFile('BTPanel/static/language/' + GetLanguage() + '/public.json'))
+    keys = log_message.keys()
+    if type(msg) == str:
+        if msg in keys:
+            msg = log_message[msg]
+            for i in range(len(args)):
+                rep = '{' + str(i + 1) + '}'
+                msg = msg.replace(rep, args[i])
+
+    return {
+        "code": code,
+        "status": status,
+        "msg": msg,
+        "data": data,
+        "timestamp": timestamp
+    }
+
+
+# 2024/1/24 上午 11:56 取指定模型目录
+def get_mod_path(mod_name=None):
+    '''
+        @name 取指定插件目录
+        @author hwliang<2021-07-14>
+        @param mod_name<string> 模型名称 不传则返回模型根目录
+        @return string
+    '''
+
+    root_path = "{}/mod/project".format(get_panel_path())
+    if not mod_name: return root_path
+    return "{}/{}".format(root_path, mod_name)
+
+
+def get_client_info_db_obj():
+    '''
+        @name 获取客户端信息数据库对象
+        @return object
+    '''
+    db_path = '{}/data/db'.format(get_panel_path())
+    db_file = '{}/client_info.db'.format(db_path)
+    if not os.path.exists(db_path): os.makedirs(db_path, 384)
+    db_obj = M('')
+    db_obj._Sql__DB_FILE = db_file
+    # 如果数据库文件不存在则创建
+    if not os.path.exists(db_file):
+        db_obj.execute('''CREATE TABLE client_info (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remote_addr VARCHAR(50) NOT NULL,
+            remote_port INTEGER DEFAULT 0,
+            session_id VARCHAR(32) NOT NULL,
+            user_agent TEXT NOT NULL,
+            login_time  INTEGER DEFAULT 0
+        )''')
+
+        # 创建索引
+        db_obj.execute('CREATE INDEX client_ip_index ON client_info(client_ip)')
+        db_obj.execute('CREATE INDEX session_id_index ON client_info(session_id)')
+        db_obj.execute('CREATE INDEX login_time_index ON client_info(login_time)')
+    return db_obj
+
+
+def record_client_info():
+    '''
+        @name 记录客户端信息
+        @return void
+    '''
+    from flask import request
+    from BTPanel import cache
+    db_obj = get_client_info_db_obj()
+    remote_addr = request.environ.get('REMOTE_ADDR', '0.0.0.0')
+    user_agent = request.headers.get('User-Agent', '')
+    pdata = {
+        'remote_addr': remote_addr,
+        'remote_port': request.environ.get('REMOTE_PORT'),
+        'session_id': md5(remote_addr + user_agent),
+        'user_agent': user_agent,
+        'login_time': int(time.time())
+    }
+    db_obj.table('client_info').insert(pdata)
+    db_obj.close()
+
+    # 设置缓存
+    cache.set('last_client_session_id', pdata['session_id'], 86400 * 2)
+
+
+def check_client_info():
+    '''
+        @name 检查客户端信息
+        @return int 0:陌生IP，1:上次登录的IP且UA一致，2:近30天内登录过的IP
+    '''
+    from flask import request
+    from BTPanel import cache
+    remote_addr = request.environ.get('REMOTE_ADDR', '0.0.0.0')
+    # 如果是本地访问或为未来IP则当作陌生IP
+    if remote_addr in ['0.0.0.0', '127.0.0.1', '::1', '::']: return 0
+    user_agent = request.headers.get('User-Agent', '')
+    # 如果UA不是浏览器则当作陌生IP
+    if user_agent.find('Mozilla') == -1: return 0
+
+    session_id = md5(remote_addr + user_agent)
+    if cache.get('last_client_session_id') == session_id: return 1
+
+    db_obj = get_client_info_db_obj()
+    if not db_obj: return 0
+
+    last_login_info = db_obj.table('client_info').order('id desc').field('remote_addr,session_id,login_time').find()
+    if not last_login_info: return 0
+
+    # 如果上次登录的IP且UA一致
+    now_time = int(time.time())
+    if last_login_info['session_id'] == session_id:
+        s_time = now_time - last_login_info['login_time']
+        if s_time < (86400 * 2):
+            cache.set('last_client_session_id', session_id, 86400 * 2 - s_time)
+            return 1
+        if s_time < (86400 * 30): return 2
+        return 0
+
+    # 如果近30天内登录过的IP
+    if remote_addr == last_login_info['remote_addr'] and now_time - last_login_info['login_time'] < 2592000: return 2
+    if db_obj.table('client_info').where('remote_addr=?', remote_addr).count(): return 2
+
+    # 陌生IP
+    return 0
+
+
+def redirect_to_login(default_callback_def=None):
+    '''
+        @name 重定向到登录页面
+        @return void
+    '''
+    from flask import redirect, request, Response
+    client_status = check_client_info()
+    # 获取请求头
+    x_http_token = request.headers.get('x-http-token', '')
+    if client_status == 0:
+        if default_callback_def:
+            return default_callback_def(None)
+        return error_404(None)
+    elif client_status == 1:
+        if x_http_token:
+            result = {"status": False, "code": -8888, "redirect": get_admin_path(),
+                      "msg": "The current login session has been invalid, please login again!"}
+            return Response(json.dumps(result), mimetype='application/json', status=200)
+        return redirect(get_admin_path())
+    elif client_status == 2:
+        if x_http_token:
+            result = {"status": False, "code": -8888, "redirect": "/login", "msg": "The current login session has been invalid, please login again!"}
+            return Response(json.dumps(result), mimetype='application/json', status=200)
+        return redirect('/login')
+
+    if default_callback_def:
+        return default_callback_def(None)
+    return error_404(None)
+
+
+def ws_send(data: str):
+    try:
+        if '/www/server/panel' not in sys.path:
+            sys.path.insert(0, '/www/server/panel')
+        from BTPanel import WS_OBJ
+        ws_obj = {i: j for i, j in WS_OBJ.items() if j['timeout'] > int(time.time())}
+        if ws_obj == {}: return False
+        for i, j in ws_obj.items():
+            j['ws_obj'].send(data)
+        return True
+    except:
+        return False
+
+

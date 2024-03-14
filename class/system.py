@@ -980,6 +980,8 @@ class system:
     def ReWeb(self,get):
         public.ExecShell("/etc/init.d/bt start")
         public.writeFile('data/restart.pl','True')
+        # 重启面板 默认开启系统监控
+        public.writeFile('data/control.conf', '30')
         return public.return_msg_gettext(True,'Panel restarted')
 
     

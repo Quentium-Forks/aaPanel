@@ -717,24 +717,15 @@ class panelSSL:
             "authorization": "bt {}".format(self.__userInfo['token'])
         }
 
-
         result = public.return_msg_gettext(False, 'The request failed, please try again later!')
-
         try:
             # response_data = public.httpPost(self.__APIURL + '/' + dname, self.__PDATA)
             response_data = public.httpPost(self.__APIURL + '/' + dname, data=self.__PDATA, headers=url_headers)
-
-            # public.print_log("###******************** response_data: {}".format(response_data))
-            # public.print_log("******************** url: {}".format(self.__APIURL + '/' + dname))
-            # public.print_log("******************** data: {}".format(self.__PDATA))
-            # public.print_log("******************** url_headers: {}".format(url_headers))
         except Exception as ex:
             raise public.error_conn_cloud(str(ex))
-
         try:
             result = json.loads(response_data)
         except:
-            # public.print_log("@@@@@@@@@@@@@@@@@@@3333333333333333333333333")
             pass
         return result
 

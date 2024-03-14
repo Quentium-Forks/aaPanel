@@ -6037,3 +6037,20 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             pass
 
 
+    def site_rname(self, get):
+        try:
+            if not (hasattr(get, "id") and hasattr(get, "rname")):
+                return public.returnMsg(False, "parameter error")
+            id = get.id
+            rname = get.rname
+            data = public.M('sites').where("id=?", (id,)).select()
+            if not data:
+                return public.returnMsg(False, "The site does not exist!")
+            data = data[0]
+            name = data['rname'] if 'rname' in data.keys() and data.get('rname', '') else data['name']
+            if 'rname' not in data.keys():
+                public.M('sites').execute("ALTER TABLE 'sites' ADD 'rname' text DEFAULT ''", ())
+            public.M('sites').where('id=?', data['id']).update({'rname': rname})
+            return public.returnMsg(True, 'Website [{}] renamed: [{}]'.format(name, rname))
+        except:
+            return public.returnMsg(False, traceback.format_exc())

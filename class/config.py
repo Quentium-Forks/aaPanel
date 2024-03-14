@@ -2814,7 +2814,6 @@ class config:
             #'server_id':  user_info['server_id'],
         }
 
-
         try:
             user_info = json.loads(public.ReadFile("{}/data/userInfo.json".format(public.get_panel_path())))
             data['server_id'] = user_info['server_id']
@@ -2827,6 +2826,13 @@ class config:
         except:
             pass
 
+        # 连不上官网时使用默认数据
+        if not isinstance(res, dict):
+            res = {
+                "nonce": 0,
+                "success": False,
+                "res": False
+            }
 
 
         # 判断运行天数
@@ -2839,20 +2845,17 @@ class config:
                 nps_time = float(public.ReadFile("data/panel_nps_time.pl"))
                 safe_day = int((cur_timestamp - nps_time) / 86400)
 
-
-                # public.print_log("###################### 时间{}".format(cur_timestamp))
-
             except:
                 public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
         else:
             public.WriteFile("data/panel_nps_time.pl", "%s" % cur_timestamp)
-        datas = {'nonce': res['nonce'],
-                 'success': res['success'],
+
+        datas = {'nonce': res.get('nonce', 0),
+                 'success': res.get('success', False),
                  'res': {
                      'safe_day': safe_day,
-                     'is_submit': res['res']
-                    }
-                 }
+                     'is_submit': res.get('res', False)
+                 }}
 
         cache.set(ikey, datas, 3600)
         # if res['success']:
@@ -2933,7 +2936,7 @@ class config:
             }
         except:
             pass
-        # public.print_log("user_info@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(user_info))
+
         url = 'https://www.aapanel.com/api/panel/nps/submit'
         if not hasattr(get, 'questions'):
             return public.returnMsg(False, "questions Parameter error")
@@ -2965,13 +2968,18 @@ class config:
         except:
             pass
 
+        # 连不上官网时使用默认数据
+        if not isinstance(res, dict):
+            res = {
+                "nonce": 0,
+                "success": False,
+                "res": "The submission failed, please check to connect to the node"
+            }
+
         if res['success']:
             return public.returnMsg(True, "Submitted successfully")
 
-        # public.print_log("data**********************************   {}".format(data))
-        # public.print_log("url**********************************   {}".format(url))
-        # public.print_log("提交问卷@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   {}".format(res))
-        return public.returnMsg(False, res['res'] if 'res' in res else "Submission Failed")
+        return public.returnMsg(False, res['res'] if 'res' in res else "The submission failed, please check to connect to the node")
 
 
     # # nps问卷

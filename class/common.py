@@ -27,7 +27,7 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '6.9.80'
+        g.version = '6.9.81'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -196,40 +196,50 @@ class panelAdmin(panelSetup):
             #         return redirect(public.get_admin_path())
 
             # 标记新的会话过期时间
-            session['session_timeout'] = time.time() + public.get_session_timeout()
+            # session['session_timeout'] = time.time() + public.get_session_timeout()
+            # 标记新的会话过期时间
+            self.check_session()
+
         except:
-            public.print_log(public.get_error_info())
+            # public.print_log(public.get_error_info())
             session.clear()
+            public.print_error()
             return redirect('/login?id=2')
+
+    def check_session(self):
+        white_list = ['/favicon.ico', '/system?action=GetNetWork']
+        if g.uri in white_list:
+            return
+        session['session_timeout'] = time.time() + public.get_session_timeout()
+
+
 
     # 获取sk
     def get_sk(self):
         save_path = '/www/server/panel/config/api.json'
         if not os.path.exists(save_path):
-            return public.error_not_login('/login')
-
+            return public.redirect_to_login()
 
         try:
             api_config = json.loads(public.ReadFile(save_path))
         except:
             os.remove(save_path)
-            return  public.error_not_login('/login')
+            return public.redirect_to_login()
 
         if not api_config['open']:
-            return  public.error_not_login('/login')
+            return public.redirect_to_login()
         from BTPanel import get_input
         get = get_input()
         client_ip = public.GetClientIp()
         if not 'client_bind_token' in get:
             if not 'request_token' in get or not 'request_time' in get:
-                return  public.error_not_login('/login')
+                return public.redirect_to_login()
 
             num_key = client_ip + '_api'
-            if not public.get_error_num(num_key,20):
+            if not public.get_error_num(num_key, 20):
                 return public.returnJson(False,'20 consecutive verification failures, prohibited for 1 hour')
 
-
-            if not public.is_api_limit_ip(api_config['limit_addr'],client_ip): #client_ip in api_config['limit_addr']:
+            if not public.is_api_limit_ip(api_config['limit_addr'], client_ip):  # client_ip in api_config['limit_addr']:
                 public.set_error_num(num_key)
                 return public.returnJson(False,'%s[' % public.get_msg_gettext("20 consecutive verification failures, prohibited for 1 hour")+client_ip+']')
         else:
@@ -260,7 +270,7 @@ class panelAdmin(panelSetup):
 
             get = get_input()
             if not 'request_token' in get or not 'request_time' in get:
-                return  public.error_not_login('/login')
+                return public.error_not_login('/login')
             g.is_aes = True
             g.aes_key = api_config['key']
         request_token = public.md5(get.request_time + api_config['token'])

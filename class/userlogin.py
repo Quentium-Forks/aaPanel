@@ -353,10 +353,14 @@ class userlogin:
             #返回增加登录地区
             res = public.returnMsg(True,'LOGIN_SUCCESS')
             res['login_time'] = time.time()
+            res['login_time_str'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             try:
                 ip_info = public.get_free_ip_info(address)
                 if 'city' in ip_info:
                     res['ip_info'] = ip_info
+                if 'Internal network address' in ip_info['info']:
+                    res['ip_info'] = ip_info
+                    res['ip_info']['ip'] = address
                 login_address = '{}({})'.format(address,ip_info['info'])
             except:
                 print(public.get_error_info())
@@ -370,7 +374,8 @@ class userlogin:
 
             res['last_login'] = last_login
             session['login_address'] = public.xsssec(login_address)
-
+            session['login_time'] = res['login_time']  # 记录登录时间，验证客户端时要用，不要删除
+            public.record_client_info()
             return public.getJson(res),json_header
         except Exception as ex:
             stringEx = str(ex)
