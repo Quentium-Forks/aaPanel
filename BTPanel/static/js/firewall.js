@@ -151,7 +151,7 @@ var safety = {
 				break;
 		}
 	},
-	getFirewallInfo: function () {
+	getFirewallInfo: function (load) {
 		bt_tools.send({
 			url: '/safe/firewall/get_firewall_info',
 		}, function (rdata) {
@@ -161,7 +161,7 @@ var safety = {
 			$('#safety .tab-nav-border span:eq(1) > i').html(rdata.ip);
 			$('#safety .tab-nav-border span:eq(2) > i').html(rdata.trans);
 			$('#safety .tab-nav-border span:eq(3) > i').html(rdata.country);
-		}, lan.security.firewall.get_firewall_info);
+		}, load ? lan.security.firewall.get_firewall_info : '');
 	},
 	/**
 	 * @description 清空日志
@@ -1358,7 +1358,7 @@ var ssh = {
 	/**
 	 * @description 获取SSH信息
 	 */
-	getSshInfo:function (){
+	getSshInfo:function (load){
 		bt_tools.send({
 			url: '/safe/ssh/GetSshInfo',
 			verify: false
@@ -1373,17 +1373,17 @@ var ssh = {
 	/**
 	 * @description 获取登录告警信息
 	 */
-	getLoginAlarmInfo:function(){
+	getLoginAlarmInfo:function(load){
 		bt_tools.send({
 			url:'/ssh_security?action=get_jian'
 		},function (rdata){
 			$('#ssh_login_give').prop('checked', rdata.status);
-		}, {load: lan.security.ssh.get_jian,verify:false})
+		},  {load: load ? lan.security.ssh.get_jian : '',verify:false})
 	},
 	/**
 	 * @description 获取高级SSH信息
 	 */
-	getSeniorSshInfo:function (){
+	getSeniorSshInfo:function (load){
 		bt_tools.send({
 			url: '/ssh_security?action=get_config',
 			verify: false
@@ -1397,13 +1397,13 @@ var ssh = {
 			})
 			$('[name="root_login"]').html(root_option);
 			// $('[name="root_login"]').prop("checked",rdata.root_is_login === 'yes')
-		}, lan.security.ssh.get_config);
+		}, load ? lan.security.ssh.get_config : '');
 	},
 
 	/**
 	 * @description 获取SSH登录告警
 	 */
-	getSshLoginAlarmInfo: function () {
+	getSshLoginAlarmInfo: function (load) {
 		var that = this;
 		bt_tools.send({
 			url: '/ssh_security?action=get_login_send',
@@ -1421,7 +1421,7 @@ var ssh = {
 			} else {
 				that.renderLoginAlarmInfo(send);
 			}
-		}, lan.security.ssh.get_login_send);
+		}, load ? lan.security.ssh.get_login_send : '');
 	},
 	/**
 	 * @description 渲染SSH登录告警配置

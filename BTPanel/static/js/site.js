@@ -11,7 +11,9 @@ $('#cutMode .tabs-item').on('click', function () {
             } else {
                 $('.site_table_view .mask_layer').addClass('hide');
             }
-            site.php_table_view();
+						product_recommend.init(function () {
+							site.php_table_view();
+						});
             // site.get_types();
             break;
         case 'nodejs':
@@ -1598,10 +1600,117 @@ var site = {
         });
     },
     php_table_view: function () {
+				var hoverInfo = {}
         $('#bt_site_table').empty();
+
+				$('.site_table_view').after(
+					'<div class=" web_name_hover hide">\
+						<div class=" web_name_title"></div>\
+						<div class="web_name_setting ">\
+							<span class="web_name_copy flex align-center btlink"><span class="web_name_copy_icon"></span>' + lan.site.copy + '<span id="site_name_copy"></span></span>\
+							<span class="web_name_rename flex align-center btlink"><span class="web_name_rename_icon"></span>' + lan.site.rename + '</span>\
+						</div>\
+					</div>'
+				);
+				
+				// 点击复制网站
+				$('.web_name_copy')
+					.unbind()
+					.click(function (e) {
+						var clipboard = new ClipboardJS('#site_name_copy');
+						clipboard.on('success', function (e) {
+							bt.msg({
+								msg: lan.mail_sys.success_copy,
+								icon: 1,
+							});
+						});
+						clipboard.on('error', function (e) {
+							bt.msg({
+								msg: lan.pgsql.cp_fail,
+								icon: 2,
+							});
+						});
+						$('#site_name_copy').attr('data-clipboard-text', hoverInfo.site);
+						$('#site_name_copy').click(function (e) {
+							e.stopPropagation();
+						});
+						$('#site_name_copy').click();
+					});
+				
+				// 点击重命名网站
+				$('.web_name_rename')
+					.unbind()
+					.click(function (e) {
+						var site_name = hoverInfo.site,
+							site_id = hoverInfo.id;
+						$(this)
+							.parent()
+							.prev()
+							.find('.web_name_text')
+							.html('<input type="text" title="' + lan.site.website_edit_tips + '" class="web_name_input" value="' + site_name + '"/>')
+							.find('input')
+							.focus()
+							.click(function (e) {
+								e.stopPropagation();
+							});
+						$(this)
+							.parent()
+							.prev()
+							.find('.web_name_text')
+							.find('input')
+							.blur(function () {
+								var new_name = $(this).val();
+								if (new_name == site_name) {
+									$('.web_name_hover').addClass('hide');
+									return;
+								}
+								if (new_name != '') {
+									bt_tools.send(
+										{
+											url: '/site?action=site_rname',
+											data: { id: site_id, rname: escapeXml(new_name) },
+										},
+										function (res) {
+											site_table.$refresh_table_list(true);
+											bt.msg(res);
+											$('.web_name_hover').addClass('hide');
+										}
+									);
+								}
+							});
+						$(this)
+							.parent()
+							.prev()
+							.find('.web_name_text')
+							.find('input')
+							.keyup(function (e) {
+								if (e.keyCode == 13) {
+									$(this).blur();
+								}
+							});
+						// 防止网站xss
+						function escapeXml(unsafe) {
+							return unsafe.replace(/[<>&'"]/g, function (c) {
+								switch (c) {
+									case '<':
+										return '&lt;';
+									case '>':
+										return '&gt;';
+									case '&':
+										return '&amp;';
+									case "'":
+										return '&apos;';
+									case '"':
+										return '&quot;';
+								}
+							});
+						}
+						e.stopPropagation();
+					});
+
         site_table = bt_tools.table({
             el: '#bt_site_table',
-            url: '/data?action=getData',
+            url: '/datalist/data/get_data_list',
             cookiePrefix: 'site_table', // cookie前缀，用于状态存储，如果不设置，着所有状态不存储，
             param: {table: 'sites'}, //参数
             minWidth: '1000px',
@@ -1614,18 +1723,44 @@ var site = {
             column: [
                 {type: 'checkbox', class: '', width: 20},
                 {
-                    fid: 'name',
+                    fid: 'rname',
                     title: lan.site.site_name,
                     sort: true,
                     sortValue: 'asc',
+										class:'site_name',
                     type: 'link',
                     width: 130,
+										isDisabled: true,
                     event: function (row, index, ev) {
                         site.web_edit(row, true);
                     },
-                    template: function (row, index) {
-                        return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" title="' + row.name + '">' + row.name + '</a></div>';
-                    }
+                    // template: function (row, index) {
+                    //     return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" title="' + row.name + '">' + row.name + '</a></div>';
+                    // }
+										template: function (row, index) {
+											var install = false;
+											var recomConfig = product_recommend.get_recommend_type(5);
+											if (recomConfig) {
+												for (var j = 0; j < recomConfig['list'].length; j++) {
+													var item = recomConfig['list'][j];
+													if (item.name == 'btwaf' || item.name == 'btwaf_httpd') {
+														if (item.install === true) install = true;
+													}
+												}
+											}
+											if(bt.get_cookie('serverType') == 'openlitespeed'){
+												return '<div style="display:inline-flex;align-items:center;position:relative">\
+												<a class="btlink web_name" data-type="'+row.rname+'" data-name="'+row.name+'" data-id="'+row.id+'" href="javascript:;">'+ row.rname +'</a>\
+												</div>'
+											}else{
+												var color = (!$.isEmptyObject(row.waf) && row.waf.status &&install)?'green':'grey'
+												return '<div style="display:inline-flex;align-items:center;position:relative">\
+																	<span title="WAF防火墙，保护网站安全" class="site_waf_icon_'+color+' site_waf_icon" data-id="'+row.id+'" data-type="'+row.rname+'" data-name="'+row.name+'" id="site_waf_icon'+ index +'"></span>\
+																	<a class="btlink web_name" data-type="'+row.rname+'" data-name="'+row.name+'" data-id="'+row.id+'" href="javascript:;">'+ row.rname +'</a>\
+																	\
+																</div>'
+											}
+										},
                 },
                 {
                     fid: 'status',
@@ -1657,101 +1792,102 @@ var site = {
                         site.backup_site_view({id: row.id, name: row.name}, site_table);
                     }
                 },
+								{
+									fid: 'path',
+									title: lan.site.root_dir,
+									tips: 'Open path',
+									type: 'link',
+									event: function (row, index, ev) {
+											openPath(row.path);
+									},
+									template: function (row, index) {
+											return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" href="javascript:;" title="' + row.path + '">' + row.path + '</a></div>';
+									}
+								},
+								bt.public.get_quota_config('site'),
+								{
+									fid: 'edate',
+									title: lan.site.endtime,
+									width: 115,
+									class: 'set_site_edate',
+									sort: true,
+									type: 'link',
+									template: function (row, index) {
+											var _endtime = row.edate || row.endtime;
+											if (_endtime === "0000-00-00") {
+													return lan.site.web_end_time;
+											} else {
+													if (new Date(_endtime).getTime() < new Date().getTime()) {
+															return '<a href="javascript:;" class="bt_danger">' + _endtime + '</a>';
+													} else {
+															return _endtime;
+													}
+											}
+									},
+									event: function (row) {
+									}
+								}, 
                 {
-                    fid: 'path',
-                    title: lan.site.root_dir,
-                    tips: 'Open path',
-                    type: 'link',
-                    event: function (row, index, ev) {
-                        openPath(row.path);
-                    },
-                    template: function (row, index) {
-                        return '<div style="display: flex;"><a class="btlink size_ellipsis" style="flex: 1; width: 0;" href="javascript:;" title="' + row.path + '">' + row.path + '</a></div>';
-                    }
-                },
-                bt.public.get_quota_config('site'),
-                {
-                    fid: 'edate',
-                    title: lan.site.endtime,
-                    width: 115,
-                    class: 'set_site_edate',
-                    sort: true,
-                    type: 'link',
-                    template: function (row, index) {
-                        var _endtime = row.edate || row.endtime;
-                        if (_endtime === "0000-00-00") {
-                            return lan.site.web_end_time;
-                        } else {
-                            if (new Date(_endtime).getTime() < new Date().getTime()) {
-                                return '<a href="javascript:;" class="bt_danger">' + _endtime + '</a>';
-                            } else {
-                                return _endtime;
-                            }
-                        }
-                    },
-                    event: function (row) {
-                    }
-                }, //模拟点击误删
-                {
-                    fid: 'ps', title: lan.site.note, type: 'input', blur: function (row, index, ev) {
-                        if (row.ps == ev.target.value) return false;
-                        bt.pub.set_data_ps({id: row.id, table: 'sites', ps: ev.target.value}, function (res) {
-                            if (!res.status) layer.msg(res.msg, {status: 2});
-                        });
-                    }, keyup: function (row, index, ev) {
-                        if (ev.keyCode === 13) {
-                            $(this).blur();
-                        }
-                    }
-                },
-                {
-                    fid: 'php_version',
-                    title: 'PHP',
-                    tips: 'Selete php version',
-                    width: 57,
-                    type: 'link',
-                    template: function (row, index) {
-                        if (row.php_version.indexOf('static') > -1) return row.php_version;
-                        return row.php_version;
-                    },
-                    event: function (row, index) {
-                        site.web_edit(row);
-                        setTimeout(function () {
-                            $('.site-menu p:eq(9)').click();
-                        }, 500);
-                    }
-                },
-                {
-                    fid: 'ssl',
-                    title: 'SSL',
-                    tips: 'Deployment certificate',
-                    width: 110,
-                    type: 'text',
-                    template: function (row, index) {
-                        var _ssl = row.ssl, _info = '',
-                            _arry = [['issuer', 'Certificate'], ['notAfter', 'Due date'], ['notBefore', 'Application date'], ['dns', 'Domain name']];
-                        try {
-                            if (typeof row.ssl.endtime != 'undefined') {
-                                if (row.ssl.endtime < 0) {
-                                    return '<a class="btlink bt_danger" href="javascript:;">Exp in ' + Math.row.ssl.endtime + ' days</a>';
-                                }
-                            }
-                        } catch (error) {
-                        }
-                        for (var i = 0; i < _arry.length; i++) {
-                            var item = _ssl[_arry[i][0]];
-                            _info += _arry[i][1] + ':' + item + (_arry.length - 1 != i ? '\n' : '');
-                        }
-                        return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
-                    },
-                    event: function (row, index, ev, key, that) {
-                        //   console.log(row, '111');
-                        site.web_edit(row);
-                        setTimeout(function () {
-                            $('.site-menu p:eq(8)').click();
-                        }, 500);
-                    }
-                },
+									fid: 'ps', title: lan.site.note, type: 'input', blur: function (row, index, ev) {
+											if (row.ps == ev.target.value) return false;
+											bt.pub.set_data_ps({id: row.id, table: 'sites', ps: ev.target.value}, function (res) {
+													if (!res.status) layer.msg(res.msg, {status: 2});
+											});
+									}, keyup: function (row, index, ev) {
+											if (ev.keyCode === 13) {
+													$(this).blur();
+											}
+									}
+								},
+								{
+									fid: 'php_version',
+									title: 'PHP',
+									tips: 'Selete php version',
+									width: 57,
+									type: 'link',
+									template: function (row, index) {
+											if (row.php_version.indexOf('static') > -1) return row.php_version;
+											return row.php_version;
+									},
+									event: function (row, index) {
+											site.web_edit(row);
+											setTimeout(function () {
+													$('.site-menu p:eq(9)').click();
+											}, 500);
+									}
+								},
+								{
+									fid: 'site_ssl',
+									title: 'SSL',
+									tips: 'Deployment certificate',
+									width: 130,
+									sort: true,
+									type: 'text',
+									template: function (row, index) {
+											var _ssl = row.ssl, _info = '',
+													_arry = [['issuer', 'Certificate'], ['notAfter', 'Due date'], ['notBefore', 'Application date'], ['dns', 'Domain name']];
+											try {
+													if (typeof row.ssl.endtime != 'undefined') {
+															if (row.ssl.endtime < 0) {
+																	return '<a class="btlink bt_danger" href="javascript:;">Exp in ' + Math.row.ssl.endtime + ' days</a>';
+															}
+													}
+											} catch (error) {
+											}
+											for (var i = 0; i < _arry.length; i++) {
+													var item = _ssl[_arry[i][0]];
+													_info += _arry[i][1] + ':' + item + (_arry.length - 1 != i ? '\n' : '');
+											}
+											return row.ssl === -1 ? '<a class="btlink bt_warning" href="javascript:;">Not Set</a>' : '<a class="btlink ' + (row.ssl.endtime < 7 ? 'bt_danger' : '') + '" href="javascript:;" title="' + _info + '">Exp in ' + row.ssl.endtime + ' days</a>';
+									},
+									event: function (row, index, ev, key, that) {
+											//   console.log(row, '111');
+											site.web_edit(row);
+											setTimeout(function () {
+													$('.site-menu p:eq(8)').click();
+											}, 500);
+									}
+								},
                 {
                     fid:'attack',
                     title:'Attack',
@@ -1843,6 +1979,56 @@ var site = {
                         layer.closeAll('tips');
                     }))
                 }
+
+								$('.web_name').hover(
+									function (e) {
+										if ($('.web_name_input').is(':focus')) return;
+										// 获取元素基于浏览器的位置
+										function getElementPosition(element) {
+											let top = element.offsetTop; //这是获取元素距父元素顶部的距离
+											let left = element.offsetLeft;
+											var current = element.offsetParent; //这是获取父元素
+											while (current !== null) {
+												//当它上面有元素时就继续执行
+												top += current.offsetTop; //这是获取父元素距它的父元素顶部的距离累加起来
+												left += current.offsetLeft;
+												current = current.offsetParent; //继续找父元素
+											}
+											return {
+												top,
+												left,
+											};
+										}
+										hoverInfo['site'] = $(this).data('type');
+										hoverInfo['id'] = $(this).data('id');
+										console.log($(this).data('id'));
+										$('.web_name_hover')
+											.find('.web_name_title')
+											.html(lan.site.website_name + '<span class="web_name_text">' + $(this).data('type') + '</span>');
+										var _that = $(this);
+										$('.web_name_hover').css({ left: getElementPosition(e.target).left - 110 + _that.width() / 2 + 'px', top: getElementPosition(e.target).top - 80 + 'px' });
+										$('.web_name_hover').removeClass('hide');
+									},
+									function (e) {
+										$('.web_name_hover').hover(
+											function () {
+												// 鼠标进入web_name_hover时显示
+												$(this).removeClass('hide');
+											},
+											function () {
+												if ($('.web_name_input').is(':focus')) return;
+												// 鼠标离开web_name_hover时隐藏
+												$(this).addClass('hide');
+											}
+										);
+										$('.site_name')
+											.parent()
+											.mouseleave(function () {
+												if ($('.web_name_input').is(':focus')) return;
+												$('.web_name_hover').addClass('hide');
+											});
+									}
+								);
             },
             // 渲染完成
             tootls: [{ // 按钮组

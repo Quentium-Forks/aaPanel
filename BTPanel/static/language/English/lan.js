@@ -1238,6 +1238,10 @@ var lan = {
 	},
 	"site":{
 		"website": "Website",
+		"website_name": "Website name: ",
+		"rename": "Rename",
+		"copy": "Copy",
+		"website_edit_tips": "Click the editing content, press Enter or lose the focus and automatically save",
 		"executing":"is being executed, please wait...",
 		"click_edit":"Click to edit content",
 		"have_been_selected":"Selected ",

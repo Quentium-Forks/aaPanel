@@ -1219,7 +1219,7 @@ check_email: function (email) {
     aceEditor: function(obj) {
         var aEditor = {
                 ACE: ace.edit(obj.el, {
-                    theme: "ace/theme/chrome", //主题
+                    theme: obj.theme ? obj.theme : "ace/theme/chrome", // 主题
                     mode: "ace/mode/" + (obj.mode || 'nginx'), // 语言类型
                     wrap: true,
                     showInvisibles: false,
@@ -2895,9 +2895,9 @@ bt.files = {
         },
         get_dir_size: function(path, callback) {
             if (!path) path = this.get_path();
-            var loading = bt.load(lan.public.the);
+            // var loading = bt.load(lan.public.the);
             bt.send('GetDirSize', 'files/GetDirSize', { path: path }, function(rdata) {
-                loading.close();
+                // loading.close();
                 if (callback) callback(rdata);
             })
         },

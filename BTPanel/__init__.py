@@ -391,7 +391,7 @@ def site(pdata=None):
             'reset_wp_password', 'is_update', 'purge_all_cache', 'set_fastcgi_cache', 'update_wp', 'get_wp_username',
             'get_language', 'deploy_wp',
             # 网站管理新增
-            'test_domains_api',
+            'test_domains_api', 'site_rname',
 
             )
     return publicObject(siteObject, defs, None, pdata)
@@ -1294,12 +1294,31 @@ def login():
                 data['hosts'] = json.dumps(data['hosts'])
         data['app_login'] = os.path.exists('data/app_login.pl')
         public.cache_set(public.Md5(uuid.UUID(int=uuid.getnode()).hex[-12:] + public.GetClientIp()), 'check', 360)
+
+        # 生成登录token
         last_key = 'last_login_token'
-        rsa_key = 'public_key'
-        session[last_key] = public.GetRandomString(32)
+        # -----------
+        last_time_key = 'last_login_token_time'
+        s_time = int(time.time())
+        if last_key in session and last_time_key in session:
+            # 10秒内不重复生成token
+            if s_time - session[last_time_key] > 10:
+                session[last_key] = public.GetRandomString(32)
+                session[last_time_key] = s_time
+        else:
+            session[last_key] = public.GetRandomString(32)
+            session[last_time_key] = s_time
+
         data[last_key] = session[last_key]
-        data[rsa_key] = public.get_rsa_public_key().replace("\n", "")
+        data['public_key'] = public.get_rsa_public_key()
         return render_template('login.html', data=data)
+        # -----------
+
+        # rsa_key = 'public_key'
+        # session[last_key] = public.GetRandomString(32)
+        # data[last_key] = session[last_key]
+        # data[rsa_key] = public.get_rsa_public_key().replace("\n", "")
+        # return render_template('login.html', data=data)
 
 
 @app.route('/close', methods=method_get)
