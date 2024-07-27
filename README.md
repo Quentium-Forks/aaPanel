@@ -1,3 +1,5 @@
+# ⚠️ No longer updated, this repo was used to keep up with aaPanel open source updates. I switched to plesk for more stability and an easier workflow.
+
 #aaPanel Docker Deployment
 The docker image is officially released by aaPanel
 
